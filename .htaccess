@@ -13,6 +13,11 @@ Options -Indexes
 # Enable UTF-8 encoding default
 AddDefaultCharset UTF-8
 
+# Video Streaming & MIME types
+AddType video/mp4 .mp4
+AddType video/webm .webm
+AddType video/ogg .ogv
+
 # Security HTTP response headers
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
@@ -24,6 +29,7 @@ AddDefaultCharset UTF-8
 # Caching for static assets
 <IfModule mod_expires.c>
     ExpiresActive On
+    ExpiresByType video/mp4 "access plus 1 month"
     ExpiresByType image/jpg "access plus 1 month"
     ExpiresByType image/jpeg "access plus 1 month"
     ExpiresByType image/png "access plus 1 month"
