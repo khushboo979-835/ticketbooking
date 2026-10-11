@@ -238,8 +238,13 @@ include __DIR__ . '/includes/header.php';
                 <!-- UPI White Card (Scan Box + App Badges) -->
                 <div class="upi-pay-card" style="border: 2px solid #e2e8f0;">
                     
-                    <!-- Dynamic Fast Canvas QR Container -->
-                    <div id="upi-qrcode" class="upi-qr-box"></div>
+                    <!-- Official Bank UPI QR Poster & Dynamic Intent -->
+                    <div style="text-align: center; margin-bottom: 12px;">
+                        <img src="<?= BASE_URL ?>/assets/uploads/upi-qr-scanner.png" alt="chandni 0777 SBI UPI QR" style="max-width: 220px; width: 100%; border-radius: 12px; border: 2px solid #e2e8f0; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
+                    </div>
+                    
+                    <!-- Dynamic Fast Canvas QR Container Fallback -->
+                    <div id="upi-qrcode" class="upi-qr-box" style="display:none;"></div>
 
                     <!-- Accepted UPI Apps Indicators -->
                     <div style="display: flex; justify-content: center; align-items: center; gap: 14px; margin: 15px 0 10px; font-weight: 700; font-size: 0.9rem; color: #475569;">
@@ -250,18 +255,18 @@ include __DIR__ . '/includes/header.php';
                     </div>
 
                     <!-- UPI ID with Copy Button -->
-                    <div style="margin-top: 10px;">
-                        <span style="font-size: 0.8rem; color: #64748b; font-weight: 600;">UPI ID:</span><br>
+                    <div style="margin-top: 10px; background: #f8fafc; padding: 10px; border-radius: 8px;">
+                        <span style="font-size: 0.8rem; color: #64748b; font-weight: 600;">Verified Payee: <strong>chandni 0777 (State Bank of India)</strong></span><br>
                         <span class="upi-vpa" id="upi-id-text"><?= e($upiId) ?></span>
-                        <button type="button" class="btn btn-secondary btn-sm" style="margin-left: 8px; color: #1e293b; border-color: #cbd5e1; background: #f1f5f9;" onclick="copyUpiId()">
-                            &#128203; Copy
+                        <button type="button" class="btn btn-secondary btn-sm" style="margin-left: 8px; color: #1e293b; border-color: #cbd5e1; background: #fff;" onclick="copyUpiId()">
+                            &#128203; Copy UPI ID
                         </button>
                     </div>
 
                     <!-- Open UPI App Directly on Mobile -->
                     <div style="margin-top: 15px;">
-                        <a href="<?= e($upiPayload) ?>" class="btn btn-primary btn-sm" style="background: #7a1244; color: #fff; border-radius: 20px; padding: 8px 24px; font-weight: 700;">
-                            &#128241; Pay via Installed UPI App
+                        <a href="<?= e($upiPayload) ?>" class="btn btn-primary btn-sm" style="background: linear-gradient(135deg, #7a1244, #500a2c); color: #fff; border-radius: 20px; padding: 10px 28px; font-weight: 700; font-size: 1rem; display: inline-block;">
+                            &#128241; Open GPay / PhonePe / Paytm App
                         </a>
                     </div>
                 </div>

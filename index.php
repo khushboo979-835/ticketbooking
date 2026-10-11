@@ -13,48 +13,69 @@ include __DIR__ . '/includes/header.php';
 ?>
 
 <!-- Hero Banner Section -->
-<section class="hero-section">
+<section class="hero-section" style="padding: 40px 0 60px;">
     <div class="container">
-        <span class="hero-badge">&#10024; Millennium India Group Presents &#10024;</span>
-        <h1 class="hero-title"><?= e($event['title'] ?? 'Jashn-E-Garba 2026') ?></h1>
-        <p class="hero-subtitle">
-            Patna's Grandest Dandiya & Garba Mahotsav. Feel the rhythm of authentic Gujarati beats, live singers, festive lights, and royal cultural celebration!
-        </p>
+        
+        <!-- Celebrity Guest Banner Top Badge -->
+        <div style="display:inline-block; background: linear-gradient(135deg, #f5b722, #e67e22); color: #1f0411; font-weight: 800; padding: 8px 24px; border-radius: 50px; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 15px rgba(245,183,34,0.4); margin-bottom: 20px;">
+            &#127775; Special Celebrity Guest: Saurabh Raj Jain (Mahabharat Fame Krishna) &#127775;
+        </div>
 
-        <div class="hero-meta-grid">
-            <div class="hero-meta-card">
-                <span>&#128197;</span>
-                <div>
-                    <strong>Date:</strong>
-                    <div><?= date('l, d F Y', strtotime($event['date'] ?? '2026-10-16')) ?></div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 35px; align-items: center; text-align: left; margin-bottom: 35px;">
+            <div>
+                <span class="hero-badge" style="display:inline-block; margin-bottom: 10px;">&#10024; Millennium India Group Presents</span>
+                <h1 class="hero-title" style="text-align: left; font-size: 2.8rem; line-height: 1.15; margin-bottom: 15px;">
+                    <?= e($event['title'] ?? 'Jashn-E-Garba 2026') ?>
+                </h1>
+                <p class="hero-subtitle" style="text-align: left; font-size: 1.15rem; margin: 0 0 20px 0; color: #f8fafc;">
+                    <strong>Dance &bull; Celebrate &bull; Feel the Vibes!</strong><br>
+                    Patna's Grandest Dandiya & Garba Mahotsav. Live Gujarati folk band, authentic festive vibes, food included with passes, and special appearance by celebrated actor <strong>Saurabh Raj Jain</strong> and anchor <strong>Roshni</strong>!
+                </p>
+
+                <div class="hero-meta-grid" style="grid-template-columns: 1fr; gap: 12px; margin-bottom: 25px;">
+                    <div class="hero-meta-card" style="padding: 12px 18px;">
+                        <span style="font-size: 1.6rem;">&#128197;</span>
+                        <div>
+                            <strong>Date &amp; Timing:</strong>
+                            <div>Friday, 16 October 2026 &bull; 05:00 PM Onwards</div>
+                        </div>
+                    </div>
+
+                    <div class="hero-meta-card" style="padding: 12px 18px;">
+                        <span style="font-size: 1.6rem;">&#128205;</span>
+                        <div>
+                            <strong>Venue:</strong>
+                            <div>Unique Garden, Pillar No. 1, Bailey Road, Patna - 800014</div>
+                        </div>
+                    </div>
+
+                    <div class="hero-meta-card" style="padding: 12px 18px;">
+                        <span style="font-size: 1.6rem;">&#127869;</span>
+                        <div>
+                            <strong>Special Privilege:</strong>
+                            <div style="color: var(--gold-accent); font-weight: 700;">Delicious Food Included with All Valid Passes!</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                    <a href="<?= BASE_URL ?>/booking.php?event_id=<?= $event['id'] ?? 1 ?>" class="btn btn-primary" style="font-size:1.15rem; padding:15px 36px; box-shadow: 0 6px 20px rgba(245,183,34,0.4);">
+                        &#127915; Book Passes Now
+                    </a>
+                    <a href="tel:8603268304" class="btn btn-secondary" style="font-size:1rem; padding:15px 24px;">
+                        &#128222; Helpline: 8603268304
+                    </a>
                 </div>
             </div>
 
-            <div class="hero-meta-card">
-                <span>&#9200;</span>
-                <div>
-                    <strong>Timing:</strong>
-                    <div><?= date('h:i A', strtotime($event['start_time'] ?? '17:00:00')) ?> &ndash; <?= date('h:i A', strtotime($event['end_time'] ?? '21:00:00')) ?></div>
-                </div>
-            </div>
-
-            <div class="hero-meta-card">
-                <span>&#128205;</span>
-                <div>
-                    <strong>Venue:</strong>
-                    <div><?= e($event['venue'] ?? 'Unique Garden, Patna') ?></div>
+            <!-- Official Poster Showcase -->
+            <div style="text-align: center;">
+                <div style="position: relative; display: inline-block; border-radius: 16px; overflow: hidden; box-shadow: 0 15px 40px rgba(0,0,0,0.8); border: 2px solid var(--gold-accent);">
+                    <img src="<?= BASE_URL ?>/assets/uploads/jashn-poster-official.jpg" alt="Jashn-E-Garba 2026 Official Poster" style="width: 100%; max-width: 440px; display: block;">
                 </div>
             </div>
         </div>
 
-        <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap;">
-            <a href="<?= BASE_URL ?>/booking.php?event_id=<?= $event['id'] ?? 1 ?>" class="btn btn-primary" style="font-size:1.15rem; padding:15px 35px;">
-                &#127915; Book Your Passes Now
-            </a>
-            <a href="<?= BASE_URL ?>/event-detail.php?slug=<?= e($event['slug'] ?? 'jashn-e-garba-2026') ?>" class="btn btn-secondary">
-                View Event Schedule &amp; Details
-            </a>
-        </div>
     </div>
 </section>
 

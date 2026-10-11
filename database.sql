@@ -101,30 +101,30 @@ SET FOREIGN_KEY_CHECKS = 1;
 INSERT INTO `admins` (`username`, `password_hash`, `email`) VALUES
 ('admin', '$2y$10$Ov0hF27rsu.h2Y9cn99F9e.PilWHS4vlCyMbSgT/Vpfjd6HbUcMSK', 'admin@millenniumindiagroup.com');
 
--- Launch Event: Jashn-E-Garba 2026
+-- Launch Event: Jashn-E-Garba 2026 (Official Launch)
 INSERT INTO `events` (`id`, `slug`, `title`, `date`, `start_time`, `end_time`, `venue`, `description`, `banner_image`, `is_published`) VALUES
-(1, 'jashn-e-garba-2026', 'Jashn-E-Garba 2026', '2026-10-16', '17:00:00', '21:00:00', 'Unique Garden, Patna', 
-'Step into the most grand, culturally vibrant and electrifying Dandiya & Garba Mahotsav of the year brought to you by Millennium India Group! Experience live authentic Gujarati folk band, celebrity DJ performances, mouthwatering festive food stalls, royal photo booths, traditional prize competitions (Best Attire, Best Garba Performer, Best Couple Dancer), and high-security family friendly environment. Book your passes early to secure guaranteed entry!', 
-'assets/uploads/garba-banner.jpg', 1);
+(1, 'jashn-e-garba-2026', 'Jashn-E-Garba 2026', '2026-10-16', '17:00:00', '22:00:00', 'Unique Garden, Pillar No. 1, Bailey Road, Patna - 800014', 
+'Millennium India Group presents Jashn-E-Garba 2026! Dance, Celebrate, Feel the Vibes! Special Celebrity Guest: Saurabh Raj Jain (Mahabharat Fame Lord Krishna, Actor). Hosted by Anchor Roshni. Authentic Gujarati Dandiya beats, live orchestra, food included, high-energy lights and royal festive celebration.', 
+'assets/uploads/jashn-poster-official.jpg', 1);
 
--- Ticket Categories for Jashn-E-Garba 2026
+-- Ticket Categories for Jashn-E-Garba 2026 (Official Prices with Food Included)
 INSERT INTO `ticket_categories` (`event_id`, `name`, `price`, `people_allowed`, `total_quantity`, `available_quantity`, `status`) VALUES
-(1, 'Early Bird - Only Entry', 999.00, 1, 500, 485, 'active'),
-(1, 'Early Bird Couple', 1800.00, 2, 300, 292, 'active'),
-(1, 'Early Bird Family', 2999.00, 4, 150, 147, 'active'),
-(1, 'VIP Celebrity Lounge', 4999.00, 2, 50, 48, 'active');
+(1, 'Single Entry Pass (Food Included)', 999.00, 1, 500, 485, 'active'),
+(1, 'Couple Pass (Food Included)', 1800.00, 2, 300, 292, 'active'),
+(1, 'Family Ticket (4 Persons - Food Included)', 3200.00, 4, 150, 147, 'active'),
+(1, 'VIP Celebrity Meet & Greet Pass', 4999.00, 2, 50, 48, 'active');
 
 -- Default Site Settings
 INSERT INTO `site_settings` (`setting_key`, `setting_value`) VALUES
 ('site_name', 'Millennium India Group'),
-('site_tagline', 'Premier Cultural Events & Festivities'),
+('site_tagline', 'Jashn-E-Garba 2026 Official Ticketing Portal'),
 ('contact_email', 'support@millenniumindiagroup.com'),
-('contact_phone', '+91 98765 43210'),
-('contact_address', 'Exhibition Road / Bailey Road, Patna, Bihar 800001'),
-('upi_id', 'millenniumindia@upi'),
-('upi_payee_name', 'Millennium India Group'),
+('contact_phone', '8603268304'),
+('contact_address', 'Unique Garden, Pillar No. 1, Bailey Road, Patna - 800014'),
+('upi_id', 'chandni0984@oksbi'),
+('upi_payee_name', 'chandni 0777'),
 ('razorpay_key_id', 'rzp_test_migDemoKey123'),
 ('razorpay_key_secret', 'migSecretLiveDemoKey987654321'),
 ('gateway_mode', 'test'),
 ('currency_symbol', '₹'),
-('terms_conditions', '1. Tickets once purchased are non-refundable.\n2. Entry wristbands/passes will be issued at the gate against valid digital QR ticket scan.\n3. Traditional Dandiya attire is recommended.\n4. Outside food, beverages, and restricted substances are strictly prohibited.\n5. Management reserves right of admission.');
+('terms_conditions', '1. Tickets once purchased are non-refundable.\n2. Entry wristbands/passes will be issued at the gate against valid digital QR ticket scan.\n3. Food is included with valid passes.\n4. Traditional Dandiya attire is recommended.\n5. Outside food, beverages, and restricted substances are strictly prohibited.\n6. Management reserves right of admission.');

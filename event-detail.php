@@ -65,6 +65,29 @@ include __DIR__ . '/includes/header.php';
                 </div>
             </div>
 
+            <!-- Celebrity Guest & Anchor Spotlight -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px; background: rgba(30, 4, 18, 0.9); padding: 25px; border-radius: 14px; border: 1px solid var(--gold-accent);">
+                <div style="display: flex; gap: 18px; align-items: center;">
+                    <img src="<?= BASE_URL ?>/assets/uploads/saurabh-raj-jain.jpg" alt="Saurabh Raj Jain" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--gold-accent); box-shadow: 0 4px 15px rgba(245,183,34,0.4);">
+                    <div>
+                        <span style="background: var(--gold-accent); color: #1f0411; font-size: 0.75rem; font-weight: 800; padding: 3px 10px; border-radius: 20px; text-transform: uppercase;">Special Guest</span>
+                        <h3 style="color: #fff; font-size: 1.25rem; margin: 6px 0 2px;">Saurabh Raj Jain</h3>
+                        <p style="color: var(--gold-light); font-size: 0.88rem; margin: 0; font-weight: 600;">Mahabharat Fame Krishna &bull; Acclaimed Actor</p>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 18px; align-items: center;">
+                    <div style="width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, #f5b722, #7a1244); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; border: 3px solid var(--gold-accent); color: #fff;">
+                        &#127908;
+                    </div>
+                    <div>
+                        <span style="background: #e11d48; color: #fff; font-size: 0.75rem; font-weight: 800; padding: 3px 10px; border-radius: 20px; text-transform: uppercase;">Official Anchor</span>
+                        <h3 style="color: #fff; font-size: 1.25rem; margin: 6px 0 2px;">Anchor Roshni</h3>
+                        <p style="color: #cbd5e1; font-size: 0.88rem; margin: 0;">High-energy host and celebrity anchor</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Description -->
             <div style="font-size: 1.05rem; line-height: 1.8; color: #eee; margin-bottom: 30px; border-top: 1px solid rgba(245,183,34,0.2); padding-top: 20px;">
                 <h3 style="color: var(--gold-accent); margin-bottom: 12px;">About The Celebration</h3>
