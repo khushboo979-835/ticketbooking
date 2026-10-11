@@ -27,7 +27,7 @@ define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
 define('DB_PORT', getenv('DB_PORT') ?: '3306');
 define('DB_NAME', getenv('DB_NAME') ?: 'u980414876_eventdb');
 define('DB_USER', getenv('DB_USER') ?: 'u980414876_admin');
-define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : 'Gl7&dz^M^+');
+define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : 'U9:h9x6Y#Ph');
 define('DB_CHARSET', 'utf8mb4');
 
 // Security & Session Settings
