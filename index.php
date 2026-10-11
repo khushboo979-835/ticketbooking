@@ -85,60 +85,70 @@ include __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-    <!-- 3. OFFICIAL 3-VIDEO ROTATIONAL SHOWCASE (Video0 at top, then Video1 & Video2) -->
+    <!-- 3. ALL 3 OFFICIAL GARBA VIDEOS (Video 0, Video 1 & Video 2 With Full Sound) -->
     <div class="festive-card" style="margin-bottom: 35px; padding: 25px 20px;">
-        <div style="text-align: center; margin-bottom: 20px;">
+        <div style="text-align: center; margin-bottom: 24px;">
             <span style="color: var(--gold-accent); font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;">Watch The Excitement</span>
-            <h2 style="font-size: 1.85rem; font-weight: 800; color: #fff; margin-top: 4px;">&#127916; Official Videos &amp; Teasers</h2>
+            <h2 style="font-size: 1.85rem; font-weight: 800; color: #fff; margin-top: 4px;">&#127916; Official Videos &amp; Teasers (With Sound)</h2>
             <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto; font-size: 0.9rem;">
-                Catch a glimpse of the grand Dandiya beats, celebrity guest invitation &amp; festive vibes!
+                Watch Patna's Grandest Dandiya Celebration, Celebrity Invitation &amp; High-Energy Beats!
             </p>
         </div>
 
-        <!-- Video Rotational Switcher Tabs -->
-        <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
-            <button type="button" class="video-tab-btn active" onclick="switchVideo(0)" id="vtab-0" style="background: var(--gold-accent); color: #1f0411; border: none; font-weight: 800; padding: 9px 18px; border-radius: 50px; cursor: pointer; font-size: 0.88rem; transition: all 0.2s ease;">
-                &#127775; Video 0: Celebrity Teaser
-            </button>
-            <button type="button" class="video-tab-btn" onclick="switchVideo(1)" id="vtab-1" style="background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(245,183,34,0.3); font-weight: 700; padding: 9px 18px; border-radius: 50px; cursor: pointer; font-size: 0.88rem; transition: all 0.2s ease;">
-                &#128131; Video 1: Grand Garba Promo
-            </button>
-            <button type="button" class="video-tab-btn" onclick="switchVideo(2)" id="vtab-2" style="background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(245,183,34,0.3); font-weight: 700; padding: 9px 18px; border-radius: 50px; cursor: pointer; font-size: 0.88rem; transition: all 0.2s ease;">
-                &#127881; Video 2: Saurabh Raj Jain Invite
-            </button>
-        </div>
-
-        <!-- Main Featured Video Player (Autoplay Muted Loop with Controls) -->
-        <div style="max-width: 820px; margin: 0 auto; background: #0d0107; border: 2px solid var(--gold-accent); border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.7);">
-            <video id="featured-video-player" controls autoplay muted loop playsinline preload="auto" style="width: 100%; display: block; aspect-ratio: 16/9; max-height: 440px; object-fit: cover; background: #000;">
-                <source id="featured-video-src" src="<?= BASE_URL ?>/assets/uploads/Video0.mp4" type="video/mp4">
-                Your browser does not support HTML5 video.
-            </video>
-            <div style="padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: rgba(20,2,11,0.95); border-top: 1px solid rgba(245,183,34,0.2);">
+        <!-- Video 0: Main Star Promo (Featured on top) -->
+        <div style="max-width: 840px; margin: 0 auto 24px; background: #0d0107; border: 2px solid var(--gold-accent); border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.7);">
+            <div style="padding: 12px 18px; background: rgba(30,3,17,0.95); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245,183,34,0.25); flex-wrap: wrap; gap: 8px;">
                 <div>
-                    <strong id="video-title-display" style="color: #fff; font-size: 1rem;">&#127775; Video 0: Official Event Teaser</strong>
-                    <div id="video-desc-display" style="font-size: 0.82rem; color: var(--gold-light); margin-top: 2px;">Featuring Grand Dandiya Mahotsav &amp; Star Celebrities</div>
+                    <span style="background: var(--gold-accent); color: #1f0411; font-weight: 800; font-size: 0.72rem; padding: 2px 10px; border-radius: 20px; text-transform: uppercase;">Featured</span>
+                    <strong style="color: #fff; font-size: 1rem; margin-left: 6px;">&#127775; Video 0: Official Event Teaser</strong>
                 </div>
-                <button type="button" onclick="toggleAudio()" id="btn-audio-toggle" style="background: rgba(245,183,34,0.15); border: 1px solid var(--gold-accent); color: var(--gold-accent); font-weight: 700; font-size: 0.82rem; padding: 6px 14px; border-radius: 20px; cursor: pointer;">
-                    &#128266; Unmute Sound
+                <button type="button" onclick="playWithSound('v0-player')" style="background: rgba(245,183,34,0.2); border: 1px solid var(--gold-accent); color: var(--gold-accent); font-weight: 700; font-size: 0.82rem; padding: 5px 14px; border-radius: 20px; cursor: pointer;">
+                    &#128266; Play With Sound
                 </button>
             </div>
+            <video id="v0-player" controls playsinline preload="metadata" style="width: 100%; display: block; aspect-ratio: 16/9; max-height: 420px; object-fit: cover; background: #000;">
+                <source src="<?= BASE_URL ?>/assets/uploads/Video0.mp4" type="video/mp4">
+                Your browser does not support HTML5 video.
+            </video>
         </div>
 
-        <!-- 3 Side-by-Side Mini Video Cards -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 22px;">
-            <div onclick="switchVideo(0)" style="cursor: pointer; background: rgba(30,3,17,0.8); border: 1px solid rgba(245,183,34,0.3); border-radius: 10px; padding: 12px; transition: all 0.2s ease;">
-                <div style="font-weight: 800; color: #fff; font-size: 0.92rem;">&#9654; Video 0: Star Teaser</div>
-                <div style="font-size: 0.78rem; color: var(--gold-light); margin-top: 2px;">Tap to watch featured trailer</div>
+        <!-- Video 1 & Video 2: 2 Responsive Full Video Players Side-by-Side -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 840px; margin: 0 auto;">
+            
+            <!-- Video 1: Grand Garba Promo -->
+            <div style="background: #0d0107; border: 1.5px solid var(--gold-accent); border-radius: 14px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.6);">
+                <div style="padding: 10px 14px; background: rgba(30,3,17,0.95); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245,183,34,0.25); flex-wrap: wrap; gap: 6px;">
+                    <strong style="color: #fff; font-size: 0.92rem;">&#128131; Video 1: Garba Beats &amp; Vibes</strong>
+                    <button type="button" onclick="playWithSound('v1-player')" style="background: rgba(245,183,34,0.2); border: 1px solid var(--gold-accent); color: var(--gold-accent); font-weight: 700; font-size: 0.78rem; padding: 4px 12px; border-radius: 20px; cursor: pointer;">
+                        &#128266; Sound ON
+                    </button>
+                </div>
+                <video id="v1-player" controls playsinline preload="metadata" style="width: 100%; display: block; aspect-ratio: 16/9; max-height: 280px; object-fit: cover; background: #000;">
+                    <source src="<?= BASE_URL ?>/assets/uploads/Video1.mp4" type="video/mp4">
+                    Your browser does not support HTML5 video.
+                </video>
+                <div style="padding: 10px 14px; font-size: 0.8rem; color: var(--gold-light);">
+                    High-energy traditional dhol, nagada &amp; live folk Dandiya rhythms!
+                </div>
             </div>
-            <div onclick="switchVideo(1)" style="cursor: pointer; background: rgba(30,3,17,0.8); border: 1px solid rgba(245,183,34,0.3); border-radius: 10px; padding: 12px; transition: all 0.2s ease;">
-                <div style="font-weight: 800; color: #fff; font-size: 0.92rem;">&#9654; Video 1: Garba Beats</div>
-                <div style="font-size: 0.78rem; color: var(--gold-light); margin-top: 2px;">Feel the live orchestra energy</div>
+
+            <!-- Video 2: Saurabh Raj Jain Invitation -->
+            <div style="background: #0d0107; border: 1.5px solid var(--gold-accent); border-radius: 14px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.6);">
+                <div style="padding: 10px 14px; background: rgba(30,3,17,0.95); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245,183,34,0.25); flex-wrap: wrap; gap: 6px;">
+                    <strong style="color: #fff; font-size: 0.92rem;">&#127881; Video 2: Saurabh Raj Jain Invite</strong>
+                    <button type="button" onclick="playWithSound('v2-player')" style="background: rgba(245,183,34,0.2); border: 1px solid var(--gold-accent); color: var(--gold-accent); font-weight: 700; font-size: 0.78rem; padding: 4px 12px; border-radius: 20px; cursor: pointer;">
+                        &#128266; Sound ON
+                    </button>
+                </div>
+                <video id="v2-player" controls playsinline preload="metadata" style="width: 100%; display: block; aspect-ratio: 16/9; max-height: 280px; object-fit: cover; background: #000;">
+                    <source src="<?= BASE_URL ?>/assets/uploads/Video2.mp4" type="video/mp4">
+                    Your browser does not support HTML5 video.
+                </video>
+                <div style="padding: 10px 14px; font-size: 0.8rem; color: var(--gold-light);">
+                    Mahabharat fame actor Saurabh Raj Jain inviting all Patna Dandiya fans!
+                </div>
             </div>
-            <div onclick="switchVideo(2)" style="cursor: pointer; background: rgba(30,3,17,0.8); border: 1px solid rgba(245,183,34,0.3); border-radius: 10px; padding: 12px; transition: all 0.2s ease;">
-                <div style="font-weight: 800; color: #fff; font-size: 0.92rem;">&#9654; Video 2: Saurabh Raj Jain</div>
-                <div style="font-size: 0.78rem; color: var(--gold-light); margin-top: 2px;">Personal message for Patna fans</div>
-            </div>
+
         </div>
     </div>
 
@@ -280,68 +290,46 @@ include __DIR__ . '/includes/header.php';
 
 </div>
 
-<!-- Interactive Video Switcher & Copy UPI Scripts -->
+<!-- Interactive Video Sound & Copy UPI Scripts -->
 <script>
-const videoSources = [
-    {
-        src: '<?= BASE_URL ?>/assets/uploads/Video0.mp4',
-        title: '🌟 Video 0: Official Event Teaser',
-        desc: 'Featuring Grand Dandiya Mahotsav & Star Celebrities'
-    },
-    {
-        src: '<?= BASE_URL ?>/assets/uploads/Video1.mp4',
-        title: '💃 Video 1: Jashn-E-Garba High-Energy Promo',
-        desc: 'Feel the high-energy Dandiya beats, dhol & grand festive vibes'
-    },
-    {
-        src: '<?= BASE_URL ?>/assets/uploads/Video2.mp4',
-        title: '🎭 Video 2: Saurabh Raj Jain Invitation',
-        desc: 'Celebrity Guest Saurabh Raj Jain inviting all Patna Dandiya lovers'
-    }
-];
-
-function switchVideo(index) {
-    const player = document.getElementById('featured-video-player');
-    const titleEl = document.getElementById('video-title-display');
-    const descEl = document.getElementById('video-desc-display');
-    
-    // Update tabs
-    for (let i = 0; i < 3; i++) {
-        const btn = document.getElementById('vtab-' + i);
-        if (btn) {
-            if (i === index) {
-                btn.style.background = 'var(--gold-accent)';
-                btn.style.color = '#1f0411';
-                btn.style.border = 'none';
-            } else {
-                btn.style.background = 'rgba(255,255,255,0.08)';
-                btn.style.color = '#cbd5e1';
-                btn.style.border = '1px solid rgba(245,183,34,0.3)';
-            }
+function playWithSound(playerId) {
+    const players = ['v0-player', 'v1-player', 'v2-player'];
+    players.forEach(function(id) {
+        const v = document.getElementById(id);
+        if (v && id !== playerId) {
+            v.pause();
         }
-    }
+    });
     
-    if (videoSources[index]) {
-        player.pause();
-        player.src = videoSources[index].src;
-        titleEl.innerHTML = videoSources[index].title;
-        descEl.innerHTML = videoSources[index].desc;
-        player.load();
-        player.play().catch(function(err){ console.log('Autoplay deferred:', err); });
+    const target = document.getElementById(playerId);
+    if (target) {
+        target.muted = false;
+        target.volume = 1.0;
+        target.play().catch(function(e) {
+            console.log('Play triggered:', e);
+        });
     }
 }
 
-function toggleAudio() {
-    const player = document.getElementById('featured-video-player');
-    const btn = document.getElementById('btn-audio-toggle');
-    if (player.muted) {
-        player.muted = false;
-        btn.innerHTML = '&#128264; Mute Sound';
-    } else {
-        player.muted = true;
-        btn.innerHTML = '&#128266; Unmute Sound';
-    }
-}
+// Ensure when any video starts playing, other videos pause automatically so sounds do not clash
+document.addEventListener('DOMContentLoaded', function() {
+    const videoIds = ['v0-player', 'v1-player', 'v2-player'];
+    videoIds.forEach(function(id) {
+        const video = document.getElementById(id);
+        if (video) {
+            video.addEventListener('play', function() {
+                videoIds.forEach(function(otherId) {
+                    if (otherId !== id) {
+                        const otherVideo = document.getElementById(otherId);
+                        if (otherVideo && !otherVideo.paused) {
+                            otherVideo.pause();
+                        }
+                    }
+                });
+            });
+        }
+    });
+});
 
 function copyUpiId() {
     const upiText = 'chandni0984@oksbi';
