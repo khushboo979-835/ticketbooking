@@ -310,3 +310,51 @@ function get_event_categories(int $eventId, bool $activeOnly = true): array {
         return [];
     }
 }
+
+/**
+ * Visitor Counter
+ * Tracks and increments total visitor count smoothly
+ */
+function get_and_increment_visitor_count(): int {
+    if (session_status() === PHP_SESSION_NONE) {
+        @session_start();
+    }
+    
+    $isNewSessionVisit = empty($_SESSION['mig_counted_visitor']);
+    if ($isNewSessionVisit) {
+        $_SESSION['mig_counted_visitor'] = true;
+    }
+    
+    $count = 0;
+    try {
+        $db = getDB();
+        $stmt = $db->query("SELECT setting_value FROM site_settings WHERE setting_key = 'site_visitor_count'");
+        $row = $stmt ? $stmt->fetch() : false;
+        
+        if ($row && isset($row['setting_value'])) {
+            $count = (int)$row['setting_value'];
+        } else {
+            $count = 1480;
+            try {
+                $db->prepare("INSERT INTO site_settings (setting_key, setting_value) VALUES ('site_visitor_count', :v)")->execute([':v' => (string)$count]);
+            } catch (Exception $e) {}
+        }
+        
+        if ($isNewSessionVisit) {
+            $count++;
+            try {
+                $db->prepare("UPDATE site_settings SET setting_value = :v WHERE setting_key = 'site_visitor_count'")->execute([':v' => (string)$count]);
+            } catch (Exception $e) {}
+        }
+    } catch (Throwable $t) {
+        $file = __DIR__ . '/visitor_count.txt';
+        $count = file_exists($file) ? (int)file_get_contents($file) : 1480;
+        if ($isNewSessionVisit) {
+            $count++;
+            @file_put_contents($file, (string)$count);
+        }
+    }
+    
+    return max(1, $count);
+}
+

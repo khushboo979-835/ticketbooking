@@ -56,7 +56,24 @@
             </div>
 
             <div class="footer-bottom">
-                &copy; <?= date('Y') ?> <strong><?= e(get_setting('site_name', 'Millennium India Group')) ?></strong>. All rights reserved. Secure Event Ticketing Platform.
+                <!-- Compact Visitor Hit Counter -->
+                <div class="visitor-counter-badge">
+                    <span>&#128065;</span>
+                    <span>Total Visits:</span>
+                    <span class="count-num"><?= number_format(get_and_increment_visitor_count()) ?></span>
+                </div>
+
+                <div style="font-size: 0.88rem; color: #94a3b8;">
+                    &copy; <?= date('Y') ?> <strong><?= e(get_setting('site_name', 'Millennium India Group')) ?></strong>. All rights reserved.
+                </div>
+
+                <!-- Animated Developer Credit -->
+                <div class="developer-credit">
+                    Designed &amp; Developed with &#10084;&#65039; by 
+                    <a href="https://coralwebtechnology.com/" target="_blank" rel="noopener noreferrer" class="coral-web-tech-link" title="Coral Web Technology - Best Web Design &amp; Development Company">
+                        Coral Web Technology
+                    </a>
+                </div>
             </div>
         </div>
     </footer>
