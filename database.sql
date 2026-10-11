@@ -119,7 +119,7 @@ INSERT INTO `site_settings` (`setting_key`, `setting_value`) VALUES
 ('site_name', 'Millennium India Group'),
 ('site_tagline', 'Jashn-E-Garba 2026 Official Ticketing Portal'),
 ('contact_email', 'support@millenniumindiagroup.com'),
-('contact_phone', '8603268304'),
+('contact_phone', '7004665804'),
 ('contact_address', 'Unique Garden, Pillar No. 1, Bailey Road, Patna - 800014'),
 ('upi_id', 'chandni0984@oksbi'),
 ('upi_payee_name', 'chandni 0777'),

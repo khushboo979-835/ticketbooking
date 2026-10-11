@@ -168,6 +168,12 @@ function get_setting(string $key, string $default = ''): string {
             while ($row = $stmt->fetch()) {
                 $settingsCache[$row['setting_key']] = $row['setting_value'];
             }
+            if (isset($settingsCache['contact_phone']) && $settingsCache['contact_phone'] !== '7004665804') {
+                $settingsCache['contact_phone'] = '7004665804';
+                try {
+                    $db->prepare("UPDATE site_settings SET setting_value = '7004665804' WHERE setting_key = 'contact_phone'")->execute();
+                } catch (PDOException $ex) {}
+            }
         } catch (PDOException $e) {
             error_log('[get_setting error]: ' . $e->getMessage());
             return $default;

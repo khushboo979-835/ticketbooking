@@ -10,7 +10,7 @@
                         Patna's premier event management company presenting grand cultural festivals, festive Dandiya nights, and celebrity entertainment spectacles.
                     </p>
                     <p style="color: var(--gold-accent); font-weight: 600;">
-                        &#128222; Hotline: <?= e(get_setting('contact_phone', '+91 98765 43210')) ?>
+                        &#128222; Hotline: <a href="tel:7004665804" style="color: var(--gold-accent); text-decoration: none;">+91 7004665804</a>
                     </p>
                     <p style="font-size: 0.9rem;">
                         &#9993; Email: <?= e(get_setting('contact_email', 'support@millenniumindiagroup.com')) ?>
