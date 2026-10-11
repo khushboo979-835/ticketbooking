@@ -607,10 +607,34 @@ footer {
   font-size: 0.9rem;
 }
 
-/* Mobile Responsiveness */
+/* Mobile Responsiveness & BookMyShow-style Polish */
 @media (max-width: 768px) {
+  .nav-container {
+    padding: 10px 14px;
+  }
+  .brand-logo {
+    font-size: 1.05rem;
+    gap: 6px;
+    flex-wrap: wrap;
+    line-height: 1.2;
+  }
+  .brand-logo span:nth-child(2) {
+    font-size: 0.95rem !important;
+  }
+  .brand-badge {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+  }
   .hero-title {
-    font-size: 2.2rem;
+    font-size: 1.9rem !important;
+    line-height: 1.2 !important;
+  }
+  .hero-section {
+    padding: 25px 0 40px !important;
+  }
+  .hero-meta-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
   }
   .nav-links {
     display: none;
@@ -620,16 +644,90 @@ footer {
     right: 0;
     background: #1e0411;
     flex-direction: column;
-    padding: 20px;
+    padding: 15px 20px;
     border-bottom: 2px solid var(--gold-dark);
+    gap: 12px;
   }
   .nav-links.show {
     display: flex;
   }
   .mobile-menu-toggle {
     display: block;
+    font-size: 1.6rem;
+    background: none;
+    border: none;
+    color: var(--gold-accent);
+    cursor: pointer;
   }
   .payment-tabs {
     flex-direction: column;
+  }
+  
+  /* Ticket Table Mobile Transformation (No side scroll / overlap) */
+  .desktop-only-view {
+    display: none !important;
+  }
+  .mobile-only-cards {
+    display: block !important;
+  }
+  .table-responsive {
+    overflow-x: visible;
+  }
+  .ticket-selection-mobile-card {
+    background: rgba(26, 3, 14, 0.95);
+    border: 1px solid rgba(245, 183, 34, 0.35);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .ticket-selection-mobile-card .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .ticket-selection-mobile-card .bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px dashed rgba(245, 183, 34, 0.2);
+    padding-top: 10px;
+  }
+  
+  /* Booking Steps Indicator on Mobile */
+  .booking-steps-bar {
+    gap: 6px !important;
+    font-size: 0.8rem !important;
+  }
+  .booking-step-pill {
+    padding: 4px 10px !important;
+    font-size: 0.75rem !important;
+  }
+}
+
+/* Floating Sticky Book Pass Pill on Mobile */
+.mobile-sticky-book-bar {
+  display: none;
+}
+@media (max-width: 768px) {
+  .mobile-sticky-book-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(31, 4, 17, 0.95);
+    backdrop-filter: blur(10px);
+    border-top: 2px solid var(--gold-accent);
+    padding: 12px 18px;
+    z-index: 9999;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 -5px 25px rgba(0,0,0,0.8);
+  }
+  body {
+    padding-bottom: 75px;
   }
 }

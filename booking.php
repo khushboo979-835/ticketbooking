@@ -202,8 +202,9 @@ include __DIR__ . '/includes/header.php';
 
                 <h3 style="color: var(--gold-accent); font-size: 1.3rem; margin-bottom: 16px;">Select Your Tickets</h3>
 
-                <div class="table-responsive" style="margin-bottom: 25px;">
-                    <table class="admin-table" style="background: rgba(20,2,11,0.6); border-radius: 8px; overflow: hidden;">
+                <!-- Desktop Ticket Table -->
+                <div class="table-responsive desktop-only-view" style="margin-bottom: 25px;">
+                    <table class="admin-table" style="background: rgba(20,2,11,0.6); border-radius: 8px; overflow: hidden; width: 100%;">
                         <thead>
                             <tr style="background: rgba(122,18,68,0.4);">
                                 <th style="color: var(--gold-light); font-size: 0.95rem;">Ticket Type</th>
@@ -246,7 +247,7 @@ include __DIR__ . '/includes/header.php';
                                                     class="form-control qty-select-field" 
                                                     data-price="<?= (float)$cat['price'] ?>"
                                                     data-people="<?= (int)$cat['people_allowed'] ?>"
-                                                    style="background: #12141d; border: 1px solid var(--gold-dark); color: #fff; font-weight: bold; padding: 8px 12px; border-radius: 6px; cursor: pointer;">
+                                                    style="background: #12141d; border: 1px solid var(--gold-dark); color: #fff; font-weight: bold; padding: 8px 12px; border-radius: 6px; cursor: pointer; width: 100%;">
                                                 <?php for ($i = 0; $i <= $maxAllowed; $i++): ?>
                                                     <option value="<?= $i ?>" <?= $i === $prevQty ? 'selected' : '' ?>><?= $i ?></option>
                                                 <?php endfor; ?>
@@ -257,6 +258,60 @@ include __DIR__ . '/includes/header.php';
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Mobile-Optimized Ticket Cards (Zero Overlap & Touch Friendly) -->
+                <div class="mobile-only-cards" style="display: none; margin-bottom: 20px;">
+                    <?php foreach ($categories as $cat): ?>
+                        <?php 
+                            $isPre = ($cat['id'] == $preselectedCatId);
+                            $prevQty = 0;
+                            if ($cart && isset($cart['items'][$cat['id']])) {
+                                $prevQty = $cart['items'][$cat['id']]['quantity'];
+                            } elseif ($isPre) {
+                                $prevQty = 1;
+                            }
+                            $maxAllowed = min(10, (int)$cat['available_quantity']);
+                            $isSoldOut = ($cat['available_quantity'] <= 0 || $cat['status'] === 'sold_out');
+                        ?>
+                        <div class="ticket-selection-mobile-card">
+                            <div class="head">
+                                <div>
+                                    <strong style="color: #fff; font-size: 1.1rem;"><?= e($cat['name']) ?></strong>
+                                    <div style="font-size: 0.8rem; color: var(--gold-light); margin-top: 3px;">
+                                        &#128101; Admits <?= (int)$cat['people_allowed'] ?> Person<?= $cat['people_allowed'] > 1 ? 's' : '' ?>
+                                    </div>
+                                    <div style="font-size: 0.75rem; color: <?= $cat['available_quantity'] < 25 ? '#f87171' : '#34d399' ?>; margin-top: 2px;">
+                                        <?= $isSoldOut ? 'Sold Out' : ((int)$cat['available_quantity'] . ' passes remaining') ?>
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 1.3rem; font-weight: 900; color: var(--gold-accent);">
+                                        <?= format_inr($cat['price']) ?>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bottom">
+                                <span style="font-size: 0.85rem; color: #cbd5e1; font-weight: 600;">Select Quantity:</span>
+                                <div>
+                                    <?php if ($isSoldOut): ?>
+                                        <span style="color: #ef4444; font-weight: bold; font-size: 0.85rem;">SOLD OUT</span>
+                                    <?php else: ?>
+                                        <select name="quantities[<?= $cat['id'] ?>]" 
+                                                class="form-control qty-select-field" 
+                                                data-price="<?= (float)$cat['price'] ?>"
+                                                data-people="<?= (int)$cat['people_allowed'] ?>"
+                                                style="background: #12141d; border: 1px solid var(--gold-accent); color: #fff; font-weight: bold; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 1.05rem;">
+                                            <?php for ($i = 0; $i <= $maxAllowed; $i++): ?>
+                                                <option value="<?= $i ?>" <?= $i === $prevQty ? 'selected' : '' ?>><?= $i ?></option>
+                                            <?php endfor; ?>
+                                        </select>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
 
                 <!-- Total Calculation Bar -->

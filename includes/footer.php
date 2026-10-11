@@ -60,5 +60,16 @@
             </div>
         </div>
     </footer>
+
+    <!-- BookMyShow-Style Floating Quick Action Bar on Mobile -->
+    <div class="mobile-sticky-book-bar">
+        <div>
+            <div style="font-size:0.75rem; color:#aaa; text-transform:uppercase;">Passes From</div>
+            <div style="font-size:1.25rem; font-weight:900; color:var(--gold-accent);">₹999 <span style="font-size:0.75rem; font-weight:normal; color:#cbd5e1;">(Food Included)</span></div>
+        </div>
+        <a href="<?= BASE_URL ?>/booking.php?event_id=1" class="btn btn-primary" style="padding:10px 24px; font-weight:800; font-size:1rem; border-radius:50px; box-shadow:0 4px 15px rgba(245,183,34,0.4);">
+            &#127915; Book Now
+        </a>
+    </div>
 </body>
 </html>
