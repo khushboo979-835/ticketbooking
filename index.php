@@ -12,26 +12,42 @@ $categories = $event ? get_event_categories($event['id']) : [];
 include __DIR__ . '/includes/header.php';
 ?>
 
-<!-- 1. TOP OFFICIAL GRAPHIC BANNER (Positioned Right Below Navbar) -->
-<section style="background: linear-gradient(180deg, #18020e 0%, #2a0319 50%, #16010c 100%); padding: 25px 0 35px; border-bottom: 2px solid rgba(245, 183, 34, 0.3);">
+<!-- 1. VERY TOP SECTION: VIDEO 0 PLAYING CONTINUOUSLY AT THE VERY TOP (Client: Ye video chalte huye sabse uper rakhna hai) -->
+<section style="background: linear-gradient(180deg, #18020e 0%, #2a0319 50%, #16010c 100%); padding: 20px 0 30px; border-bottom: 2px solid rgba(245, 183, 34, 0.3);">
     <div class="container" style="text-align: center;">
 
-        <!-- Celebrity Guest Announcement Pill -->
-        <div style="display:inline-block; background: linear-gradient(135deg, #f5b722, #e67e22); color: #1f0411; font-weight: 800; padding: 7px 22px; border-radius: 50px; font-size: 0.88rem; text-transform: uppercase; letter-spacing: 0.8px; box-shadow: 0 4px 15px rgba(245,183,34,0.4); margin-bottom: 18px;">
-            &#127775; Special Celebrity Guest: Saurabh Raj Jain (Mahabharat Fame Krishna) &bull; Anchor Roshni &#127775;
+        <!-- Celebrity Announcement Pill -->
+        <div style="display:inline-block; background: linear-gradient(135deg, #f5b722, #e67e22); color: #1f0411; font-weight: 800; padding: 7px 22px; border-radius: 50px; font-size: 0.88rem; text-transform: uppercase; letter-spacing: 0.8px; box-shadow: 0 4px 15px rgba(245,183,34,0.4); margin-bottom: 16px;">
+            &#127775; Special Celebrity Guest: Saurabh Raj Jain &bull; Anchor Roshni &#127775;
         </div>
 
-        <!-- Highlighted Official Poster Graphic (Full View under Navbar) -->
-        <div style="max-width: 860px; margin: 0 auto; position: relative;">
-            <div style="border-radius: 16px; overflow: hidden; box-shadow: 0 15px 45px rgba(0,0,0,0.85); border: 2.5px solid var(--gold-accent);">
-                <img src="<?= BASE_URL ?>/assets/uploads/jashn-poster-official.jpg" 
-                     alt="Jashn-E-Garba 2026 Official Poster - Saurabh Raj Jain & Anchor Roshni" 
-                     style="width: 100%; display: block; object-fit: contain; max-height: 580px; margin: 0 auto; background: #000;">
+        <!-- Top Video 0 (Playing at the very top) -->
+        <div style="max-width: 860px; margin: 0 auto; background: #0d0107; border: 2.5px solid var(--gold-accent); border-radius: 16px; overflow: hidden; box-shadow: 0 15px 45px rgba(0,0,0,0.85);">
+            <div style="padding: 12px 18px; background: rgba(30,3,17,0.95); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245,183,34,0.25); flex-wrap: wrap; gap: 8px;">
+                <div style="text-align: left;">
+                    <span style="background: var(--gold-accent); color: #1f0411; font-weight: 800; font-size: 0.72rem; padding: 2px 10px; border-radius: 20px; text-transform: uppercase;">
+                        &#9654; Live Teaser
+                    </span>
+                    <strong style="color: #fff; font-size: 1rem; margin-left: 6px;">&#127775; Jashn-E-Garba 2026 Promo Video</strong>
+                </div>
+                <button type="button" onclick="playWithSound('top-v0-player')" id="top-btn-sound" style="background: rgba(245,183,34,0.2); border: 1.5px solid var(--gold-accent); color: var(--gold-accent); font-weight: 800; font-size: 0.85rem; padding: 6px 16px; border-radius: 20px; cursor: pointer; transition: all 0.2s ease;">
+                    &#128266; Tap For Full Sound
+                </button>
+            </div>
+
+            <!-- Video 0 autoplays on page load with sound toggle -->
+            <video id="top-v0-player" controls autoplay muted loop playsinline preload="auto" style="width: 100%; display: block; aspect-ratio: 16/9; max-height: 460px; object-fit: cover; background: #000;">
+                <source src="<?= BASE_URL ?>/assets/uploads/Video0.mp4" type="video/mp4">
+                Your browser does not support HTML5 video.
+            </video>
+
+            <div style="padding: 10px 16px; background: rgba(20,2,11,0.95); text-align: center; font-size: 0.85rem; color: var(--gold-light); font-weight: 600;">
+                &#127915; Patna's Biggest Dandiya Mahotsav &bull; 16 October 2026 &bull; Unique Garden, Bailey Road
             </div>
         </div>
 
-        <!-- Immediate Action CTA Under Poster -->
-        <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-top: 22px;">
+        <!-- Immediate Action CTAs Under Top Video -->
+        <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-top: 20px;">
             <a href="<?= BASE_URL ?>/booking.php?event_id=<?= $event['id'] ?? 1 ?>" class="btn btn-primary" style="font-size: 1.12rem; padding: 14px 34px; box-shadow: 0 6px 20px rgba(245,183,34,0.4); font-weight: 800;">
                 &#127915; Book Passes Now (From ₹999)
             </a>
@@ -46,9 +62,9 @@ include __DIR__ . '/includes/header.php';
 <!-- Main Container Content -->
 <div class="container" style="padding-top: 35px; padding-bottom: 60px;">
 
-    <!-- 2. EVENT DETAILS & HIGHLIGHTS CARD (Placed Cleanly Below Graphic) -->
+    <!-- 2. OFFICIAL POSTER GRAPHIC & EVENT DETAILS -->
     <div class="festive-card" style="margin-bottom: 35px; padding: 25px 22px;">
-        <div style="text-align: center; margin-bottom: 22px;">
+        <div style="text-align: center; margin-bottom: 20px;">
             <span class="hero-badge" style="display:inline-block; margin-bottom: 6px;">Millennium India Group Presents</span>
             <h1 style="font-size: 2.2rem; font-weight: 900; color: #fff; margin: 4px 0 8px;">
                 <?= e($event['title'] ?? 'Jashn-E-Garba 2026') ?>
@@ -58,6 +74,14 @@ include __DIR__ . '/includes/header.php';
             </p>
         </div>
 
+        <!-- Official Poster Graphic Showcase -->
+        <div style="max-width: 820px; margin: 0 auto 24px; border-radius: 14px; overflow: hidden; border: 2px solid var(--gold-accent); box-shadow: 0 10px 30px rgba(0,0,0,0.7);">
+            <img src="<?= BASE_URL ?>/assets/uploads/jashn-poster-official.jpg" 
+                 alt="Jashn-E-Garba 2026 Official Poster" 
+                 style="width: 100%; display: block; object-fit: contain; max-height: 520px; margin: 0 auto; background: #000;">
+        </div>
+
+        <!-- Event Key Meta Highlights -->
         <div class="hero-meta-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
             <div class="hero-meta-card" style="padding: 14px 18px;">
                 <span style="font-size: 1.7rem;">&#128197;</span>
@@ -85,34 +109,17 @@ include __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-    <!-- 3. ALL 3 OFFICIAL GARBA VIDEOS (Video 0, Video 1 & Video 2 With Full Sound) -->
+    <!-- 3. VIDEOS 1 & 2 (With Full Sound & Controls) -->
     <div class="festive-card" style="margin-bottom: 35px; padding: 25px 20px;">
-        <div style="text-align: center; margin-bottom: 24px;">
-            <span style="color: var(--gold-accent); font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;">Watch The Excitement</span>
-            <h2 style="font-size: 1.85rem; font-weight: 800; color: #fff; margin-top: 4px;">&#127916; Official Videos &amp; Teasers (With Sound)</h2>
+        <div style="text-align: center; margin-bottom: 22px;">
+            <span style="color: var(--gold-accent); font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;">Watch More Teasers</span>
+            <h2 style="font-size: 1.85rem; font-weight: 800; color: #fff; margin-top: 4px;">&#127916; Event Promo &amp; Celebrity Invite</h2>
             <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto; font-size: 0.9rem;">
-                Watch Patna's Grandest Dandiya Celebration, Celebrity Invitation &amp; High-Energy Beats!
+                Feel the energetic Gujarati folk rhythms &amp; Saurabh Raj Jain inviting you!
             </p>
         </div>
 
-        <!-- Video 0: Main Star Promo (Featured on top) -->
-        <div style="max-width: 840px; margin: 0 auto 24px; background: #0d0107; border: 2px solid var(--gold-accent); border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.7);">
-            <div style="padding: 12px 18px; background: rgba(30,3,17,0.95); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245,183,34,0.25); flex-wrap: wrap; gap: 8px;">
-                <div>
-                    <span style="background: var(--gold-accent); color: #1f0411; font-weight: 800; font-size: 0.72rem; padding: 2px 10px; border-radius: 20px; text-transform: uppercase;">Featured</span>
-                    <strong style="color: #fff; font-size: 1rem; margin-left: 6px;">&#127775; Video 0: Official Event Teaser</strong>
-                </div>
-                <button type="button" onclick="playWithSound('v0-player')" style="background: rgba(245,183,34,0.2); border: 1px solid var(--gold-accent); color: var(--gold-accent); font-weight: 700; font-size: 0.82rem; padding: 5px 14px; border-radius: 20px; cursor: pointer;">
-                    &#128266; Play With Sound
-                </button>
-            </div>
-            <video id="v0-player" controls playsinline preload="metadata" style="width: 100%; display: block; aspect-ratio: 16/9; max-height: 420px; object-fit: cover; background: #000;">
-                <source src="<?= BASE_URL ?>/assets/uploads/Video0.mp4" type="video/mp4">
-                Your browser does not support HTML5 video.
-            </video>
-        </div>
-
-        <!-- Video 1 & Video 2: 2 Responsive Full Video Players Side-by-Side -->
+        <!-- 2 Full Video Players Side-by-Side (Desktop 2-Col, Mobile Stack) -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 840px; margin: 0 auto;">
             
             <!-- Video 1: Grand Garba Promo -->
@@ -152,7 +159,7 @@ include __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-    <!-- 4. DIRECT UPI PAYMENT CARD (Scanner Image Removed, Direct UPI Details Added) -->
+    <!-- 4. DIRECT UPI PAYMENT CARD (No QR Code Image, Clean UPI Bar) -->
     <div class="festive-card" style="margin-bottom: 35px; border: 2px solid var(--gold-accent); background: linear-gradient(135deg, rgba(61,7,32,0.96), rgba(20,2,11,0.98)); padding: 22px 20px; border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; border-bottom: 1px dashed rgba(245,183,34,0.3); padding-bottom: 12px;">
             <div>
@@ -189,7 +196,7 @@ include __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-    <!-- 5. SELECT YOUR ENTRY CATEGORY (Single Stacked Vertical Cards Matching Client Image 3) -->
+    <!-- 5. SELECT YOUR ENTRY CATEGORY (Single Stacked Vertical Cards Matching Client Screenshot) -->
     <div style="text-align: center; margin-bottom: 25px;">
         <span style="color: var(--gold-accent); font-weight: 800; text-transform: uppercase; font-size: 0.82rem; letter-spacing: 1px;">Instant Booking &bull; Limited Slots</span>
         <h2 style="font-size: 2.1rem; font-weight: 900; color: #fff; margin-top: 4px;">Select Your Entry Category</h2>
@@ -293,7 +300,7 @@ include __DIR__ . '/includes/header.php';
 <!-- Interactive Video Sound & Copy UPI Scripts -->
 <script>
 function playWithSound(playerId) {
-    const players = ['v0-player', 'v1-player', 'v2-player'];
+    const players = ['top-v0-player', 'v1-player', 'v2-player'];
     players.forEach(function(id) {
         const v = document.getElementById(id);
         if (v && id !== playerId) {
@@ -308,12 +315,21 @@ function playWithSound(playerId) {
         target.play().catch(function(e) {
             console.log('Play triggered:', e);
         });
+        
+        if (playerId === 'top-v0-player') {
+            const btn = document.getElementById('top-btn-sound');
+            if (btn) {
+                btn.innerHTML = '&#128264; Sound Active';
+                btn.style.background = 'var(--gold-accent)';
+                btn.style.color = '#1f0411';
+            }
+        }
     }
 }
 
 // Ensure when any video starts playing, other videos pause automatically so sounds do not clash
 document.addEventListener('DOMContentLoaded', function() {
-    const videoIds = ['v0-player', 'v1-player', 'v2-player'];
+    const videoIds = ['top-v0-player', 'v1-player', 'v2-player'];
     videoIds.forEach(function(id) {
         const video = document.getElementById(id);
         if (video) {
