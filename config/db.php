@@ -39,20 +39,30 @@ class Database {
             try {
                 self::$instance = new PDO($dsn, DB_USER, DB_PASS, $options);
             } catch (PDOException $e) {
-                // Log technical trace securely to server log (never expose DB credentials to end-users)
+                // Log technical trace securely to server log
                 error_log('[Database Connection Failure]: ' . $e->getMessage());
 
                 // Prevent blank screen with clear, brand-styled recovery screen
                 if (!headers_sent()) {
                     http_response_code(503);
                 }
+                
+                $debugMsg = '';
+                if (isset($_GET['check_db'])) {
+                    $debugMsg = '<div style="margin-top:15px;background:#000;color:#ff6b6b;padding:10px;border-radius:6px;font-family:monospace;font-size:12px;text-align:left;word-break:break-all;">' .
+                                '<strong>Database Error:</strong> ' . htmlspecialchars($e->getMessage()) . '<br>' .
+                                '<strong>Host:</strong> ' . htmlspecialchars(DB_HOST) . ' | <strong>DB:</strong> ' . htmlspecialchars(DB_NAME) . ' | <strong>User:</strong> ' . htmlspecialchars(DB_USER) .
+                                '</div>';
+                }
+
                 echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Service Temporarily Unavailable</title>' .
-                     '<style>body{background:#1f0411;color:#ffd966;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}' .
-                     '.box{background:rgba(56,10,31,0.9);padding:30px;border-radius:12px;border:1px solid #f5b722;text-align:center;max-width:500px;}' .
+                     '<style>body{background:#1f0411;color:#ffd966;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;box-sizing:border-box;}' .
+                     '.box{background:rgba(56,10,31,0.9);padding:30px;border-radius:12px;border:1px solid #f5b722;text-align:center;max-width:550px;width:100%;}' .
                      'h2{color:#fff;margin-top:0;}p{color:#ddd;line-height:1.6;}</style></head>' .
                      '<body><div class="box"><h2>&#127881; Millennium India Group</h2>' .
                      '<p>The ticketing portal is undergoing high-speed optimization. Please refresh in a few moments or contact our WhatsApp helpline.</p>' .
                      '<button onclick="location.reload()" style="background:#f5b722;border:none;padding:10px 20px;font-weight:bold;border-radius:6px;cursor:pointer;">Refresh Page</button>' .
+                     $debugMsg .
                      '</div></body></html>';
                 exit;
             }
