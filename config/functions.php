@@ -312,8 +312,8 @@ function get_event_categories(int $eventId, bool $activeOnly = true): array {
 }
 
 /**
- * Visitor Counter
- * Tracks and increments total visitor count smoothly
+ * Visitor Counter (100% Real Tracking - Zero Dummy / Seed Data)
+ * Tracks genuine real visitors who opened the website
  */
 function get_and_increment_visitor_count(): int {
     if (session_status() === PHP_SESSION_NONE) {
@@ -325,36 +325,44 @@ function get_and_increment_visitor_count(): int {
         $_SESSION['mig_counted_visitor'] = true;
     }
     
-    $count = 0;
+    $realCount = 1;
     try {
         $db = getDB();
-        $stmt = $db->query("SELECT setting_value FROM site_settings WHERE setting_key = 'site_visitor_count'");
-        $row = $stmt ? $stmt->fetch() : false;
         
-        if ($row && isset($row['setting_value'])) {
-            $count = (int)$row['setting_value'];
-        } else {
-            $count = 1480;
-            try {
-                $db->prepare("INSERT INTO site_settings (setting_key, setting_value) VALUES ('site_visitor_count', :v)")->execute([':v' => (string)$count]);
-            } catch (Exception $e) {}
-        }
+        // Ensure real visitor logging table exists
+        $db->exec("CREATE TABLE IF NOT EXISTS `site_visitors` (
+            `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+            `ip_address` VARCHAR(45) NOT NULL,
+            `user_agent` VARCHAR(255) NULL,
+            `visited_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         
+        // Log genuine visitor on new visit
         if ($isNewSessionVisit) {
-            $count++;
-            try {
-                $db->prepare("UPDATE site_settings SET setting_value = :v WHERE setting_key = 'site_visitor_count'")->execute([':v' => (string)$count]);
-            } catch (Exception $e) {}
+            $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+            $ua = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 250);
+            $ins = $db->prepare("INSERT INTO site_visitors (ip_address, user_agent) VALUES (:ip, :ua)");
+            $ins->execute([':ip' => $ip, ':ua' => $ua]);
         }
+        
+        // Count exact real visitors from table
+        $stmt = $db->query("SELECT COUNT(*) AS total_real_visits FROM site_visitors");
+        $row = $stmt ? $stmt->fetch() : null;
+        $realCount = $row ? (int)$row['total_real_visits'] : 1;
+        
+        // Overwrite site_settings to wipe out any previous dummy counts permanently
+        $db->prepare("INSERT INTO site_settings (setting_key, setting_value) VALUES ('site_visitor_count', :v) 
+                      ON DUPLICATE KEY UPDATE setting_value = :v2")->execute([':v' => (string)$realCount, ':v2' => (string)$realCount]);
+                      
     } catch (Throwable $t) {
-        $file = __DIR__ . '/visitor_count.txt';
-        $count = file_exists($file) ? (int)file_get_contents($file) : 1480;
+        $file = __DIR__ . '/real_visitor_count.txt';
+        $realCount = file_exists($file) ? (int)file_get_contents($file) : 1;
         if ($isNewSessionVisit) {
-            $count++;
-            @file_put_contents($file, (string)$count);
+            $realCount++;
+            @file_put_contents($file, (string)$realCount);
         }
     }
     
-    return max(1, $count);
+    return max(1, $realCount);
 }
 
