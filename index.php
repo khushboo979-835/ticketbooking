@@ -82,11 +82,92 @@ include __DIR__ . '/includes/header.php';
 <!-- Main Container Content -->
 <div class="container" style="padding-top: 50px; padding-bottom: 60px;">
 
-    <!-- Ticket Categories Grid -->
-    <div style="text-align: center; margin-bottom: 35px;">
-        <span style="color: var(--gold-accent); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Instant Booking &bull; Limited Slots</span>
-        <h2 style="font-size: 2.2rem; font-weight: 800; color: #fff; margin-top: 6px;">Select Your Entry Category</h2>
-        <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto;">Secure your digital pass now. Instant QR confirmation via Direct UPI or Payment Gateway.</p>
+    <!-- 1. COMPACT QUICK SCAN & PAY BOX (Placed Above Categories) -->
+    <div class="festive-card" style="margin-bottom: 30px; border: 2px solid var(--gold-accent); background: linear-gradient(135deg, rgba(61,7,32,0.96), rgba(20,2,11,0.98)); padding: 18px 16px; border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; border-bottom: 1px dashed rgba(245,183,34,0.3); padding-bottom: 10px;">
+            <div style="text-align: left;">
+                <span style="background: var(--gold-accent); color: #1f0411; font-weight: 800; font-size: 0.72rem; padding: 2px 10px; border-radius: 20px; text-transform: uppercase;">
+                    &#9889; Quick Direct Pay
+                </span>
+                <h3 style="font-size: 1.3rem; color: #fff; margin: 4px 0 0; font-weight: 800;">
+                    Scan SBI QR &amp; Reserve Pass
+                </h3>
+            </div>
+            <div style="font-size: 0.82rem; color: #cbd5e1; text-align: right;">
+                Payee: <strong style="color: #fff;">chandni 0777 (SBI)</strong><br>
+                <code style="color: var(--gold-accent); font-size: 0.82rem; font-weight: 700;">chandni0984@oksbi</code>
+            </div>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: center;">
+            <!-- Compact Scanner Image (Short length & tight border) -->
+            <div style="text-align: center; flex-shrink: 0;">
+                <div style="background: #fff; padding: 6px; border-radius: 10px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 2px solid var(--gold-accent);">
+                    <img src="<?= BASE_URL ?>/assets/uploads/upi-qr-scanner-clean.png" alt="SBI UPI Scanner" style="max-width: 125px; width: 100%; display: block; border-radius: 4px; object-fit: contain;">
+                </div>
+                <div style="font-size: 0.75rem; color: var(--gold-light); margin-top: 4px; font-weight: 600;">Tap or Scan to Pay</div>
+            </div>
+
+            <!-- Quick Action Info & Buttons -->
+            <div style="flex: 1; min-width: 250px;">
+                <p style="font-size: 0.88rem; color: #e2e8f0; margin: 0 0 10px; line-height: 1.45;">
+                    Scan with <strong>GPay, PhonePe, Paytm or BHIM</strong>. Pay the exact amount &amp; enter UTR for instant pass confirmation!
+                </p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <a href="<?= BASE_URL ?>/booking.php?event_id=1&step=1" class="btn btn-primary" style="padding: 10px 18px; font-weight: 800; font-size: 0.9rem; border-radius: 8px;">
+                        &#127915; Book Passes (From ₹999)
+                    </a>
+                    <a href="upi://pay?pa=chandni0984@oksbi&pn=chandni%200777&cu=INR" class="btn btn-secondary" style="padding: 10px 16px; font-size: 0.86rem; border-radius: 8px; background: #222634;">
+                        &#128241; Open UPI App
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. OFFICIAL GARBA VIDEOS & TEASERS (Placed Right After Scanner) -->
+    <div class="festive-card" style="margin-bottom: 35px; padding: 22px 18px;">
+        <div style="text-align: center; margin-bottom: 18px;">
+            <span style="color: var(--gold-accent); font-weight: 700; text-transform: uppercase; font-size: 0.78rem; letter-spacing: 1px;">Watch The Excitement</span>
+            <h2 style="font-size: 1.7rem; font-weight: 800; color: #fff; margin-top: 4px;">&#127916; Event Teasers &amp; Vibes</h2>
+            <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto; font-size: 0.88rem;">Catch a glimpse of the grand Dandiya celebration and festive cultural mania!</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px;">
+            <!-- Video 1 -->
+            <div style="background: #0d0107; border: 1px solid var(--gold-accent); border-radius: 12px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.6);">
+                <video controls playsinline preload="metadata" style="width: 100%; display: block; aspect-ratio: 16/9; max-height: 280px; object-fit: cover; background: #000;">
+                    <source src="<?= BASE_URL ?>/assets/uploads/Video1.mp4" type="video/mp4">
+                    <source src="<?= BASE_URL ?>/assets/uploads/video1.mp4" type="video/mp4">
+                    <source src="<?= BASE_URL ?>/assets/uploads/Video1%20.mp4" type="video/mp4">
+                    Your browser does not support HTML5 video.
+                </video>
+                <div style="padding: 12px 14px;">
+                    <strong style="color: #fff; font-size: 0.92rem;">&#127775; Jashn-E-Garba 2026 Promo Teaser</strong>
+                    <div style="font-size: 0.78rem; color: var(--gold-light); margin-top: 3px;">Feel the high-energy Dandiya beats &amp; grandeur</div>
+                </div>
+            </div>
+
+            <!-- Video 2 -->
+            <div style="background: #0d0107; border: 1px solid var(--gold-accent); border-radius: 12px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.6);">
+                <video controls playsinline preload="metadata" style="width: 100%; display: block; aspect-ratio: 16/9; max-height: 280px; object-fit: cover; background: #000;">
+                    <source src="<?= BASE_URL ?>/assets/uploads/Video2.mp4" type="video/mp4">
+                    <source src="<?= BASE_URL ?>/assets/uploads/video2.mp4" type="video/mp4">
+                    Your browser does not support HTML5 video.
+                </video>
+                <div style="padding: 12px 14px;">
+                    <strong style="color: #fff; font-size: 0.92rem;">&#127881; Celebrity Guest Invitation</strong>
+                    <div style="font-size: 0.78rem; color: var(--gold-light); margin-top: 3px;">Saurabh Raj Jain inviting all Patna Dandiya lovers</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. TICKET CATEGORIES GRID -->
+    <div style="text-align: center; margin-bottom: 30px;">
+        <span style="color: var(--gold-accent); font-weight: 700; text-transform: uppercase; font-size: 0.82rem; letter-spacing: 1px;">Instant Booking &bull; Limited Slots</span>
+        <h2 style="font-size: 2.1rem; font-weight: 800; color: #fff; margin-top: 4px;">Select Your Entry Category</h2>
+        <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto; font-size: 0.92rem;">Secure your digital pass now. Instant QR confirmation via Direct UPI or Payment Gateway.</p>
     </div>
 
     <div class="tickets-grid">
@@ -111,7 +192,7 @@ include __DIR__ . '/includes/header.php';
                         <span>Admits: <strong><?= (int)$cat['people_allowed'] ?> Person<?= $cat['people_allowed'] > 1 ? 's' : '' ?></strong></span>
                     </div>
                     <p style="font-size: 0.88rem; color: #ccc; margin-bottom: 20px;">
-                        Includes grand entry, Dandiya sticks access, live orchestra, and contest eligibility.
+                        Includes grand entry, Dandiya sticks access, live orchestra, and delicious food!
                     </p>
                 </div>
 
@@ -153,86 +234,6 @@ include __DIR__ . '/includes/header.php';
                 <div style="font-size: 2rem; color: var(--gold-accent); margin-bottom: 8px;">&#128737;</div>
                 <h4 style="color: #fff; margin-bottom: 6px;">Family-Safe Atmosphere</h4>
                 <p style="font-size: 0.9rem; color: var(--text-muted);">CCTV surveillance, bouncers, strict digital QR ticket gate verification, and dedicated parking.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Direct Instant UPI Payment Card on Homepage -->
-    <div class="festive-card" style="margin-top: 45px; border: 2px solid var(--gold-accent); background: linear-gradient(135deg, rgba(61,7,32,0.95), rgba(20,2,11,0.98)); padding: 30px 20px;">
-        <div style="text-align: center; margin-bottom: 25px;">
-            <span style="background: var(--gold-accent); color: #1f0411; font-weight: 800; font-size: 0.8rem; padding: 4px 14px; border-radius: 20px; text-transform: uppercase;">
-                Fastest Checkout
-            </span>
-            <h2 style="font-size: 2rem; color: #fff; margin-top: 10px; font-weight: 800;">
-                &#128242; Instant Scan &amp; Pay Pass
-            </h2>
-            <p style="color: var(--text-muted); max-width: 650px; margin: 0 auto; font-size: 0.95rem;">
-                Pay directly to our official State Bank of India UPI QR code. Submit your 12-digit UTR number below to instantly reserve your passes!
-            </p>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; align-items: center; max-width: 850px; margin: 0 auto;">
-            <div style="text-align: center;">
-                <div style="background: #fff; padding: 15px; border-radius: 16px; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.6); border: 2px solid var(--gold-accent);">
-                    <img src="<?= BASE_URL ?>/assets/uploads/upi-qr-scanner.png" alt="Official SBI UPI Scanner" style="max-width: 210px; width: 100%; display: block; border-radius: 8px;">
-                </div>
-                <div style="margin-top: 12px; font-size: 0.85rem; color: #cbd5e1;">
-                    Verified Merchant: <strong style="color: #fff;">chandni 0777 (SBI)</strong><br>
-                    UPI ID: <strong style="color: var(--gold-accent); font-family: monospace;">chandni0984@oksbi</strong>
-                </div>
-            </div>
-
-            <div>
-                <form action="<?= BASE_URL ?>/booking.php?event_id=1&step=2" method="POST" style="background: rgba(15,2,9,0.7); padding: 22px; border-radius: 12px; border: 1px solid rgba(245,183,34,0.3);">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="action" value="select_tickets">
-                    <input type="hidden" name="quantities[1]" value="1">
-                    
-                    <h3 style="color: var(--gold-light); font-size: 1.15rem; margin-bottom: 12px;">Quick Single Pass (₹999)</h3>
-                    <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 15px;">Includes Entry + Authentic Gujarati Beats + Food</p>
-                    
-                    <a href="<?= BASE_URL ?>/booking.php?event_id=1&step=1" class="btn btn-primary btn-block" style="padding: 13px; font-weight: 800; font-size: 1rem; text-align: center; display: block; margin-bottom: 10px;">
-                        &#127915; Choose Passes &amp; Pay UTR
-                    </a>
-                    <a href="upi://pay?pa=chandni0984@oksbi&pn=chandni%200777&cu=INR" class="btn btn-secondary btn-block" style="padding: 11px; font-size: 0.9rem; text-align: center; display: block; background: #252836;">
-                        &#128241; Open GPay / PhonePe App
-                    </a>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Official Garba Videos Section -->
-    <div class="festive-card" style="margin-top: 45px;">
-        <div style="text-align: center; margin-bottom: 25px;">
-            <span style="color: var(--gold-accent); font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Watch The Excitement</span>
-            <h2 style="font-size: 2rem; font-weight: 800; color: #fff; margin-top: 6px;">&#127916; Event Teasers &amp; Vibes</h2>
-            <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto;">Catch a glimpse of the grand Dandiya celebration and festive cultural mania!</p>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 24px;">
-            <!-- Video 1 -->
-            <div style="background: #0d0107; border: 1px solid var(--gold-accent); border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
-                <video controls playsinline preload="metadata" style="width: 100%; display: block; max-height: 480px; object-fit: cover; background: #000;">
-                    <source src="<?= BASE_URL ?>/assets/uploads/Video1%20.mp4" type="video/mp4">
-                    Your browser does not support HTML5 video.
-                </video>
-                <div style="padding: 14px 18px;">
-                    <strong style="color: #fff; font-size: 1rem;">&#127775; Jashn-E-Garba 2026 Promo Teaser</strong>
-                    <div style="font-size: 0.85rem; color: var(--gold-light); margin-top: 4px;">Feel the high-energy Dandiya beats &amp; grandeur</div>
-                </div>
-            </div>
-
-            <!-- Video 2 -->
-            <div style="background: #0d0107; border: 1px solid var(--gold-accent); border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
-                <video controls playsinline preload="metadata" style="width: 100%; display: block; max-height: 480px; object-fit: cover; background: #000;">
-                    <source src="<?= BASE_URL ?>/assets/uploads/Video2.mp4" type="video/mp4">
-                    Your browser does not support HTML5 video.
-                </video>
-                <div style="padding: 14px 18px;">
-                    <strong style="color: #fff; font-size: 1rem;">&#127881; Celebrity Guest Invitation</strong>
-                    <div style="font-size: 0.85rem; color: var(--gold-light); margin-top: 4px;">Saurabh Raj Jain inviting all Patna Dandiya lovers</div>
-                </div>
             </div>
         </div>
     </div>
