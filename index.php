@@ -12,41 +12,82 @@ $categories = $event ? get_event_categories($event['id']) : [];
 include __DIR__ . '/includes/header.php';
 ?>
 
-<!-- 1. VERY TOP SECTION: VIDEO 0 PLAYING CONTINUOUSLY AT THE VERY TOP (Client: Ye video chalte huye sabse uper rakhna hai) -->
-<section style="background: linear-gradient(180deg, #18020e 0%, #2a0319 50%, #16010c 100%); padding: 20px 0 30px; border-bottom: 2px solid rgba(245, 183, 34, 0.3);">
+<!-- 1. VERY TOP SECTION: ALL 3 VIDEOS PLAYING CONTINUOUSLY AT THE VERY TOP (Client: Tino video chalte huye Daliy Sabse uper me) -->
+<section style="background: linear-gradient(180deg, #18020e 0%, #2a0319 50%, #16010c 100%); padding: 18px 0 28px; border-bottom: 2px solid rgba(245, 183, 34, 0.3);">
     <div class="container" style="text-align: center;">
 
-        <!-- Celebrity Announcement Pill -->
-        <div style="display:inline-block; background: linear-gradient(135deg, #f5b722, #e67e22); color: #1f0411; font-weight: 800; padding: 7px 22px; border-radius: 50px; font-size: 0.88rem; text-transform: uppercase; letter-spacing: 0.8px; box-shadow: 0 4px 15px rgba(245,183,34,0.4); margin-bottom: 16px;">
-            &#127775; Special Celebrity Guest: Saurabh Raj Jain &bull; Anchor Roshni &#127775;
-        </div>
-
-        <!-- Top Video 0 (Playing at the very top) -->
-        <div style="max-width: 860px; margin: 0 auto; background: #0d0107; border: 2.5px solid var(--gold-accent); border-radius: 16px; overflow: hidden; box-shadow: 0 15px 45px rgba(0,0,0,0.85);">
-            <div style="padding: 12px 18px; background: rgba(30,3,17,0.95); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245,183,34,0.25); flex-wrap: wrap; gap: 8px;">
-                <div style="text-align: left;">
-                    <span style="background: var(--gold-accent); color: #1f0411; font-weight: 800; font-size: 0.72rem; padding: 2px 10px; border-radius: 20px; text-transform: uppercase;">
-                        &#9654; Live Teaser
-                    </span>
-                    <strong style="color: #fff; font-size: 1rem; margin-left: 6px;">&#127775; Jashn-E-Garba 2026 Promo Video</strong>
+        <!-- 3 Videos Grid (All 3 playing continuously in loop, with one-tap sound buttons) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; max-width: 1140px; margin: 0 auto;">
+            
+            <!-- Video 0: Official Teaser Promo -->
+            <div style="background: #0d0107; border: 2px solid var(--gold-accent); border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.75); display: flex; flex-direction: column;">
+                <div style="padding: 10px 14px; background: rgba(30,3,17,0.95); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245,183,34,0.25); flex-wrap: wrap; gap: 6px;">
+                    <div style="text-align: left;">
+                        <span style="background: var(--gold-accent); color: #1f0411; font-weight: 800; font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; text-transform: uppercase;">
+                            &#9654; Live Teaser
+                        </span>
+                        <strong style="color: #fff; font-size: 0.9rem; margin-left: 5px;">Promo Video</strong>
+                    </div>
+                    <button type="button" onclick="playWithSound('top-v0-player')" id="btn-sound-v0" style="background: rgba(245,183,34,0.2); border: 1.5px solid var(--gold-accent); color: var(--gold-accent); font-weight: 800; font-size: 0.78rem; padding: 4px 12px; border-radius: 20px; cursor: pointer; transition: all 0.2s ease;">
+                        &#128266; Sound ON
+                    </button>
                 </div>
-                <button type="button" onclick="playWithSound('top-v0-player')" id="top-btn-sound" style="background: rgba(245,183,34,0.2); border: 1.5px solid var(--gold-accent); color: var(--gold-accent); font-weight: 800; font-size: 0.85rem; padding: 6px 16px; border-radius: 20px; cursor: pointer; transition: all 0.2s ease;">
-                    &#128266; Tap For Full Sound
-                </button>
+                <video id="top-v0-player" controls autoplay muted loop playsinline preload="auto" style="width: 100%; display: block; aspect-ratio: 16/9; max-height: 250px; object-fit: cover; background: #000; flex: 1;">
+                    <source src="<?= BASE_URL ?>/assets/uploads/Video0.mp4" type="video/mp4">
+                    Your browser does not support HTML5 video.
+                </video>
+                <div style="padding: 8px 12px; background: rgba(20,2,11,0.95); text-align: center; font-size: 0.8rem; color: var(--gold-light); font-weight: 600;">
+                    &#127915; Jashn-E-Garba Promo Teaser
+                </div>
             </div>
 
-            <!-- Video 0 autoplays on page load with sound toggle -->
-            <video id="top-v0-player" controls autoplay muted loop playsinline preload="auto" style="width: 100%; display: block; aspect-ratio: 16/9; max-height: 460px; object-fit: cover; background: #000;">
-                <source src="<?= BASE_URL ?>/assets/uploads/Video0.mp4" type="video/mp4">
-                Your browser does not support HTML5 video.
-            </video>
-
-            <div style="padding: 10px 16px; background: rgba(20,2,11,0.95); text-align: center; font-size: 0.85rem; color: var(--gold-light); font-weight: 600;">
-                &#127915; Patna's Biggest Dandiya Mahotsav &bull; 16 October 2026 &bull; Unique Garden, Bailey Road
+            <!-- Video 1: Garba Beats & Vibes -->
+            <div style="background: #0d0107; border: 2px solid var(--gold-accent); border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.75); display: flex; flex-direction: column;">
+                <div style="padding: 10px 14px; background: rgba(30,3,17,0.95); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245,183,34,0.25); flex-wrap: wrap; gap: 6px;">
+                    <div style="text-align: left;">
+                        <span style="background: #e67e22; color: #fff; font-weight: 800; font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; text-transform: uppercase;">
+                            &#128131; Beats
+                        </span>
+                        <strong style="color: #fff; font-size: 0.9rem; margin-left: 5px;">Garba Beats &amp; Vibes</strong>
+                    </div>
+                    <button type="button" onclick="playWithSound('v1-player')" id="btn-sound-v1" style="background: rgba(245,183,34,0.2); border: 1.5px solid var(--gold-accent); color: var(--gold-accent); font-weight: 800; font-size: 0.78rem; padding: 4px 12px; border-radius: 20px; cursor: pointer; transition: all 0.2s ease;">
+                        &#128266; Sound ON
+                    </button>
+                </div>
+                <video id="v1-player" controls autoplay muted loop playsinline preload="auto" style="width: 100%; display: block; aspect-ratio: 16/9; max-height: 250px; object-fit: cover; background: #000; flex: 1;">
+                    <source src="<?= BASE_URL ?>/assets/uploads/Video1.mp4" type="video/mp4">
+                    Your browser does not support HTML5 video.
+                </video>
+                <div style="padding: 8px 12px; background: rgba(20,2,11,0.95); text-align: center; font-size: 0.8rem; color: var(--gold-light); font-weight: 600;">
+                    &#129345; High Energy Folk Garba Beats
+                </div>
             </div>
+
+            <!-- Video 2: Saurabh Raj Jain Invitation -->
+            <div style="background: #0d0107; border: 2px solid var(--gold-accent); border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.75); display: flex; flex-direction: column;">
+                <div style="padding: 10px 14px; background: rgba(30,3,17,0.95); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245,183,34,0.25); flex-wrap: wrap; gap: 6px;">
+                    <div style="text-align: left;">
+                        <span style="background: #9b59b6; color: #fff; font-weight: 800; font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; text-transform: uppercase;">
+                            &#127881; Celebrity
+                        </span>
+                        <strong style="color: #fff; font-size: 0.9rem; margin-left: 5px;">Saurabh Raj Jain Invite</strong>
+                    </div>
+                    <button type="button" onclick="playWithSound('v2-player')" id="btn-sound-v2" style="background: rgba(245,183,34,0.2); border: 1.5px solid var(--gold-accent); color: var(--gold-accent); font-weight: 800; font-size: 0.78rem; padding: 4px 12px; border-radius: 20px; cursor: pointer; transition: all 0.2s ease;">
+                        &#128266; Sound ON
+                    </button>
+                </div>
+                <video id="v2-player" controls autoplay muted loop playsinline preload="auto" style="width: 100%; display: block; aspect-ratio: 16/9; max-height: 250px; object-fit: cover; background: #000; flex: 1;">
+                    <source src="<?= BASE_URL ?>/assets/uploads/Video2.mp4" type="video/mp4">
+                    Your browser does not support HTML5 video.
+                </video>
+                <div style="padding: 8px 12px; background: rgba(20,2,11,0.95); text-align: center; font-size: 0.8rem; color: var(--gold-light); font-weight: 600;">
+                    &#127775; Saurabh Raj Jain Inviting You
+                </div>
+            </div>
+
         </div>
 
-        <!-- Immediate Action CTAs Under Top Video -->
+        <!-- Immediate Action CTAs Under Top Video Section -->
         <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-top: 20px;">
             <a href="<?= BASE_URL ?>/booking.php?event_id=<?= $event['id'] ?? 1 ?>" class="btn btn-primary" style="font-size: 1.12rem; padding: 14px 34px; box-shadow: 0 6px 20px rgba(245,183,34,0.4); font-weight: 800;">
                 &#127915; Book Passes Now (From ₹199)
@@ -109,55 +150,7 @@ include __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-    <!-- 3. VIDEOS 1 & 2 (With Full Sound & Controls) -->
-    <div class="festive-card" style="margin-bottom: 35px; padding: 25px 20px;">
-        <div style="text-align: center; margin-bottom: 22px;">
-            <span style="color: var(--gold-accent); font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;">Watch More Teasers</span>
-            <h2 style="font-size: 1.85rem; font-weight: 800; color: #fff; margin-top: 4px;">&#127916; Event Promo &amp; Celebrity Invite</h2>
-            <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto; font-size: 0.9rem;">
-                Feel the energetic Gujarati folk rhythms &amp; Saurabh Raj Jain inviting you!
-            </p>
-        </div>
 
-        <!-- 2 Full Video Players Side-by-Side (Desktop 2-Col, Mobile Stack) -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-width: 840px; margin: 0 auto;">
-            
-            <!-- Video 1: Grand Garba Promo -->
-            <div style="background: #0d0107; border: 1.5px solid var(--gold-accent); border-radius: 14px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.6);">
-                <div style="padding: 10px 14px; background: rgba(30,3,17,0.95); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245,183,34,0.25); flex-wrap: wrap; gap: 6px;">
-                    <strong style="color: #fff; font-size: 0.92rem;">&#128131; Video 1: Garba Beats &amp; Vibes</strong>
-                    <button type="button" onclick="playWithSound('v1-player')" style="background: rgba(245,183,34,0.2); border: 1px solid var(--gold-accent); color: var(--gold-accent); font-weight: 700; font-size: 0.78rem; padding: 4px 12px; border-radius: 20px; cursor: pointer;">
-                        &#128266; Sound ON
-                    </button>
-                </div>
-                <video id="v1-player" controls playsinline preload="metadata" style="width: 100%; display: block; aspect-ratio: 16/9; max-height: 280px; object-fit: cover; background: #000;">
-                    <source src="<?= BASE_URL ?>/assets/uploads/Video1.mp4" type="video/mp4">
-                    Your browser does not support HTML5 video.
-                </video>
-                <div style="padding: 10px 14px; font-size: 0.8rem; color: var(--gold-light);">
-                    High-energy traditional dhol, nagada &amp; live folk Dandiya rhythms!
-                </div>
-            </div>
-
-            <!-- Video 2: Saurabh Raj Jain Invitation -->
-            <div style="background: #0d0107; border: 1.5px solid var(--gold-accent); border-radius: 14px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.6);">
-                <div style="padding: 10px 14px; background: rgba(30,3,17,0.95); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245,183,34,0.25); flex-wrap: wrap; gap: 6px;">
-                    <strong style="color: #fff; font-size: 0.92rem;">&#127881; Video 2: Saurabh Raj Jain Invite</strong>
-                    <button type="button" onclick="playWithSound('v2-player')" style="background: rgba(245,183,34,0.2); border: 1px solid var(--gold-accent); color: var(--gold-accent); font-weight: 700; font-size: 0.78rem; padding: 4px 12px; border-radius: 20px; cursor: pointer;">
-                        &#128266; Sound ON
-                    </button>
-                </div>
-                <video id="v2-player" controls playsinline preload="metadata" style="width: 100%; display: block; aspect-ratio: 16/9; max-height: 280px; object-fit: cover; background: #000;">
-                    <source src="<?= BASE_URL ?>/assets/uploads/Video2.mp4" type="video/mp4">
-                    Your browser does not support HTML5 video.
-                </video>
-                <div style="padding: 10px 14px; font-size: 0.8rem; color: var(--gold-light);">
-                    Mahabharat fame actor Saurabh Raj Jain inviting all Patna Dandiya fans!
-                </div>
-            </div>
-
-        </div>
-    </div>
 
     <!-- 4. DIRECT UPI PAYMENT CARD (No QR Code Image, Clean UPI Bar) -->
     <div class="festive-card" style="margin-bottom: 35px; border: 2px solid var(--gold-accent); background: linear-gradient(135deg, rgba(61,7,32,0.96), rgba(20,2,11,0.98)); padding: 22px 20px; border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);">
@@ -300,48 +293,46 @@ include __DIR__ . '/includes/header.php';
 <!-- Interactive Video Sound & Copy UPI Scripts -->
 <script>
 function playWithSound(playerId) {
-    const players = ['top-v0-player', 'v1-player', 'v2-player'];
-    players.forEach(function(id) {
-        const v = document.getElementById(id);
-        if (v && id !== playerId) {
-            v.pause();
-        }
-    });
+    const list = [
+        { id: 'top-v0-player', btn: 'btn-sound-v0' },
+        { id: 'v1-player', btn: 'btn-sound-v1' },
+        { id: 'v2-player', btn: 'btn-sound-v2' }
+    ];
     
-    const target = document.getElementById(playerId);
-    if (target) {
-        target.muted = false;
-        target.volume = 1.0;
-        target.play().catch(function(e) {
-            console.log('Play triggered:', e);
-        });
-        
-        if (playerId === 'top-v0-player') {
-            const btn = document.getElementById('top-btn-sound');
-            if (btn) {
-                btn.innerHTML = '&#128264; Sound Active';
-                btn.style.background = 'var(--gold-accent)';
-                btn.style.color = '#1f0411';
+    list.forEach(function(item) {
+        const v = document.getElementById(item.id);
+        const b = document.getElementById(item.btn);
+        if (v) {
+            if (item.id === playerId) {
+                v.muted = false;
+                v.volume = 1.0;
+                v.play().catch(function(e) { console.log('Play triggered:', e); });
+                if (b) {
+                    b.innerHTML = '&#128264; Playing Sound';
+                    b.style.background = 'var(--gold-accent)';
+                    b.style.color = '#1f0411';
+                }
+            } else {
+                v.muted = true; // Keep playing visually, mute audio to avoid clashing
+                if (b) {
+                    b.innerHTML = '&#128266; Sound ON';
+                    b.style.background = 'rgba(245,183,34,0.2)';
+                    b.style.color = 'var(--gold-accent)';
+                }
             }
         }
-    }
+    });
 }
 
-// Ensure when any video starts playing, other videos pause automatically so sounds do not clash
+// Ensure all 3 videos run continuously on page load
 document.addEventListener('DOMContentLoaded', function() {
     const videoIds = ['top-v0-player', 'v1-player', 'v2-player'];
     videoIds.forEach(function(id) {
         const video = document.getElementById(id);
         if (video) {
-            video.addEventListener('play', function() {
-                videoIds.forEach(function(otherId) {
-                    if (otherId !== id) {
-                        const otherVideo = document.getElementById(otherId);
-                        if (otherVideo && !otherVideo.paused) {
-                            otherVideo.pause();
-                        }
-                    }
-                });
+            video.muted = true;
+            video.play().catch(function(e) {
+                console.log('Autoplay notice for', id, e);
             });
         }
     });
