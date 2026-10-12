@@ -76,9 +76,9 @@ include __DIR__ . '/includes/header.php';
 
         <!-- Official Poster Graphic Showcase -->
         <div style="max-width: 820px; margin: 0 auto 24px; border-radius: 14px; overflow: hidden; border: 2px solid var(--gold-accent); box-shadow: 0 10px 30px rgba(0,0,0,0.7);">
-            <img src="<?= BASE_URL ?>/assets/uploads/jashn-poster-official.jpg" 
+            <img src="<?= asset_v('assets/uploads/jashn-poster-new.jpg') ?>" 
                  alt="Jashn-E-Garba 2026 Official Poster" 
-                 style="width: 100%; display: block; object-fit: contain; max-height: 520px; margin: 0 auto; background: #000;">
+                 style="width: 100%; display: block; object-fit: contain; max-height: 540px; margin: 0 auto; background: #000;">
         </div>
 
         <!-- Event Key Meta Highlights -->
