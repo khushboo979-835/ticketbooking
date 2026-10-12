@@ -49,7 +49,7 @@ include __DIR__ . '/includes/header.php';
         <!-- Immediate Action CTAs Under Top Video -->
         <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-top: 20px;">
             <a href="<?= BASE_URL ?>/booking.php?event_id=<?= $event['id'] ?? 1 ?>" class="btn btn-primary" style="font-size: 1.12rem; padding: 14px 34px; box-shadow: 0 6px 20px rgba(245,183,34,0.4); font-weight: 800;">
-                &#127915; Book Passes Now (From ₹999)
+                &#127915; Book Passes Now (From ₹199)
             </a>
             <a href="tel:7004665804" class="btn btn-secondary" style="font-size: 1rem; padding: 14px 24px; font-weight: 700;">
                 &#128222; Helpline: +91 7004665804
@@ -190,7 +190,7 @@ include __DIR__ . '/includes/header.php';
                     &#128241; Open UPI App
                 </a>
                 <a href="<?= BASE_URL ?>/booking.php?event_id=1&step=1" class="btn btn-primary" style="padding: 10px 22px; font-weight: 800; font-size: 0.92rem; border-radius: 8px;">
-                    &#127915; Book Passes (From ₹999)
+                    &#127915; Book Passes (From ₹199)
                 </a>
             </div>
         </div>
@@ -198,10 +198,10 @@ include __DIR__ . '/includes/header.php';
 
     <!-- 5. SELECT YOUR ENTRY CATEGORY (Single Stacked Vertical Cards Matching Client Screenshot) -->
     <div style="text-align: center; margin-bottom: 25px;">
-        <span style="color: var(--gold-accent); font-weight: 800; text-transform: uppercase; font-size: 0.82rem; letter-spacing: 1px;">Instant Booking &bull; Limited Slots</span>
+        <span style="color: var(--gold-accent); font-weight: 800; text-transform: uppercase; font-size: 0.82rem; letter-spacing: 1px;">Official Poster Pricing &bull; Instant Passes</span>
         <h2 style="font-size: 2.1rem; font-weight: 900; color: #fff; margin-top: 4px;">Select Your Entry Category</h2>
         <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto; font-size: 0.92rem;">
-            Secure your digital pass now. Delicious Food included with all passes!
+            Secure your digital pass now. Official pricing as shown on poster!
         </p>
     </div>
 

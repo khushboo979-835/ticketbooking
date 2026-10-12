@@ -309,6 +309,23 @@ function get_event($idOrSlug): ?array {
 function get_event_categories(int $eventId, bool $activeOnly = true): array {
     try {
         $db = getDB();
+
+        // Auto-sync ticket categories with official poster pricing (₹199, ₹299, ₹399, ₹699)
+        static $syncedPricing = false;
+        if (!$syncedPricing) {
+            $syncedPricing = true;
+            try {
+                $check = $db->query("SELECT MIN(price) AS min_p FROM ticket_categories WHERE event_id = 1");
+                $minP = (float)($check ? $check->fetchColumn() : 0);
+                if ($minP > 200 || $minP == 0) {
+                    $db->exec("UPDATE ticket_categories SET name = 'Single Pass (No Food)', price = 199.00, people_allowed = 1 WHERE id = 1");
+                    $db->exec("UPDATE ticket_categories SET name = 'Couple Pass (No Food)', price = 299.00, people_allowed = 2 WHERE id = 2");
+                    $db->exec("UPDATE ticket_categories SET name = 'Single Pass (With Food)', price = 399.00, people_allowed = 1 WHERE id = 3");
+                    $db->exec("UPDATE ticket_categories SET name = 'Couple Pass (With Food)', price = 699.00, people_allowed = 2 WHERE id = 4");
+                }
+            } catch (Throwable $e) {}
+        }
+
         $sql = "SELECT * FROM ticket_categories WHERE event_id = :event_id";
         if ($activeOnly) {
             $sql .= " AND status = 'active'";
