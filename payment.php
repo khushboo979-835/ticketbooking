@@ -231,52 +231,60 @@ include __DIR__ . '/includes/header.php';
             <div class="festive-card" style="border: 2px solid var(--gold-accent); padding: 30px 25px;">
                 
                 <div style="text-align: center; margin-bottom: 20px;">
-                    <h2 style="color: #fff; font-size: 1.6rem; font-weight: 800; margin-bottom: 6px;">Scan &amp; Pay Using UPI</h2>
+                    <h2 style="color: #fff; font-size: 1.6rem; font-weight: 800; margin-bottom: 6px;">Pay Directly Using UPI ID</h2>
                     <p style="color: var(--text-muted); font-size: 0.95rem;">Pay directly to Millennium India Group with zero gateway fees</p>
                 </div>
 
-                <!-- UPI White Card (Scan Box + App Badges) -->
-                <div class="upi-pay-card" style="border: 2px solid #e2e8f0;">
+                <!-- UPI White Card (Clean UPI ID Box + App Badges, NO SCANNER IMAGE) -->
+                <div class="upi-pay-card" style="border: 2px solid #e2e8f0; max-width: 480px; margin: 0 auto 25px; padding: 22px 20px; border-radius: 14px; background: #fff; text-align: center; box-shadow: 0 6px 25px rgba(0,0,0,0.2);">
                     
-                    <!-- Official Bank UPI QR Poster & Dynamic Intent -->
-                    <div style="text-align: center; margin-bottom: 12px;">
-                        <img src="<?= BASE_URL ?>/assets/uploads/upi-qr-scanner.png" alt="chandni 0777 SBI UPI QR" style="max-width: 220px; width: 100%; border-radius: 12px; border: 2px solid #e2e8f0; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
-                    </div>
-                    
-                    <!-- Dynamic Fast Canvas QR Container Fallback -->
-                    <div id="upi-qrcode" class="upi-qr-box" style="display:none;"></div>
+                    <span style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.74rem; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        &#9889; Official Bank Verified UPI
+                    </span>
 
-                    <!-- Accepted UPI Apps Indicators -->
-                    <div style="display: flex; justify-content: center; align-items: center; gap: 14px; margin: 15px 0 10px; font-weight: 700; font-size: 0.9rem; color: #475569;">
+                    <div style="margin-top: 10px; font-size: 0.88rem; color: #64748b; font-weight: 600;">
+                        Payee: <strong style="color: #1e293b;">chandni 0777 (State Bank of India)</strong>
+                    </div>
+
+                    <!-- Payable Amount Display -->
+                    <div style="margin: 14px 0 16px;">
+                        <span style="font-size: 0.8rem; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Total Payable Amount</span>
+                        <div style="font-size: 2.2rem; font-weight: 900; color: #7a1244; line-height: 1.1; margin-top: 4px;">
+                            <?= format_inr($cart['total_amount']) ?>
+                        </div>
+                    </div>
+
+                    <!-- UPI ID with Copy Button -->
+                    <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <span class="upi-vpa" id="upi-id-text" style="font-size: 1.12rem; font-weight: 800; color: #0f172a; letter-spacing: 0.5px;"><?= e($upiId) ?></span>
+                        <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-upi-pay" style="color: #1e293b; border-color: #cbd5e1; background: #fff; font-weight: 800; padding: 6px 14px; border-radius: 6px; cursor: pointer;" onclick="copyUpiId()">
+                            &#128203; Copy UPI ID
+                        </button>
+                    </div>
+
+                    <!-- Open UPI App Directly on Mobile -->
+                    <div style="margin-bottom: 14px;">
+                        <a href="<?= e($upiPayload) ?>" class="btn btn-primary" style="background: linear-gradient(135deg, #7a1244, #500a2c); color: #fff; border-radius: 50px; padding: 12px 26px; font-weight: 800; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(122,18,68,0.4); text-decoration: none;">
+                            <span>&#128241;</span> <span>Pay via GPay / PhonePe / Paytm / BHIM</span>
+                        </a>
+                    </div>
+
+                    <!-- Accepted UPI Apps Badges -->
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 14px; font-weight: 700; font-size: 0.88rem; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 10px;">
                         <span><strong style="color: #4285F4;">G</strong>Pay</span> &bull; 
                         <span style="color: #5f259f;">PhonePe</span> &bull; 
                         <span style="color: #00baf2;">Paytm</span> &bull; 
                         <span style="color: #0c2340;">BHIM</span>
                     </div>
 
-                    <!-- UPI ID with Copy Button -->
-                    <div style="margin-top: 10px; background: #f8fafc; padding: 10px; border-radius: 8px;">
-                        <span style="font-size: 0.8rem; color: #64748b; font-weight: 600;">Verified Payee: <strong>chandni 0777 (State Bank of India)</strong></span><br>
-                        <span class="upi-vpa" id="upi-id-text"><?= e($upiId) ?></span>
-                        <button type="button" class="btn btn-secondary btn-sm" style="margin-left: 8px; color: #1e293b; border-color: #cbd5e1; background: #fff;" onclick="copyUpiId()">
-                            &#128203; Copy UPI ID
-                        </button>
-                    </div>
-
-                    <!-- Open UPI App Directly on Mobile -->
-                    <div style="margin-top: 15px;">
-                        <a href="<?= e($upiPayload) ?>" class="btn btn-primary btn-sm" style="background: linear-gradient(135deg, #7a1244, #500a2c); color: #fff; border-radius: 20px; padding: 10px 28px; font-weight: 700; font-size: 1rem; display: inline-block;">
-                            &#128241; Open GPay / PhonePe / Paytm App
-                        </a>
-                    </div>
                 </div>
 
-                <!-- Steps List (Exact Infographic Copy) -->
+                <!-- Steps List -->
                 <div style="background: rgba(20, 2, 11, 0.7); border: 1px solid rgba(245, 183, 34, 0.3); border-radius: 10px; padding: 18px 22px; margin: 25px 0;">
                     <ol style="margin: 0; padding-left: 20px; font-size: 0.95rem; line-height: 1.8; color: #e2e8f0;">
-                        <li><strong>Scan the QR code</strong> and pay the exact amount: <span style="color: var(--gold-accent); font-weight: bold;"><?= format_inr($cart['total_amount']) ?></span>.</li>
-                        <li>After payment, enter your 12-digit UTR/Ref ID and click on <strong>I Have Paid</strong>.</li>
-                        <li>Your booking will be verified by our team and your digital QR pass will be issued immediately.</li>
+                        <li>Pay the exact amount <span style="color: var(--gold-accent); font-weight: bold;"><?= format_inr($cart['total_amount']) ?></span> to UPI ID <strong style="color: var(--gold-accent);"><?= e($upiId) ?></strong> using any UPI App.</li>
+                        <li>After payment, enter your 12-digit UTR/Transaction Reference ID below and click <strong>I Have Paid &amp; Confirm Ticket</strong>.</li>
+                        <li>Your booking will be verified and your digital QR entry pass will be issued immediately.</li>
                     </ol>
                 </div>
 
@@ -368,21 +376,7 @@ function switchPaymentTab(type) {
     }
 }
 
-// Generate UPI QR Code locally into Fast Canvas
 document.addEventListener('DOMContentLoaded', function() {
-    const qrContainer = document.getElementById('upi-qrcode');
-    if (qrContainer && typeof QRCode !== 'undefined') {
-        qrContainer.innerHTML = '';
-        new QRCode(qrContainer, {
-            text: <?= json_encode($upiPayload) ?>,
-            width: 170,
-            height: 170,
-            colorDark: "#1f0411",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.M
-        });
-    }
-
     // Instant UTR Submission via Fetch with Fallback
     const utrForm = document.getElementById('utr-form');
     const iHavePaidBtn = document.getElementById('btn-i-have-paid');

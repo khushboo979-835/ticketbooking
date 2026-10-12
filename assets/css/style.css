@@ -633,54 +633,6 @@ footer {
   letter-spacing: 1px;
 }
 
-/* Coral Web Technology Animated Light Glow Effect */
-@keyframes coralLightFlow {
-  0% {
-    background-position: 0% 50%;
-    filter: drop-shadow(0 0 5px rgba(255, 75, 140, 0.7));
-  }
-  25% {
-    filter: drop-shadow(0 0 7px rgba(255, 215, 0, 0.8));
-  }
-  50% {
-    background-position: 100% 50%;
-    filter: drop-shadow(0 0 8px rgba(0, 242, 254, 0.85));
-  }
-  75% {
-    filter: drop-shadow(0 0 7px rgba(138, 43, 226, 0.8));
-  }
-  100% {
-    background-position: 0% 50%;
-    filter: drop-shadow(0 0 5px rgba(255, 75, 140, 0.7));
-  }
-}
-
-.developer-credit {
-  font-size: 0.86rem;
-  color: #94a3b8;
-  margin-top: 4px;
-}
-
-.coral-web-tech-link {
-  font-weight: 800;
-  letter-spacing: 0.6px;
-  background: linear-gradient(90deg, #ff007f, #ff8c00, #ffd700, #00f2fe, #a855f7, #ff007f);
-  background-size: 300% 300%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: coralLightFlow 4s ease-in-out infinite;
-  display: inline-block;
-  text-decoration: none;
-  transition: transform 0.25s ease, filter 0.25s ease;
-  vertical-align: middle;
-  padding: 0 4px;
-}
-
-.coral-web-tech-link:hover {
-  transform: scale(1.08) translateY(-1px);
-  filter: drop-shadow(0 0 12px rgba(0, 242, 254, 1)) !important;
-}
-
 
 /* Mobile Responsiveness & BookMyShow-style Polish */
 @media (max-width: 768px) {
