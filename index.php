@@ -179,7 +179,7 @@ include __DIR__ . '/includes/header.php';
                 Pay exact amount using any app (<strong>GPay, PhonePe, Paytm or BHIM</strong>) to UPI ID <code style="color: var(--gold-accent);">chandni0984@oksbi</code>. Enter your 12-digit UTR in booking form for instant QR entry ticket!
             </p>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <a href="upi://pay?pa=chandni0984@oksbi&pn=chandni%200777&cu=INR" class="btn btn-secondary" style="padding: 10px 18px; font-size: 0.88rem; border-radius: 8px; background: #222634; font-weight: 700;">
+                <a href="upi://pay?pa=chandni0984@oksbi&pn=Chandni&cu=INR&tn=GarbaPass" class="btn btn-secondary" style="padding: 10px 18px; font-size: 0.88rem; border-radius: 8px; background: #222634; font-weight: 700;">
                     &#128241; Open UPI App
                 </a>
                 <a href="<?= BASE_URL ?>/booking.php?event_id=1&step=1" class="btn btn-primary" style="padding: 10px 22px; font-weight: 800; font-size: 0.92rem; border-radius: 8px;">
@@ -340,19 +340,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function copyUpiId() {
     const upiText = 'chandni0984@oksbi';
-    navigator.clipboard.writeText(upiText).then(function() {
-        const btn = document.getElementById('btn-copy-upi');
-        btn.innerText = 'Copied!';
-        btn.style.background = '#4ade80';
-        btn.style.color = '#000';
-        setTimeout(function() {
-            btn.innerText = 'Copy';
-            btn.style.background = 'var(--gold-accent)';
-            btn.style.color = '#1f0411';
-        }, 2000);
-    }).catch(function() {
-        alert('UPI ID: ' + upiText);
-    });
+    const btn = document.getElementById('btn-copy-upi');
+    
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(upiText).then(onSuccess).catch(fallback);
+    } else {
+        fallback();
+    }
+    
+    function fallback() {
+        const temp = document.createElement('textarea');
+        temp.value = upiText;
+        document.body.appendChild(temp);
+        temp.select();
+        try {
+            document.execCommand('copy');
+            onSuccess();
+        } catch(e) {
+            alert('UPI ID: ' + upiText);
+        }
+        document.body.removeChild(temp);
+    }
+    
+    function onSuccess() {
+        if (btn) {
+            btn.innerText = 'Copied!';
+            btn.style.background = '#4ade80';
+            btn.style.color = '#000';
+            setTimeout(function() {
+                btn.innerText = 'Copy';
+                btn.style.background = 'var(--gold-accent)';
+                btn.style.color = '#1f0411';
+            }, 2500);
+        }
+    }
 }
 </script>
 

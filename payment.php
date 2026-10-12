@@ -169,15 +169,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Lightweight standard UPI Intent String
+// Standard Clean UPI Intent String (Literal @ sign, clean payee name to prevent app crashes)
 $cleanAmount = number_format($cart['total_amount'], 2, '.', '');
-$upiPayload = "upi://pay?pa=" . rawurlencode($upiId) . 
-              "&pn=" . rawurlencode($payeeName) . 
-              "&am=" . $cleanAmount . 
-              "&cu=INR" . 
-              "&tn=" . rawurlencode("MIG-" . $bookingUid);
+$cleanUpiId = 'chandni0984@oksbi';
+$cleanPayee = 'Chandni';
+$note = 'GarbaPass';
 
-$pageTitle = 'Choose Payment Mode | ' . e($cart['event_title']);
+// Intent URIs for different apps
+$genericUpiPayload = "upi://pay?pa={$cleanUpiId}&pn={$cleanPayee}&am={$cleanAmount}&cu=INR&tn={$note}";
+$phonepePayload    = "phonepe://pay?pa={$cleanUpiId}&pn={$cleanPayee}&am={$cleanAmount}&cu=INR&tn={$note}";
+$paytmPayload      = "paytmmp://pay?pa={$cleanUpiId}&pn={$cleanPayee}&am={$cleanAmount}&cu=INR&tn={$note}";
+$gpayPayload       = "gpay://upi/pay?pa={$cleanUpiId}&pn={$cleanPayee}&am={$cleanAmount}&cu=INR&tn={$note}";
+
+$pageTitle = 'Direct UPI Payment | ' . e($cart['event_title']);
 $currentNav = 'garba';
 
 include __DIR__ . '/includes/header.php';
@@ -188,210 +192,226 @@ include __DIR__ . '/includes/header.php';
     <!-- Top Step Progression Indicator -->
     <div style="display: flex; justify-content: center; margin-bottom: 25px;">
         <div style="display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 0.95rem;">
-            <a href="<?= BASE_URL ?>/booking.php?event_id=<?= $cart['event_id'] ?>&step=1" style="background: rgba(245,183,34,0.2); color: var(--gold-light); padding: 6px 16px; border-radius: 50px;">
+            <a href="<?= BASE_URL ?>/booking.php?event_id=<?= $cart['event_id'] ?>&step=1" style="background: rgba(245,183,34,0.2); color: var(--gold-light); padding: 6px 16px; border-radius: 50px; text-decoration: none;">
                 1. Select Tickets
             </a>
             <span style="color: #666;">&rarr;</span>
-            <a href="<?= BASE_URL ?>/booking.php?event_id=<?= $cart['event_id'] ?>&step=2" style="background: rgba(245,183,34,0.2); color: var(--gold-light); padding: 6px 16px; border-radius: 50px;">
+            <a href="<?= BASE_URL ?>/booking.php?event_id=<?= $cart['event_id'] ?>&step=2" style="background: rgba(245,183,34,0.2); color: var(--gold-light); padding: 6px 16px; border-radius: 50px; text-decoration: none;">
                 2. Customer Details
             </a>
             <span style="color: #666;">&rarr;</span>
-            <span style="background: var(--gold-accent); color: #1f0411; padding: 6px 16px; border-radius: 50px;">
-                3. Payment
+            <span style="background: var(--gold-accent); color: #1f0411; padding: 6px 16px; border-radius: 50px; font-weight: 800;">
+                3. Direct UPI Payment
             </span>
         </div>
     </div>
 
-    <div style="max-width: 860px; margin: 0 auto;">
+    <div style="max-width: 820px; margin: 0 auto;">
 
         <!-- Top Order Info Pill -->
-        <div style="background: linear-gradient(135deg, rgba(122,18,68,0.7), rgba(40,6,22,0.95)); border: 1px solid var(--gold-accent); border-radius: 12px; padding: 18px 24px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+        <div style="background: linear-gradient(135deg, rgba(122,18,68,0.7), rgba(40,6,22,0.95)); border: 1.5px solid var(--gold-accent); border-radius: 12px; padding: 18px 24px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.5);">
             <div>
                 <span style="font-size: 0.8rem; color: var(--gold-light); text-transform: uppercase; font-weight: 700;">Booking Reference ID</span>
                 <div style="font-size: 1.35rem; font-family: monospace; font-weight: 900; color: #fff;"><?= e($bookingUid) ?></div>
             </div>
             <div style="text-align: right;">
                 <span style="font-size: 0.8rem; color: #aaa; text-transform: uppercase;">Total Payable Amount</span>
-                <div style="font-size: 1.8rem; font-weight: 900; color: var(--gold-accent);"><?= format_inr($cart['total_amount']) ?></div>
+                <div style="font-size: 2rem; font-weight: 900; color: var(--gold-accent);"><?= format_inr($cart['total_amount']) ?></div>
             </div>
         </div>
 
-        <!-- Payment Mode Tabs (Matches Infographic Box 4 & Box 5) -->
-        <div class="payment-tabs">
-            <button type="button" class="payment-tab-btn active" id="tab-btn-upi" onclick="switchPaymentTab('upi')">
-                <span>&#128242;</span> <span>UPI Payment</span>
-            </button>
-            <button type="button" class="payment-tab-btn" id="tab-btn-gateway" onclick="switchPaymentTab('gateway')">
-                <span>&#128179;</span> <span>Payment Gateway</span>
-            </button>
-        </div>
+        <!-- MAIN DIRECT UPI PAYMENT CARD -->
+        <div class="festive-card" style="border: 2px solid var(--gold-accent); padding: 30px 24px;">
+            
+            <div style="text-align: center; margin-bottom: 22px;">
+                <span style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.78rem; padding: 4px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.6px; display: inline-block; margin-bottom: 8px;">
+                    &#9889; Official Bank Verified UPI Transfer
+                </span>
+                <h2 style="color: #fff; font-size: 1.7rem; font-weight: 900; margin: 0 0 6px;">Pay Directly via UPI ID</h2>
+                <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">
+                    Zero convenience fee &bull; Fast, direct &amp; 100% secure payment
+                </p>
+            </div>
 
-        <!-- TAB 1: UPI PAYMENT (Matches Infographic Box 4) -->
-        <div class="payment-tab-pane active" id="pane-upi">
-            <div class="festive-card" style="border: 2px solid var(--gold-accent); padding: 30px 25px;">
+            <!-- UPI White Box -->
+            <div style="border: 2px solid #e2e8f0; max-width: 520px; margin: 0 auto 25px; padding: 24px 20px; border-radius: 16px; background: #ffffff; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,0.25);">
                 
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <h2 style="color: #fff; font-size: 1.6rem; font-weight: 800; margin-bottom: 6px;">Pay Directly Using UPI ID</h2>
-                    <p style="color: var(--text-muted); font-size: 0.95rem;">Pay directly to Millennium India Group with zero gateway fees</p>
+                <div style="font-size: 0.9rem; color: #475569; font-weight: 600;">
+                    Bank Account Holder: <strong style="color: #0f172a;">chandni 0777 (State Bank of India)</strong>
                 </div>
 
-                <!-- UPI White Card (Clean UPI ID Box + App Badges, NO SCANNER IMAGE) -->
-                <div class="upi-pay-card" style="border: 2px solid #e2e8f0; max-width: 480px; margin: 0 auto 25px; padding: 22px 20px; border-radius: 14px; background: #fff; text-align: center; box-shadow: 0 6px 25px rgba(0,0,0,0.2);">
-                    
-                    <span style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.74rem; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">
-                        &#9889; Official Bank Verified UPI
+                <!-- Payable Amount Big Display -->
+                <div style="margin: 14px 0 16px;">
+                    <span style="font-size: 0.8rem; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Amount to Transfer</span>
+                    <div style="font-size: 2.3rem; font-weight: 900; color: #7a1244; line-height: 1.1; margin-top: 4px;">
+                        <?= format_inr($cart['total_amount']) ?>
+                    </div>
+                </div>
+
+                <!-- UPI ID Bar + High-Visibility Copy Button -->
+                <div style="background: #f1f5f9; border: 2px dashed #94a3b8; padding: 14px 16px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <span id="upi-id-text" style="font-size: 1.25rem; font-weight: 900; color: #0f172a; font-family: monospace; letter-spacing: 0.5px;">
+                        <?= e($cleanUpiId) ?>
                     </span>
+                    <button type="button" class="btn btn-secondary" id="btn-copy-upi-main" onclick="copyUpiIdMain()" style="color: #fff; background: #1e293b; border: none; font-weight: 800; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 0.88rem; transition: all 0.2s ease;">
+                        &#128203; Copy UPI ID
+                    </button>
+                </div>
 
-                    <div style="margin-top: 10px; font-size: 0.88rem; color: #64748b; font-weight: 600;">
-                        Payee: <strong style="color: #1e293b;">chandni 0777 (State Bank of India)</strong>
+                <!-- Notification Alert Banner upon copying -->
+                <div id="copy-toast" style="display: none; background: #dcfce7; border: 1.5px solid #22c55e; color: #15803d; padding: 10px 14px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; margin-bottom: 18px; text-align: center;">
+                    &#10004; UPI ID copied! Open GPay, PhonePe or Paytm to transfer <?= format_inr($cart['total_amount']) ?>
+                </div>
+
+                <!-- 1-Click Direct UPI App Buttons for Mobile -->
+                <div style="margin-bottom: 16px;">
+                    <div style="font-size: 0.82rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px;">
+                        Tap to Pay Directly with Your App:
                     </div>
 
-                    <!-- Payable Amount Display -->
-                    <div style="margin: 14px 0 16px;">
-                        <span style="font-size: 0.8rem; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Total Payable Amount</span>
-                        <div style="font-size: 2.2rem; font-weight: 900; color: #7a1244; line-height: 1.1; margin-top: 4px;">
-                            <?= format_inr($cart['total_amount']) ?>
-                        </div>
-                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
+                        <!-- PhonePe -->
+                        <a href="<?= e($phonepePayload) ?>" class="btn" style="background: #5f259f; color: #fff; font-weight: 800; font-size: 0.88rem; padding: 11px 12px; border-radius: 10px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(95,37,159,0.3);">
+                            <span>&#128241;</span> <span>PhonePe</span>
+                        </a>
 
-                    <!-- UPI ID with Copy Button -->
-                    <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                        <span class="upi-vpa" id="upi-id-text" style="font-size: 1.12rem; font-weight: 800; color: #0f172a; letter-spacing: 0.5px;"><?= e($upiId) ?></span>
-                        <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-upi-pay" style="color: #1e293b; border-color: #cbd5e1; background: #fff; font-weight: 800; padding: 6px 14px; border-radius: 6px; cursor: pointer;" onclick="copyUpiId()">
-                            &#128203; Copy UPI ID
-                        </button>
-                    </div>
+                        <!-- Google Pay -->
+                        <a href="<?= e($genericUpiPayload) ?>" class="btn" style="background: #1a73e8; color: #fff; font-weight: 800; font-size: 0.88rem; padding: 11px 12px; border-radius: 10px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(26,115,232,0.3);">
+                            <span>&#128241;</span> <span>GPay</span>
+                        </a>
 
-                    <!-- Open UPI App Directly on Mobile -->
-                    <div style="margin-bottom: 14px;">
-                        <a href="<?= e($upiPayload) ?>" class="btn btn-primary" style="background: linear-gradient(135deg, #7a1244, #500a2c); color: #fff; border-radius: 50px; padding: 12px 26px; font-weight: 800; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(122,18,68,0.4); text-decoration: none;">
-                            <span>&#128241;</span> <span>Pay via GPay / PhonePe / Paytm / BHIM</span>
+                        <!-- Paytm -->
+                        <a href="<?= e($paytmPayload) ?>" class="btn" style="background: #00baf2; color: #0c2340; font-weight: 800; font-size: 0.88rem; padding: 11px 12px; border-radius: 10px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(0,186,242,0.3);">
+                            <span>&#128241;</span> <span>Paytm</span>
+                        </a>
+
+                        <!-- Any UPI App / BHIM -->
+                        <a href="<?= e($genericUpiPayload) ?>" class="btn" style="background: #0c2340; color: #fff; font-weight: 800; font-size: 0.88rem; padding: 11px 12px; border-radius: 10px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(12,35,64,0.3);">
+                            <span>&#9889;</span> <span>Any UPI</span>
                         </a>
                     </div>
-
-                    <!-- Accepted UPI Apps Badges -->
-                    <div style="display: flex; justify-content: center; align-items: center; gap: 14px; font-weight: 700; font-size: 0.88rem; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 10px;">
-                        <span><strong style="color: #4285F4;">G</strong>Pay</span> &bull; 
-                        <span style="color: #5f259f;">PhonePe</span> &bull; 
-                        <span style="color: #00baf2;">Paytm</span> &bull; 
-                        <span style="color: #0c2340;">BHIM</span>
-                    </div>
-
                 </div>
 
-                <!-- Steps List -->
-                <div style="background: rgba(20, 2, 11, 0.7); border: 1px solid rgba(245, 183, 34, 0.3); border-radius: 10px; padding: 18px 22px; margin: 25px 0;">
-                    <ol style="margin: 0; padding-left: 20px; font-size: 0.95rem; line-height: 1.8; color: #e2e8f0;">
-                        <li>Pay the exact amount <span style="color: var(--gold-accent); font-weight: bold;"><?= format_inr($cart['total_amount']) ?></span> to UPI ID <strong style="color: var(--gold-accent);"><?= e($upiId) ?></strong> using any UPI App.</li>
-                        <li>After payment, enter your 12-digit UTR/Transaction Reference ID below and click <strong>I Have Paid &amp; Confirm Ticket</strong>.</li>
-                        <li>Your booking will be verified and your digital QR entry pass will be issued immediately.</li>
-                    </ol>
+                <div style="font-size: 0.78rem; color: #94a3b8; font-weight: 600;">
+                    Supports all Indian UPI Apps (GPay, PhonePe, Paytm, BHIM, Cred, Amazon Pay)
                 </div>
-
-                <!-- UTR Input & "I Have Paid" Form -->
-                <form action="<?= BASE_URL ?>/payment.php" method="POST" id="utr-form">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="action" value="submit_utr">
-
-                    <div class="form-group">
-                        <label class="form-label" for="transaction_ref">12-Digit UTR / Transaction Reference ID *</label>
-                        <input type="text" 
-                               name="transaction_ref" 
-                               id="transaction_ref" 
-                               class="form-control" 
-                               placeholder="e.g. 428901234567" 
-                               maxlength="30" 
-                               required 
-                               style="font-size: 1.15rem; font-family: monospace; letter-spacing: 1px;">
-                        <small style="color: #aaa; font-size: 0.8rem; margin-top: 4px; display: block;">Found in your banking/UPI receipt under "UPI Ref No" or "UTR".</small>
-                    </div>
-
-                    <div style="margin-top: 20px;">
-                        <button type="submit" id="btn-i-have-paid" class="btn btn-primary btn-block" style="padding: 15px; font-size: 1.15rem; font-weight: 800; text-transform: uppercase;">
-                            &#10004; I Have Paid &rarr;
-                        </button>
-                    </div>
-                </form>
 
             </div>
-        </div>
 
-        <!-- TAB 2: PAYMENT GATEWAY (Matches Infographic Box 5) -->
-        <div class="payment-tab-pane" id="pane-gateway">
-            <div class="festive-card" style="border: 2px solid var(--gold-accent); padding: 30px 25px; text-align: center;">
-                
-                <h2 style="color: #fff; font-size: 1.6rem; font-weight: 800; margin-bottom: 6px;">Pay Securely with Razorpay</h2>
-                <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px;">Instant automated digital QR pass issuance</p>
+            <!-- Clear 3-Step Instructions Box -->
+            <div style="background: rgba(20, 2, 11, 0.75); border: 1.5px solid rgba(245, 183, 34, 0.35); border-radius: 12px; padding: 18px 22px; margin: 25px 0;">
+                <h4 style="color: var(--gold-accent); font-size: 1.05rem; margin: 0 0 10px; font-weight: 800;">
+                    &#128221; How to Pay &amp; Get Your Ticket (3 Easy Steps):
+                </h4>
+                <ol style="margin: 0; padding-left: 20px; font-size: 0.92rem; line-height: 1.8; color: #e2e8f0;">
+                    <li>Apne UPI App (PhonePe / GPay / Paytm) me UPI ID <strong style="color: var(--gold-accent);"><?= e($cleanUpiId) ?></strong> par exact <strong style="color: var(--gold-accent);"><?= format_inr($cart['total_amount']) ?></strong> transfer karein.</li>
+                    <li>Payment success hone par receipt se <strong>12-digit UTR / UPI Ref No</strong> dekhein.</li>
+                    <li>Niche box me apna UTR number likhein aur <strong>"Confirm &amp; Get My Ticket"</strong> dabayein. Aapka QR Ticket turant generate ho jayega!</li>
+                </ol>
+            </div>
 
-                <!-- Gateway Cards & Badges (Matches Infographic Box 5) -->
-                <div style="background: rgba(30, 4, 17, 0.85); border: 1px solid var(--gold-accent); border-radius: 12px; padding: 26px; max-width: 520px; margin: 0 auto;">
-                    
-                    <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;">
-                        <div style="background: #fff; padding: 8px 16px; border-radius: 6px; font-weight: 800; color: #0c2340; font-size: 1.1rem;">
-                            Razorpay
-                        </div>
-                        <div style="background: #fff; padding: 8px 16px; border-radius: 6px; font-weight: 800; color: #10b981; font-size: 1.1rem;">
-                            Cashfree
-                        </div>
-                    </div>
+            <!-- UTR Input & Confirmation Form -->
+            <form action="<?= BASE_URL ?>/payment.php" method="POST" id="utr-form" style="max-width: 580px; margin: 0 auto;">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="submit_utr">
 
-                    <div style="display: flex; justify-content: center; gap: 14px; margin-bottom: 25px; color: #cbd5e1; font-size: 0.88rem; flex-wrap: wrap;">
-                        <span>&#128179; Card</span> &bull; 
-                        <span>&#128242; UPI</span> &bull; 
-                        <span>&#127974; Netbanking</span> &bull; 
-                        <span>&#128091; Wallet</span>
-                    </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label class="form-label" for="transaction_ref" style="font-size: 1rem; font-weight: 800; color: #fff; margin-bottom: 8px; display: block;">
+                        &#128222; Enter 12-Digit UTR / Transaction Reference ID *
+                    </label>
+                    <input type="text" 
+                           name="transaction_ref" 
+                           id="transaction_ref" 
+                           class="form-control" 
+                           placeholder="e.g. 428901234567 or PhonePe Txn ID" 
+                           maxlength="35" 
+                           required 
+                           style="font-size: 1.25rem; font-family: monospace; letter-spacing: 1.5px; padding: 14px 18px; border: 2px solid var(--gold-accent); border-radius: 10px; background: rgba(13,1,7,0.8); color: #fff; width: 100%; box-sizing: border-box;">
+                    <small style="color: #cbd5e1; font-size: 0.82rem; margin-top: 6px; display: block;">
+                        &#128161; Found in your payment receipt under <strong>"UPI Ref No"</strong>, <strong>"UTR"</strong>, or <strong>"Transaction ID"</strong>.
+                    </small>
+                </div>
 
-                    <button type="button" id="razorpay-trigger-btn" class="btn btn-primary btn-block" style="padding: 15px; font-size: 1.2rem; font-weight: 800;">
-                        Pay <?= format_inr($cart['total_amount']) ?> Securely
+                <div style="margin-top: 25px;">
+                    <button type="submit" id="btn-i-have-paid" class="btn btn-primary btn-block" style="padding: 16px; font-size: 1.2rem; font-weight: 900; text-transform: uppercase; width: 100%; border-radius: 10px; box-shadow: 0 6px 25px rgba(245,183,34,0.45); cursor: pointer;">
+                        &#10004; Confirm Payment &amp; Get Ticket &rarr;
                     </button>
-
-                    <div style="margin-top: 15px; color: #34d399; font-size: 0.88rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                        <span>&#10004;</span> <span>100% Secure 256-Bit SSL Encrypted Payment</span>
-                    </div>
                 </div>
+            </form>
 
+            <div style="text-align: center; margin-top: 25px; color: var(--text-muted); font-size: 0.88rem;">
+                Need help with payment? Helpline: <a href="tel:7004665804" style="color: var(--gold-accent); font-weight: 700; text-decoration: none;">+91 7004665804</a>
             </div>
+
         </div>
 
     </div>
 </div>
 
-<!-- Non-Blocking Libraries placed before body end -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-
 <script>
-// Switch Payment Tabs
-function switchPaymentTab(type) {
-    document.querySelectorAll('.payment-tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.payment-tab-pane').forEach(pane => pane.classList.remove('active'));
-
-    if (type === 'upi') {
-        document.getElementById('tab-btn-upi').classList.add('active');
-        document.getElementById('pane-upi').classList.add('active');
+function copyUpiIdMain() {
+    const upiText = '<?= $cleanUpiId ?>';
+    const btn = document.getElementById('btn-copy-upi-main');
+    const toast = document.getElementById('copy-toast');
+    
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(upiText).then(onCopySuccess).catch(fallbackCopy);
     } else {
-        document.getElementById('tab-btn-gateway').classList.add('active');
-        document.getElementById('pane-gateway').classList.add('active');
+        fallbackCopy();
+    }
+    
+    function fallbackCopy() {
+        const temp = document.createElement('textarea');
+        temp.value = upiText;
+        document.body.appendChild(temp);
+        temp.select();
+        try {
+            document.execCommand('copy');
+            onCopySuccess();
+        } catch (e) {
+            prompt('Copy UPI ID:', upiText);
+        }
+        document.body.removeChild(temp);
+    }
+    
+    function onCopySuccess() {
+        if (btn) {
+            btn.innerHTML = '&#10004; Copied!';
+            btn.style.background = '#22c55e';
+            btn.style.color = '#000';
+            setTimeout(() => {
+                btn.innerHTML = '&#128203; Copy UPI ID';
+                btn.style.background = '#1e293b';
+                btn.style.color = '#fff';
+            }, 3000);
+        }
+        if (toast) {
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 6000);
+        }
     }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Instant UTR Submission via Fetch with Fallback
     const utrForm = document.getElementById('utr-form');
     const iHavePaidBtn = document.getElementById('btn-i-have-paid');
 
     if (utrForm && iHavePaidBtn) {
         utrForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            const utrVal = document.getElementById('transaction_ref').value.trim();
+            const input = document.getElementById('transaction_ref');
+            const utrVal = input ? input.value.trim().replace(/\s+/g, '') : '';
+            
             if (utrVal.length < 6) {
-                alert('Please enter a valid 12-digit UPI UTR number.');
+                alert('Please enter a valid 12-digit UPI UTR / Transaction Reference number.');
+                if (input) input.focus();
                 return;
             }
 
             iHavePaidBtn.disabled = true;
-            iHavePaidBtn.textContent = 'Verifying Reference...';
+            iHavePaidBtn.innerHTML = '&#9203; Verifying Reference &amp; Issuing Pass...';
 
             const formData = new FormData(utrForm);
 
@@ -407,80 +427,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.status === 'success' && data.redirect) {
                     window.location.href = data.redirect;
                 } else {
-                    alert(data.message || 'Error recording UTR. Falling back to submission...');
+                    // Fallback to direct form submit
                     utrForm.submit();
                 }
             })
             .catch(() => {
-                // Fallback to standard form post
+                // Network or parse issue, submit standard form
                 utrForm.submit();
             });
         });
     }
-
-    // Razorpay Checkout Trigger
-    const rzpBtn = document.getElementById('razorpay-trigger-btn');
-    if (rzpBtn) {
-        rzpBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-
-            const options = {
-                "key": <?= json_encode($razorpayKeyId) ?>,
-                "amount": <?= round($cart['total_amount'] * 100) ?>,
-                "currency": "INR",
-                "name": <?= json_encode($payeeName) ?>,
-                "description": <?= json_encode("Tickets for " . $cart['event_title']) ?>,
-                "image": "<?= BASE_URL ?>/assets/uploads/garba-banner.jpg",
-                "handler": function (response){
-                    fetch('<?= BASE_URL ?>/api/verify-payment.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: JSON.stringify({
-                            booking_uid: <?= json_encode($bookingUid) ?>,
-                            razorpay_payment_id: response.razorpay_payment_id,
-                            razorpay_order_id: response.razorpay_order_id || '',
-                            razorpay_signature: response.razorpay_signature || ''
-                        })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            window.location.href = '<?= BASE_URL ?>/confirmation.php?uid=' + encodeURIComponent(data.booking_uid);
-                        } else {
-                            alert(data.message || 'Payment verification failed.');
-                        }
-                    })
-                    .catch(() => {
-                        alert('Network issue verifying transaction. Please contact event desk.');
-                    });
-                },
-                "prefill": {
-                    "name": <?= json_encode($customer['customer_name']) ?>,
-                    "email": <?= json_encode($customer['customer_email']) ?>,
-                    "contact": <?= json_encode($customer['customer_phone']) ?>
-                },
-                "theme": {
-                    "color": "#7a1244"
-                }
-            };
-
-            const rzp = new Razorpay(options);
-            rzp.open();
-        });
-    }
 });
-
-function copyUpiId() {
-    const text = document.getElementById('upi-id-text').innerText;
-    navigator.clipboard.writeText(text).then(() => {
-        alert('UPI ID copied to clipboard: ' + text);
-    }).catch(() => {
-        prompt('Copy UPI ID:', text);
-    });
-}
 </script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
