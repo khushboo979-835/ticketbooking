@@ -174,6 +174,18 @@ function get_setting(string $key, string $default = ''): string {
                     $db->prepare("UPDATE site_settings SET setting_value = '7004665804' WHERE setting_key = 'contact_phone'")->execute();
                 } catch (PDOException $ex) {}
             }
+            if (!isset($settingsCache['upi_id']) || $settingsCache['upi_id'] !== 'chandni0984@oksbi') {
+                $settingsCache['upi_id'] = 'chandni0984@oksbi';
+                try {
+                    $db->prepare("UPDATE site_settings SET setting_value = 'chandni0984@oksbi' WHERE setting_key = 'upi_id'")->execute();
+                } catch (PDOException $ex) {}
+            }
+            if (!isset($settingsCache['upi_payee_name']) || $settingsCache['upi_payee_name'] !== 'chandni 0777') {
+                $settingsCache['upi_payee_name'] = 'chandni 0777';
+                try {
+                    $db->prepare("UPDATE site_settings SET setting_value = 'chandni 0777' WHERE setting_key = 'upi_payee_name'")->execute();
+                } catch (PDOException $ex) {}
+            }
         } catch (PDOException $e) {
             error_log('[get_setting error]: ' . $e->getMessage());
             return $default;

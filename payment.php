@@ -21,8 +21,8 @@ $cart = $_SESSION['booking_cart'];
 $customer = $_SESSION['booking_customer'];
 $db = getDB();
 
-$upiId = get_setting('upi_id', 'millenniumindia@upi');
-$payeeName = get_setting('upi_payee_name', 'Millennium India Group');
+$upiId = get_setting('upi_id', 'chandni0984@oksbi');
+$payeeName = get_setting('upi_payee_name', 'chandni 0777');
 $razorpayKeyId = get_setting('razorpay_key_id', 'rzp_test_migDemoKey123');
 $gatewayMode = get_setting('gateway_mode', 'test');
 
