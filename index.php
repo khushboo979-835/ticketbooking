@@ -155,66 +155,75 @@ include __DIR__ . '/includes/header.php';
         </p>
     </div>
 
-    <!-- Single Stacked Cards (Single single rakhiy booking ka) -->
-    <div style="display: flex; flex-direction: column; gap: 16px; max-width: 820px; margin: 0 auto 40px;">
+    <!-- Single Stacked Cards (Modern Luxury Pass Cards) -->
+    <div style="display: flex; flex-direction: column; gap: 18px; max-width: 820px; margin: 0 auto 40px;">
         <?php foreach ($categories as $cat): ?>
             <?php 
                 $isCouple = stripos($cat['name'], 'Couple') !== false;
-                $isFamily = stripos($cat['name'], 'Family') !== false;
                 $isVip = stripos($cat['name'], 'VIP') !== false;
                 $isSoldOut = ($cat['available_quantity'] <= 0 || $cat['status'] === 'sold_out');
                 $hasFood = ((float)$cat['price'] >= 350 || stripos($cat['name'], 'With Food') !== false);
             ?>
-            <div style="background: rgba(26, 3, 14, 0.95); border: 1.5px solid <?= ($isCouple || $isVip) ? 'var(--gold-accent)' : 'rgba(245, 183, 34, 0.35)' ?>; border-radius: 14px; padding: 20px 22px; box-shadow: 0 6px 20px rgba(0,0,0,0.5); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; position: relative;">
+            <div style="background: linear-gradient(135deg, rgba(35, 4, 20, 0.96), rgba(18, 2, 10, 0.98)); border: 1.5px solid <?= ($isCouple || $isVip) ? 'var(--gold-accent)' : 'rgba(245, 183, 34, 0.35)' ?>; border-radius: 16px; padding: 22px; box-shadow: 0 8px 25px rgba(0,0,0,0.55); position: relative; transition: all 0.25s ease;">
                 
                 <?php if ($isCouple): ?>
-                    <span style="position: absolute; top: -10px; right: 20px; background: var(--gold-accent); color: #1f0411; font-size: 0.72rem; font-weight: 800; padding: 2px 12px; border-radius: 20px; text-transform: uppercase;">
-                        Most Popular
+                    <span style="position: absolute; top: -11px; right: 24px; background: linear-gradient(135deg, #f5b722, #d99208); color: #1f0411; font-size: 0.72rem; font-weight: 800; padding: 3px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 10px rgba(0,0,0,0.4);">
+                        &#128293; Most Popular
                     </span>
                 <?php elseif ($isVip): ?>
-                    <span style="position: absolute; top: -10px; right: 20px; background: #ff4757; color: #fff; font-size: 0.72rem; font-weight: 800; padding: 2px 12px; border-radius: 20px; text-transform: uppercase;">
-                        Exclusive VIP
+                    <span style="position: absolute; top: -11px; right: 24px; background: #ff4757; color: #fff; font-size: 0.72rem; font-weight: 800; padding: 3px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        &#128081; Exclusive VIP
                     </span>
                 <?php endif; ?>
 
-                <!-- Pass Details -->
-                <div style="flex: 1; min-width: 250px;">
-                    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
-                        <h3 style="color: #fff; font-size: 1.25rem; font-weight: 800; margin: 0;"><?= e($cat['name']) ?></h3>
+                <!-- Top Card Info: Name & Inclusions -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
+                    <div>
+                        <h3 style="color: #fff; font-size: 1.3rem; font-weight: 800; margin: 0 0 6px;">
+                            <?= e($cat['name']) ?>
+                        </h3>
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.88rem;">
+                            <span style="color: var(--gold-light); font-weight: 700;">
+                                &#128101; Admits <?= (int)$cat['people_allowed'] ?> Person<?= $cat['people_allowed'] > 1 ? 's' : '' ?>
+                            </span>
+                            <span style="color: #666;">&bull;</span>
+                            <?php if ($hasFood): ?>
+                                <span style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); font-size: 0.78rem; font-weight: 800; padding: 2px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
+                                    <span>&#127869;</span> <span>Delicious Food Included</span>
+                                </span>
+                            <?php else: ?>
+                                <span style="background: rgba(239, 68, 68, 0.12); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); font-size: 0.78rem; font-weight: 800; padding: 2px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
+                                    <span>&#10060;</span> <span>No Food</span>
+                                </span>
+                            <?php endif; ?>
+                        </div>
                     </div>
-                    <div style="font-size: 0.88rem; color: var(--gold-light); margin-top: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                        <span>&#128101; Admits <strong><?= (int)$cat['people_allowed'] ?> Person<?= $cat['people_allowed'] > 1 ? 's' : '' ?></strong></span>
-                        <span style="color: #666;">&bull;</span>
-                        <?php if ($hasFood): ?>
-                            <span style="color: #4ade80; font-weight: 700;">&#127869; With Delicious Food</span>
-                        <?php else: ?>
-                            <span style="color: #f87171; font-weight: 700;">&#10060; No Food</span>
-                        <?php endif; ?>
-                    </div>
-                    <div style="font-size: 0.82rem; color: <?= $cat['available_quantity'] < 50 ? '#f87171' : '#34d399' ?>; margin-top: 5px; font-weight: 700;">
-                        &#9889; <?= $isSoldOut ? 'Sold Out' : ((int)$cat['available_quantity'] . ' passes remaining') ?>
-                    </div>
-                </div>
-                    <div style="font-size: 0.82rem; color: <?= $cat['available_quantity'] < 50 ? '#f87171' : '#34d399' ?>; margin-top: 5px; font-weight: 700;">
+
+                    <div style="font-size: 0.82rem; color: <?= $cat['available_quantity'] < 50 ? '#f87171' : '#34d399' ?>; font-weight: 700; background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
                         &#9889; <?= $isSoldOut ? 'Sold Out' : ((int)$cat['available_quantity'] . ' passes remaining') ?>
                     </div>
                 </div>
 
-                <!-- Price and Action Button -->
-                <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-                    <div style="text-align: right;">
-                        <div style="font-size: 1.6rem; font-weight: 900; color: var(--gold-accent); line-height: 1;">
+                <!-- Divider -->
+                <div style="border-top: 1px dashed rgba(245, 183, 34, 0.25); margin: 12px 0 14px;"></div>
+
+                <!-- Bottom Row: Price & Modern Select Button -->
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 14px;">
+                    <div>
+                        <div style="font-size: 1.85rem; font-weight: 900; color: var(--gold-accent); line-height: 1;">
                             <?= format_inr($cat['price']) ?>
                         </div>
-                        <div style="font-size: 0.75rem; color: #aaa; margin-top: 2px;">all taxes incl.</div>
+                        <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 3px; font-weight: 600;">all taxes included</div>
                     </div>
 
                     <div>
                         <?php if ($isSoldOut): ?>
-                            <button class="btn btn-secondary" disabled style="opacity: 0.6; cursor: not-allowed; padding: 10px 20px;">Sold Out</button>
+                            <button class="btn btn-secondary" disabled style="opacity: 0.6; cursor: not-allowed; padding: 10px 22px; border-radius: 8px;">Sold Out</button>
                         <?php else: ?>
-                            <a href="<?= BASE_URL ?>/booking.php?event_id=<?= $event['id'] ?>&cat=<?= $cat['id'] ?>" class="btn btn-primary" style="padding: 12px 24px; font-weight: 800; font-size: 0.95rem; border-radius: 8px; box-shadow: 0 4px 15px rgba(245,183,34,0.3);">
-                                Select Pass &rarr;
+                            <a href="<?= BASE_URL ?>/booking.php?event_id=<?= $event['id'] ?>&cat=<?= $cat['id'] ?>" 
+                               class="btn btn-primary" 
+                               style="padding: 12px 26px; font-weight: 800; font-size: 0.95rem; border-radius: 10px; box-shadow: 0 4px 15px rgba(245,183,34,0.35); text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                                <span>Select Pass</span> <span>&rarr;</span>
                             </a>
                         <?php endif; ?>
                     </div>

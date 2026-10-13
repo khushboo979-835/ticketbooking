@@ -205,33 +205,37 @@ include __DIR__ . '/includes/header.php';
                             $firstActiveDone = true;
                         }
                 ?>
-                    <div class="ticket-selection-mobile-card" style="background: rgba(26, 3, 14, 0.95); border: 1.5px solid <?= $defaultQty > 0 ? 'var(--gold-accent)' : 'rgba(245, 183, 34, 0.35)' ?>; border-radius: 14px; padding: 18px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                    <div class="ticket-selection-mobile-card" style="background: linear-gradient(135deg, rgba(35, 4, 20, 0.96), rgba(18, 2, 10, 0.98)); border: 1.5px solid <?= $defaultQty > 0 ? 'var(--gold-accent)' : 'rgba(245, 183, 34, 0.35)' ?>; border-radius: 16px; padding: 20px 22px; box-shadow: 0 8px 25px rgba(0,0,0,0.5);">
                         <div class="head" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
                             <div>
-                                <h4 style="color: #fff; font-size: 1.18rem; font-weight: 800; margin: 0 0 4px;"><?= e($cat['name']) ?></h4>
-                                <div style="font-size: 0.85rem; color: var(--gold-light); display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                    <span>&#128101;</span>
-                                    <span>Admits <strong><?= (int)$cat['people_allowed'] ?> Person<?= $cat['people_allowed'] > 1 ? 's' : '' ?></strong></span>
+                                <h4 style="color: #fff; font-size: 1.25rem; font-weight: 800; margin: 0 0 4px;"><?= e($cat['name']) ?></h4>
+                                <div style="font-size: 0.88rem; color: var(--gold-light); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <span>&#128101; Admits <strong><?= (int)$cat['people_allowed'] ?> Person<?= $cat['people_allowed'] > 1 ? 's' : '' ?></strong></span>
                                     <span style="color: #666;">&bull;</span>
                                     <?php if ($hasFood): ?>
-                                        <span style="color: #4ade80; font-weight: 700;">&#127869; Delicious Food Included</span>
+                                        <span style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); font-size: 0.78rem; font-weight: 800; padding: 2px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span>&#127869;</span> <span>Delicious Food Included</span>
+                                        </span>
                                     <?php else: ?>
-                                        <span style="color: #f87171; font-weight: 700;">&#10060; No Food</span>
+                                        <span style="background: rgba(239, 68, 68, 0.12); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); font-size: 0.78rem; font-weight: 800; padding: 2px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span>&#10060;</span> <span>No Food</span>
+                                        </span>
                                     <?php endif; ?>
                                 </div>
-                                <div style="font-size: 0.8rem; color: <?= $cat['available_quantity'] < 25 ? '#f87171' : '#34d399' ?>; margin-top: 4px; font-weight: 600;">
+                                <div style="font-size: 0.82rem; color: <?= $cat['available_quantity'] < 25 ? '#f87171' : '#34d399' ?>; margin-top: 5px; font-weight: 700;">
                                     &#9889; <?= $isSoldOut ? 'Sold Out' : ((int)$cat['available_quantity'] . ' passes remaining') ?>
                                 </div>
                             </div>
                             <div style="text-align: right; flex-shrink: 0;">
-                                <div style="font-size: 1.55rem; font-weight: 900; color: var(--gold-accent);">
+                                <div style="font-size: 1.75rem; font-weight: 900; color: var(--gold-accent); line-height: 1;">
                                     <?= format_inr($cat['price']) ?>
                                 </div>
+                                <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 3px; font-weight: 600;">all taxes included</div>
                             </div>
                         </div>
 
-                        <div class="bottom" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(245, 183, 34, 0.25); padding-top: 12px;">
-                            <span style="font-size: 0.9rem; color: #cbd5e1; font-weight: 700;">Pass Quantity:</span>
+                        <div class="bottom" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(245, 183, 34, 0.25); padding-top: 14px;">
+                            <span style="font-size: 0.95rem; color: #cbd5e1; font-weight: 700;">Select Quantity:</span>
                             <div>
                                 <?php if ($isSoldOut): ?>
                                     <span style="color: #ef4444; font-weight: bold; font-size: 0.9rem; background: rgba(239,68,68,0.15); padding: 4px 12px; border-radius: 6px;">SOLD OUT</span>
