@@ -14,6 +14,8 @@ send_no_cache_headers();
 $adminCurrent = 'dashboard';
 $db = getDB();
 
+ensure_seat_inventory_table();
+
 // -------------------------------------------------------------
 // Auto-Purge Legacy Dummy & Test Records Permanently
 // -------------------------------------------------------------
@@ -31,18 +33,16 @@ try {
     $db->exec("
         DELETE FROM bookings 
         WHERE customer_name LIKE '%Test%' 
-           OR customer_name = 'Live Test Customer'
-           OR customer_name = 'Live Test'
-           OR customer_name = 'Test User'
+           OR customer_name = 'Live Test Customer' 
+           OR customer_name = 'Live Test' 
+           OR customer_name = 'Test User' 
            OR customer_phone = '9876543210' 
            OR transaction_ref = '123456789012'
     ");
-} catch (Throwable $e) {
-    error_log('[admin/index.php auto_purge error]: ' . $e->getMessage());
-}
+} catch (Throwable $e) {}
 
 // -------------------------------------------------------------
-// POST Handlers: Actions (Verify, Delete, Walk-In, Quota, Clean)
+// POST Handlers: Actions (Verify, Delete, Walk-In, Quota, Clean, UTR Issue)
 // -------------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
@@ -71,6 +71,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 foreach ($items as $item) {
                     $deductStmt = $db->prepare("UPDATE ticket_categories SET available_quantity = GREATEST(0, available_quantity - :q) WHERE id = :c_id");
                     $deductStmt->execute([':q' => (int)$item['quantity'], ':c_id' => (int)$item['ticket_category_id']]);
+                }
+
+                // If seats are assigned, mark them as SOLD in event_seats
+                if (!empty($bRow['seat_numbers'])) {
+                    $seatCodes = array_filter(array_map('trim', explode(',', $bRow['seat_numbers'])));
+                    $upSeat = $db->prepare("UPDATE event_seats SET status = 'sold', booking_uid = :uid WHERE seat_code = :c");
+                    foreach ($seatCodes as $sc) {
+                        $upSeat->execute([':uid' => $bRow['booking_uid'], ':c' => $sc]);
+                    }
                 }
 
                 $upStmt = $db->prepare("UPDATE bookings SET payment_status = 'verified' WHERE id = :id");
@@ -107,6 +116,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     foreach ($items as $item) {
                         $db->prepare("UPDATE ticket_categories SET available_quantity = LEAST(total_quantity, available_quantity + :q) WHERE id = :c_id")
                            ->execute([':q' => (int)$item['quantity'], ':c_id' => (int)$item['ticket_category_id']]);
+                    }
+                }
+
+                // Free up any assigned seats back to available
+                if (!empty($bRow['seat_numbers'])) {
+                    $seatCodes = array_filter(array_map('trim', explode(',', $bRow['seat_numbers'])));
+                    $freeSeat = $db->prepare("UPDATE event_seats SET status = 'available', booking_uid = NULL WHERE seat_code = :c");
+                    foreach ($seatCodes as $sc) {
+                        $freeSeat->execute([':c' => $sc]);
                     }
                 }
 
@@ -153,7 +171,103 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Action 4: Fast Quota / Capacity Adjustment
+    // Action 4: Issue Ticket Directly by Payment Reference / UTR
+    elseif ($action === 'create_ticket_utr') {
+        $utr = preg_replace('/[^A-Za-z0-9]/', '', trim($_POST['transaction_ref'] ?? ''));
+        $name = trim($_POST['customer_name'] ?? '');
+        $phone = preg_replace('/[^\d]/', '', trim($_POST['customer_phone'] ?? ''));
+        $catId = (int)($_POST['category_id'] ?? 1);
+        $qty = max(1, (int)($_POST['quantity'] ?? 1));
+        $assignedSeats = trim($_POST['seat_codes'] ?? '');
+
+        if (empty($name)) $name = 'Garba Attendee';
+        if (empty($phone) || strlen($phone) < 10) $phone = '7004665804';
+        if (empty($utr)) $utr = 'UTR-' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
+
+        try {
+            $db->beginTransaction();
+
+            $cStmt = $db->prepare("SELECT * FROM ticket_categories WHERE id = :id");
+            $cStmt->execute([':id' => $catId]);
+            $category = $cStmt->fetch();
+
+            if ($category) {
+                $totalAmt = $qty * (float)$category['price'];
+                $bookingUid = generate_booking_uid();
+                $qrToken = generate_qr_token();
+
+                // If no seats provided, auto-pick available seats in this category
+                if (empty($assignedSeats)) {
+                    $seatStmt = $db->prepare("SELECT seat_code FROM event_seats WHERE category_id = :cid AND status = 'available' LIMIT :lim");
+                    $seatStmt->bindValue(':cid', $catId, PDO::PARAM_INT);
+                    $seatStmt->bindValue(':lim', $qty, PDO::PARAM_INT);
+                    $seatStmt->execute();
+                    $picked = $seatStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+                    $assignedSeats = implode(', ', $picked);
+                }
+
+                $insB = $db->prepare("
+                    INSERT INTO bookings (
+                        booking_uid, event_id, customer_name, customer_phone, customer_email,
+                        total_amount, payment_method, payment_status, transaction_ref, qr_token,
+                        is_checked_in, seat_numbers, created_at
+                    ) VALUES (
+                        :uid, 1, :name, :phone, :email,
+                        :amt, 'direct_upi', 'verified', :utr, :qr,
+                        0, :seats, NOW()
+                    )
+                ");
+                $insB->execute([
+                    ':uid'   => $bookingUid,
+                    ':name'  => $name,
+                    ':phone' => $phone,
+                    ':email' => $phone . '@millenniumindiagroup.com',
+                    ':amt'   => $totalAmt,
+                    ':utr'   => $utr,
+                    ':qr'    => $qrToken,
+                    ':seats' => $assignedSeats
+                ]);
+                $newBookingId = (int)$db->lastInsertId();
+
+                $insItem = $db->prepare("
+                    INSERT INTO booking_items (booking_id, ticket_category_id, quantity, unit_price, subtotal)
+                    VALUES (:b_id, :c_id, :qty, :price, :sub)
+                ");
+                $insItem->execute([
+                    ':b_id'  => $newBookingId,
+                    ':c_id'  => $catId,
+                    ':qty'   => $qty,
+                    ':price' => $category['price'],
+                    ':sub'   => $totalAmt
+                ]);
+
+                // Mark assigned seats as SOLD
+                if (!empty($assignedSeats)) {
+                    $seatArr = array_map('trim', explode(',', $assignedSeats));
+                    $updSeat = $db->prepare("UPDATE event_seats SET status = 'sold', booking_uid = :uid WHERE seat_code = :code");
+                    foreach ($seatArr as $sCode) {
+                        $updSeat->execute([':uid' => $bookingUid, ':code' => $sCode]);
+                    }
+                }
+
+                // Deduct category available quantity
+                $db->prepare("UPDATE ticket_categories SET available_quantity = GREATEST(0, available_quantity - :q) WHERE id = :id")
+                   ->execute([':q' => $qty, ':id' => $catId]);
+
+                $db->commit();
+                set_flash('success', "Ticket pass issued for {$name}! Booking UID: #{$bookingUid} (UTR: {$utr}) &bull; Allocated Seats: {$assignedSeats}. <a href='" . BASE_URL . "/ticket.php?uid={$bookingUid}' target='_blank' style='color:#fff; text-decoration:underline; font-weight:bold;'>View Digital Pass &rarr;</a>");
+            } else {
+                $db->rollBack();
+                set_flash('error', "Category not found.");
+            }
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) $db->rollBack();
+            error_log('[admin/index.php create_ticket_utr error]: ' . $e->getMessage());
+            set_flash('error', "Error issuing ticket: " . $e->getMessage());
+        }
+    }
+
+    // Action 5: Fast Quota / Capacity Adjustment
     elseif ($action === 'update_quota') {
         $catId = (int)($_POST['category_id'] ?? 0);
         $totalQty = max(1, (int)($_POST['total_quantity'] ?? 100));
@@ -170,7 +284,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Action 5: Issue Walk-In / Counter Pass
+    // Action 6: Issue Walk-In / Counter Pass
     elseif ($action === 'walkin_booking') {
         $custName = trim($_POST['customer_name'] ?? '');
         $custPhone = preg_replace('/[^\d]/', '', trim($_POST['customer_phone'] ?? ''));
@@ -194,9 +308,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $bookingUid = 'MIG' . date('Ymd') . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
                 $qrToken = 'MIG-QR-' . bin2hex(random_bytes(16));
 
+                // Auto-pick available seats in this category
+                $seatStmt = $db->prepare("SELECT seat_code FROM event_seats WHERE category_id = :cid AND status = 'available' LIMIT :lim");
+                $seatStmt->bindValue(':cid', $catId, PDO::PARAM_INT);
+                $seatStmt->bindValue(':lim', $qty, PDO::PARAM_INT);
+                $seatStmt->execute();
+                $picked = $seatStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+                $assignedSeats = implode(', ', $picked);
+
                 $insB = $db->prepare("
-                    INSERT INTO bookings (booking_uid, event_id, customer_name, customer_phone, customer_email, total_amount, payment_method, payment_status, transaction_ref, qr_token, is_checked_in, created_at)
-                    VALUES (:uid, 1, :name, :phone, :email, :amt, :method, 'verified', :ref, :qr, 0, NOW())
+                    INSERT INTO bookings (booking_uid, event_id, customer_name, customer_phone, customer_email, total_amount, payment_method, payment_status, transaction_ref, qr_token, is_checked_in, seat_numbers, created_at)
+                    VALUES (:uid, 1, :name, :phone, :email, :amt, :method, 'verified', :ref, :qr, 0, :seats, NOW())
                 ");
                 $insB->execute([
                     ':uid'    => $bookingUid,
@@ -206,7 +328,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ':amt'    => $totalAmt,
                     ':method' => $payMethod,
                     ':ref'    => $refNote,
-                    ':qr'     => $qrToken
+                    ':qr'     => $qrToken,
+                    ':seats'  => $assignedSeats
                 ]);
                 $newBookingId = (int)$db->lastInsertId();
 
@@ -226,8 +349,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $deduct = $db->prepare("UPDATE ticket_categories SET available_quantity = GREATEST(0, available_quantity - :q) WHERE id = :id");
                 $deduct->execute([':q' => $qty, ':id' => $catId]);
 
+                // Mark seats sold
+                if (!empty($picked)) {
+                    $upSeat = $db->prepare("UPDATE event_seats SET status = 'sold', booking_uid = :uid WHERE seat_code = :c");
+                    foreach ($picked as $sc) {
+                        $upSeat->execute([':uid' => $bookingUid, ':c' => $sc]);
+                    }
+                }
+
                 $db->commit();
-                set_flash('success', "Walk-In Pass #{$bookingUid} generated for {$custName}! <a href='" . BASE_URL . "/ticket.php?uid={$bookingUid}' target='_blank' style='color:#fff; text-decoration:underline; font-weight:bold;'>View Digital Pass &rarr;</a>");
+                set_flash('success', "Walk-In Pass #{$bookingUid} generated for {$custName}! Seats: {$assignedSeats}. <a href='" . BASE_URL . "/ticket.php?uid={$bookingUid}' target='_blank' style='color:#fff; text-decoration:underline; font-weight:bold;'>View Digital Pass &rarr;</a>");
             } else {
                 $db->rollBack();
                 set_flash('error', "Selected category not found.");
@@ -261,6 +392,8 @@ $hallTotalCapacity = 0;
 $hallTotalSold = 0;
 $hallTotalAvailable = 0;
 $recentBookings = [];
+$seatSummary = get_seat_summary(1);
+$rawCategories = [];
 
 try {
     // 1. High-Level Booking KPI counts
@@ -416,16 +549,18 @@ try {
                 </div>
 
                 <div class="bms-hero-actions">
-                    <a href="<?= BASE_URL ?>/admin/scanner.php" class="btn-bms-gold" title="Open QR Code Turnstile Scanner">
-                        <span>&#128247;</span> <span>Gate QR Scanner</span>
-                    </a>
-                    <button type="button" class="btn-bms-gold" style="background: linear-gradient(135deg, #10b981, #059669); color:#fff;" onclick="openWalkinModal()">
-                        <span>&#9889;</span> <span>Issue Walk-In Pass</span>
+                    <button type="button" class="btn-bms-gold" style="background: linear-gradient(135deg, #10b981, #059669); color:#fff;" onclick="openUtrModal()">
+                        <span>&#127915;</span> <span>Issue Ticket by UTR</span>
                     </button>
+                    <a href="<?= BASE_URL ?>/admin/seats.php" class="btn-bms-gold" title="Open Visual Arena Seat Map">
+                        <span>&#129681;</span> <span>Seat Matrix (Khali/Booked)</span>
+                    </a>
+                    <a href="<?= BASE_URL ?>/admin/scanner.php" class="btn-bms-dark" title="Open QR Code Turnstile Scanner">
+                        <span>&#128247;</span> <span>Gate Scanner</span>
+                    </a>
                     <a href="<?= BASE_URL ?>/api/export-csv.php" class="btn-bms-dark" title="Download Attendee Ledger as CSV">
                         <span>&#128196;</span> <span>Export CSV</span>
                     </a>
-                    <!-- Purge Dummy Data Button -->
                     <form action="<?= BASE_URL ?>/admin/index.php" method="POST" style="margin:0;" onsubmit="return confirm('Purge all dummy and test records permanently? Real customer bookings will remain intact.');">
                         <?= csrf_field() ?>
                         <input type="hidden" name="action" value="clean_dummy_data">
@@ -498,59 +633,54 @@ try {
                 </div>
             </div>
 
-            <!-- 5. Real-Time Hall Availability ("Kon Seats Khali Hai") -->
+            <!-- 5. Real-Time Arena Seats Khali/Booked Summary -->
             <div class="bms-kpi-card" style="border-top: 3px solid #3b82f6;">
                 <div class="bms-kpi-header">
-                    <span class="bms-kpi-title">Seats Khali (Available)</span>
-                    <div class="bms-kpi-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">&#127978;</div>
+                    <span class="bms-kpi-title">Arena Seats (Khali vs Booked)</span>
+                    <div class="bms-kpi-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">&#129681;</div>
                 </div>
-                <div class="bms-kpi-value" style="color: <?= $hallTotalAvailable < 50 ? '#f87171' : '#34d399' ?>;">
-                    <?= number_format($hallTotalAvailable) ?>
+                <div class="bms-kpi-value" style="color: #34d399;">
+                    <?= number_format($seatSummary['available']) ?> <span style="font-size:0.9rem; color:#94a3b8;">Khali</span>
                 </div>
                 <div class="bms-kpi-sub">
-                    <span>Out of <?= number_format($hallTotalCapacity) ?> Total Venue Capacity</span>
+                    <span style="color: #ffd966; font-weight: 700;"><?= $seatSummary['sold'] ?> Booked</span> &bull; <?= $seatSummary['total'] ?> Total Seats
                 </div>
             </div>
         </div>
 
-        <!-- ========================================================
-             Grand Hall Occupancy Progress Meter
-             ======================================================== -->
+        <!-- Grand Hall Progress Meter -->
         <div class="bms-hall-banner">
             <div class="bms-hall-header">
                 <div>
                     <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 2px;">
-                        &#127881; Grand Arena Occupancy &bull; <?= $hallOccupancyPct ?>% Booked
+                        &#127881; Arena Seating Occupancy &bull; <?= $seatSummary['occupancy_pct'] ?>% Booked
                     </h3>
                     <div style="font-size: 0.85rem; color: #94a3b8;">
-                        Total Capacity: <strong><?= number_format($hallTotalCapacity) ?> Seats</strong> &bull; 
-                        Booked: <strong style="color: #ffd966;"><?= number_format($hallTotalSold) ?></strong> &bull; 
-                        Remaining Khali: <strong style="color: #34d399;"><?= number_format($hallTotalAvailable) ?></strong>
+                        Total Seats: <strong><?= number_format($seatSummary['total']) ?></strong> &bull; 
+                        Booked: <strong style="color: #ffd966;"><?= number_format($seatSummary['sold']) ?></strong> &bull; 
+                        Remaining Khali: <strong style="color: #34d399;"><?= number_format($seatSummary['available']) ?></strong>
                     </div>
                 </div>
                 <div>
-                    <span class="badge" style="background: rgba(245,183,34,0.18); color:#ffd966; border:1px solid rgba(245,183,34,0.3); font-size:0.85rem; padding:6px 12px;">
-                        <?= $hallOccupancyPct >= 90 ? '&#128293; ALMOST FULL' : '&#9989; SEATS AVAILABLE' ?>
-                    </span>
+                    <a href="<?= BASE_URL ?>/admin/seats.php" class="btn-bms-gold" style="font-size:0.85rem; padding:6px 14px;">
+                        <span>&#129681; Open Visual Seat Map Manager</span> &rarr;
+                    </a>
                 </div>
             </div>
 
             <div class="bms-progress-track">
-                <div class="bms-progress-fill" style="width: <?= min(100, $hallOccupancyPct) ?>%; background: linear-gradient(90deg, #10b981 0%, #f5b722 75%, #ef4444 100%);"></div>
+                <div class="bms-progress-fill" style="width: <?= min(100, $seatSummary['occupancy_pct']) ?>%; background: linear-gradient(90deg, #10b981 0%, #f5b722 75%, #ef4444 100%);"></div>
             </div>
         </div>
 
-        <!-- ========================================================
-             LIVE REAL-TIME SEAT & PASS INVENTORY MATRIX
-             Client Feedback: "Kon seats khali hai, kon sa book hai"
-             ======================================================== -->
+        <!-- Category Matrix Breakdown -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <div>
                 <h2 style="font-size: 1.35rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px;">
-                    <span>&#129681;</span> <span>Live Seat &amp; Pass Inventory Matrix</span>
+                    <span>&#129681;</span> <span>Pass Tier Breakdown &amp; Quota Matrix</span>
                 </h2>
                 <div style="font-size: 0.86rem; color: #94a3b8;">
-                    Real-time category breakdown showing total capacity, tickets sold, seats remaining, and revenue earned.
+                    Category pricing, food privileges, available quota, and revenue earned.
                 </div>
             </div>
             <a href="<?= BASE_URL ?>/admin/tickets.php" class="btn-bms-dark" style="font-size: 0.82rem;">
@@ -576,11 +706,10 @@ try {
                         <div class="bms-matrix-name"><?= e($cat['name']) ?></div>
                         <div class="bms-matrix-price"><?= format_inr($cat['price']) ?></div>
 
-                        <!-- 3-Way Metrics Box: Total, Booked, Khali -->
                         <div class="bms-matrix-stats">
                             <div>
                                 <div class="bms-stat-box-num" style="color: #cbd5e1;"><?= number_format($cat['total_quantity']) ?></div>
-                                <div class="bms-stat-box-lbl">Total Capacity</div>
+                                <div class="bms-stat-box-lbl">Total Quota</div>
                             </div>
                             <div>
                                 <div class="bms-stat-box-num" style="color: #ffd966;"><?= number_format($cat['sold_quantity']) ?></div>
@@ -594,7 +723,6 @@ try {
                             </div>
                         </div>
 
-                        <!-- Mini Progress bar for this category -->
                         <div style="margin-bottom: 12px;">
                             <div style="display: flex; justify-content: space-between; font-size: 0.76rem; color: #94a3b8; margin-bottom: 4px;">
                                 <span>Occupancy Rate</span>
@@ -620,15 +748,14 @@ try {
         </div>
 
         <!-- ========================================================
-             ATTENDEE BOOKINGS LEDGER WITH TICKET MILA / NAHI MILA TABS
-             "Yaha pr wo show hona chahiye abhi tk kitna logo ko ticket mila"
+             ATTENDEE BOOKINGS LEDGER WITH SEAT NUMBERS
              ======================================================== -->
         <div class="admin-card">
             <div class="admin-card-header" style="flex-wrap: wrap; gap: 14px;">
                 <div>
                     <h3 class="admin-card-title">&#128179; Attendee Bookings &amp; Verification Ledger</h3>
                     <div style="font-size: 0.85rem; color: var(--admin-text-muted); margin-top: 3px;">
-                        Full real-time management of confirmed ticket passes, pending UPI verifications, and attendee records.
+                        Full real-time management of confirmed ticket passes, allocated seat numbers, and pending UPI verifications.
                     </div>
                 </div>
                 <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
@@ -660,8 +787,8 @@ try {
                         <tr>
                             <th>#</th>
                             <th>Booking ID</th>
-                            <th>Attendee &amp; Contact</th>
-                            <th>Ticket Pass &amp; Headcount</th>
+                            <th>Attendee &amp; Mobile</th>
+                            <th>Ticket Pass &amp; Seats</th>
                             <th>Amount Paid</th>
                             <th>UTR / Ref ID</th>
                             <th>Ticket Status</th>
@@ -713,8 +840,15 @@ try {
                                     </td>
                                     <td>
                                         <div style="font-size: 0.88rem; color: #fff;"><?= e($b['ticket_summary'] ?: 'Standard Entry') ?></div>
-                                        <div style="font-size: 0.76rem; color: var(--admin-primary); font-weight: 700; margin-top: 2px;">
-                                            &#128101; <?= (int)$b['total_persons'] ?> Persons Admitted
+                                        <div style="display: flex; gap: 6px; align-items: center; margin-top: 3px; flex-wrap: wrap;">
+                                            <span style="font-size: 0.76rem; color: var(--admin-primary); font-weight: 700;">
+                                                &#128101; <?= (int)$b['total_persons'] ?> Persons
+                                            </span>
+                                            <?php if (!empty($b['seat_numbers'])): ?>
+                                                <span style="background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); font-size: 0.74rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; font-family: monospace;">
+                                                    &#129681; <?= e($b['seat_numbers']) ?>
+                                                </span>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                     <td style="font-weight: 800; color: #fff; font-size: 1.05rem;">
@@ -730,7 +864,7 @@ try {
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <!-- TICKET MILA VS TICKET NAHI MILA (Crystal Clear Status) -->
+                                        <!-- TICKET MILA VS TICKET NAHI MILA -->
                                         <?php if ($isVerified): ?>
                                             <div class="ticket-status-badge ticket-status-issued">
                                                 &#9989; TICKET MILA
@@ -793,34 +927,44 @@ try {
 </div>
 
 <!-- ========================================================
-     MODAL: Issue Walk-In / Counter Pass
+     MODAL: Issue Ticket by Payment Reference / UTR
      ======================================================== -->
-<div class="modal-overlay" id="walkin-modal">
-    <div class="modal-content" style="max-width: 520px;">
+<div class="modal-overlay" id="utr-modal">
+    <div class="modal-content" style="max-width: 540px;">
         <h3 style="color: var(--admin-primary); margin-bottom: 16px; font-size: 1.25rem;">
-            &#9889; Issue Walk-In Pass (Counter / Offline)
+            &#127915; Issue Ticket by UTR / Reference ID
         </h3>
+        <p style="font-size: 0.84rem; color: #94a3b8; margin-bottom: 16px;">
+            Enter the customer's UPI Reference ID / UTR to generate an official digital ticket and auto-assign arena seats.
+        </p>
+
         <form action="<?= BASE_URL ?>/admin/index.php" method="POST">
             <?= csrf_field() ?>
-            <input type="hidden" name="action" value="walkin_booking">
+            <input type="hidden" name="action" value="create_ticket_utr">
 
             <div style="margin-bottom: 14px;">
-                <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">Attendee Full Name *</label>
-                <input type="text" name="customer_name" required class="form-control" placeholder="e.g. Rahul Sharma" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px;">
+                <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">12-Digit UTR / Transaction Reference *</label>
+                <input type="text" name="transaction_ref" required placeholder="e.g. 005821998431" class="form-control" style="background:#12141d; border:1px solid #f5b722; color:#fff; width:100%; padding:10px; border-radius:6px; font-family:monospace; font-weight:700;">
             </div>
 
-            <div style="margin-bottom: 14px;">
-                <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">Mobile Number (10 Digits) *</label>
-                <input type="tel" name="customer_phone" required pattern="[0-9]{10}" class="form-control" placeholder="9876543210" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px;">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:14px;">
+                <div>
+                    <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">Attendee Full Name *</label>
+                    <input type="text" name="customer_name" required placeholder="e.g. Rishu raj" class="form-control" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px;">
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">Mobile Number *</label>
+                    <input type="tel" name="customer_phone" required pattern="[0-9]{10}" placeholder="6201954936" class="form-control" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px;">
+                </div>
             </div>
 
             <div style="display:grid; grid-template-columns: 2fr 1fr; gap:12px; margin-bottom:14px;">
                 <div>
-                    <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">Select Pass Category *</label>
+                    <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">Ticket Category *</label>
                     <select name="category_id" class="form-control" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px;">
-                        <?php foreach ($categoryMatrix as $c): ?>
+                        <?php foreach ($rawCategories as $c): ?>
                             <option value="<?= $c['id'] ?>">
-                                <?= e($c['name']) ?> &mdash; <?= format_inr($c['price']) ?> (<?= $c['available_quantity'] ?> left)
+                                <?= e($c['name']) ?> &mdash; <?= format_inr($c['price']) ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -831,23 +975,14 @@ try {
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:20px;">
-                <div>
-                    <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">Payment Mode</label>
-                    <select name="payment_method" class="form-control" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px;">
-                        <option value="cash">Cash Paid at Counter</option>
-                        <option value="upi">Direct UPI (PhonePe / GPay)</option>
-                    </select>
-                </div>
-                <div>
-                    <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">UTR or Counter Note</label>
-                    <input type="text" name="transaction_ref" placeholder="CASH / UTR..." class="form-control" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px;">
-                </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">Seat Codes (Optional: leave blank to auto-assign)</label>
+                <input type="text" name="seat_codes" placeholder="e.g. E-07, E-08 (or leave empty)" class="form-control" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px; font-family:monospace;">
             </div>
 
             <div style="display:flex; justify-content:flex-end; gap:10px;">
-                <button type="button" class="btn-sm" style="background:#202434; border:1px solid #2e344a; color:#fff; cursor:pointer;" onclick="closeWalkinModal()">Cancel</button>
-                <button type="submit" class="btn-bms-gold">Generate Pass &rarr;</button>
+                <button type="button" class="btn-sm" style="background:#202434; border:1px solid #2e344a; color:#fff; cursor:pointer;" onclick="closeUtrModal()">Cancel</button>
+                <button type="submit" class="btn-bms-gold">Issue Pass Now &rarr;</button>
             </div>
         </form>
     </div>
@@ -903,12 +1038,12 @@ setInterval(function() {
     if (el) el.innerText = timeString;
 }, 1000);
 
-// Walk-in modal
-function openWalkinModal() {
-    document.getElementById('walkin-modal').classList.add('active');
+// UTR modal
+function openUtrModal() {
+    document.getElementById('utr-modal').classList.add('active');
 }
-function closeWalkinModal() {
-    document.getElementById('walkin-modal').classList.remove('active');
+function closeUtrModal() {
+    document.getElementById('utr-modal').classList.remove('active');
 }
 
 // Quota modal

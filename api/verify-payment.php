@@ -86,6 +86,15 @@ try {
         ':id'  => $booking['id']
     ]);
 
+    // Mark assigned seats as sold
+    if (!empty($booking['seat_numbers'])) {
+        $seatArr = array_map('trim', explode(',', $booking['seat_numbers']));
+        $upSeat = $db->prepare("UPDATE event_seats SET status = 'sold', booking_uid = :uid WHERE seat_code = :code");
+        foreach ($seatArr as $sCode) {
+            $upSeat->execute([':uid' => $bookingUid, ':code' => $sCode]);
+        }
+    }
+
     $db->commit();
 
     // Clear session cart

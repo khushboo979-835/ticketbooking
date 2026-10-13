@@ -48,14 +48,15 @@ if (empty($_SESSION['current_booking_uid'])) {
             }
         }
 
-        // 2. Insert booking record in pending state
+        // 2. Insert booking record in pending state with seat numbers
+        $seatNums = $cart['seat_numbers'] ?? '';
         $bStmt = $db->prepare("
             INSERT INTO bookings (
                 booking_uid, event_id, customer_name, customer_phone, customer_email, 
-                total_amount, payment_method, payment_status, qr_token
+                total_amount, payment_method, payment_status, qr_token, seat_numbers
             ) VALUES (
                 :uid, :event_id, :name, :phone, :email, 
-                :total, 'direct_upi', 'pending', :qr_token
+                :total, 'direct_upi', 'pending', :qr_token, :seats
             )
         ");
         $bStmt->execute([
@@ -65,7 +66,8 @@ if (empty($_SESSION['current_booking_uid'])) {
             ':phone'    => $customer['customer_phone'],
             ':email'    => $customer['customer_email'],
             ':total'    => (float)$cart['total_amount'],
-            ':qr_token' => $qrToken
+            ':qr_token' => $qrToken,
+            ':seats'    => $seatNums
         ]);
         $bookingId = $db->lastInsertId();
 
@@ -149,6 +151,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         foreach ($items as $it) {
             $updStock = $db->prepare("UPDATE ticket_categories SET available_quantity = GREATEST(0, available_quantity - :qty) WHERE id = :cid");
             $updStock->execute([':qty' => (int)$it['quantity'], ':cid' => (int)$it['ticket_category_id']]);
+        }
+
+        // Mark assigned seats as SOLD in event_seats
+        $bRow = $db->query("SELECT seat_numbers FROM bookings WHERE id = " . (int)$bookingId)->fetch();
+        if (!empty($bRow['seat_numbers'])) {
+            $seatCodes = array_filter(array_map('trim', explode(',', $bRow['seat_numbers'])));
+            $upSeat = $db->prepare("UPDATE event_seats SET status = 'sold', booking_uid = :uid WHERE seat_code = :c");
+            foreach ($seatCodes as $sc) {
+                $upSeat->execute([':uid' => $bookingUid, ':c' => $sc]);
+            }
         }
 
         // Clear cart session variables

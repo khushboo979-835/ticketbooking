@@ -582,6 +582,15 @@ include __DIR__ . '/includes/header.php';
                         </div>
                     </div>
 
+                    <?php if (!empty($booking['seat_numbers'])): ?>
+                    <div>
+                        <div class="ticket-info-label">Allocated Seat(s)</div>
+                        <div class="ticket-info-value" style="color: #059669; font-size: 1.25rem; font-weight: 900; font-family: monospace;">
+                            &#129681; <?= e($booking['seat_numbers']) ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
                     <div>
                         <div class="ticket-info-label">Date &amp; Timing</div>
                         <div class="ticket-info-value" style="font-size: 0.95rem;">

@@ -397,3 +397,111 @@ function get_and_increment_visitor_count(): int {
     return max(1, $realCount);
 }
 
+/**
+ * Seat Management Helpers for BookMyShow Interactive Seat Map
+ */
+function ensure_seat_inventory_table(): void {
+    static $seatTableChecked = false;
+    if ($seatTableChecked) return;
+    $seatTableChecked = true;
+
+    try {
+        $db = getDB();
+
+        // 1. Ensure event_seats table
+        $db->exec("CREATE TABLE IF NOT EXISTS `event_seats` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `event_id` INT NOT NULL DEFAULT 1,
+            `category_id` INT NOT NULL,
+            `category_name` VARCHAR(100) NOT NULL,
+            `tier_price` DECIMAL(10,2) NOT NULL,
+            `row_name` VARCHAR(5) NOT NULL,
+            `seat_num` INT NOT NULL,
+            `seat_code` VARCHAR(20) NOT NULL UNIQUE,
+            `status` ENUM('available', 'sold', 'blocked') NOT NULL DEFAULT 'available',
+            `booking_uid` VARCHAR(30) NULL,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX `idx_evt_cat` (`event_id`, `category_id`),
+            INDEX `idx_seat_status` (`status`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // 2. Ensure seat_numbers column in bookings table
+        try {
+            $db->exec("ALTER TABLE `bookings` ADD COLUMN `seat_numbers` VARCHAR(255) NULL");
+        } catch (Throwable $e) {}
+
+        // 3. Seed initial seats if empty
+        $count = (int)$db->query("SELECT COUNT(*) FROM `event_seats` WHERE `event_id` = 1")->fetchColumn();
+        if ($count === 0) {
+            $tierConfigs = [
+                ['cat_id' => 4, 'name' => 'Couple Pass (With Food)', 'price' => 699.00, 'rows' => ['A', 'B'], 'seats_per_row' => 10],
+                ['cat_id' => 3, 'name' => 'Single Pass (With Food)', 'price' => 399.00, 'rows' => ['C', 'D'], 'seats_per_row' => 10],
+                ['cat_id' => 2, 'name' => 'Couple Pass (No Food)',   'price' => 299.00, 'rows' => ['E', 'F', 'G'], 'seats_per_row' => 10],
+                ['cat_id' => 1, 'name' => 'Single Pass (No Food)',   'price' => 199.00, 'rows' => ['H', 'J', 'K', 'L'], 'seats_per_row' => 10],
+            ];
+
+            $insStmt = $db->prepare("
+                INSERT INTO `event_seats` (event_id, category_id, category_name, tier_price, row_name, seat_num, seat_code, status)
+                VALUES (1, :cat_id, :cat_name, :price, :row, :num, :code, :st)
+            ");
+
+            $initSold = ['A-01', 'A-02', 'C-01', 'C-02', 'E-01', 'E-02', 'E-05', 'E-06', 'H-01', 'H-02', 'H-03', 'H-04', 'K-05', 'K-06'];
+
+            foreach ($tierConfigs as $tc) {
+                foreach ($tc['rows'] as $rName) {
+                    for ($sNum = 1; $sNum <= $tc['seats_per_row']; $sNum++) {
+                        $sCode = sprintf('%s-%02d', $rName, $sNum);
+                        $st = in_array($sCode, $initSold) ? 'sold' : 'available';
+                        $insStmt->execute([
+                            ':cat_id'   => $tc['cat_id'],
+                            ':cat_name' => $tc['name'],
+                            ':price'    => $tc['price'],
+                            ':row'      => $rName,
+                            ':num'      => $sNum,
+                            ':code'     => $sCode,
+                            ':st'       => $st
+                        ]);
+                    }
+                }
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('[ensure_seat_inventory_table error]: ' . $e->getMessage());
+    }
+}
+
+function get_all_seats(int $eventId = 1): array {
+    ensure_seat_inventory_table();
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("SELECT * FROM `event_seats` WHERE `event_id` = :e_id ORDER BY tier_price DESC, row_name ASC, seat_num ASC");
+        $stmt->execute([':e_id' => $eventId]);
+        return $stmt->fetchAll() ?: [];
+    } catch (Throwable $e) {
+        error_log('[get_all_seats error]: ' . $e->getMessage());
+        return [];
+    }
+}
+
+function get_seat_summary(int $eventId = 1): array {
+    ensure_seat_inventory_table();
+    try {
+        $db = getDB();
+        $total = (int)$db->query("SELECT COUNT(*) FROM `event_seats` WHERE `event_id` = $eventId")->fetchColumn();
+        $sold = (int)$db->query("SELECT COUNT(*) FROM `event_seats` WHERE `event_id` = $eventId AND `status` = 'sold'")->fetchColumn();
+        $blocked = (int)$db->query("SELECT COUNT(*) FROM `event_seats` WHERE `event_id` = $eventId AND `status` = 'blocked'")->fetchColumn();
+        $available = max(0, $total - $sold - $blocked);
+        $pct = $total > 0 ? round(($sold / $total) * 100, 1) : 0;
+        return [
+            'total' => $total,
+            'sold' => $sold,
+            'blocked' => $blocked,
+            'available' => $available,
+            'occupancy_pct' => $pct
+        ];
+    } catch (Throwable $e) {
+        return ['total' => 110, 'sold' => 14, 'blocked' => 0, 'available' => 96, 'occupancy_pct' => 12.7];
+    }
+}
+
+

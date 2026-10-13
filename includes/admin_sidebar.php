@@ -39,6 +39,11 @@ $adminCurrent = $adminCurrent ?? 'dashboard';
             </a>
         </li>
         <li>
+            <a href="<?= BASE_URL ?>/admin/seats.php" class="sidebar-link <?= $adminCurrent === 'seats' ? 'active' : '' ?>">
+                <span>&#129681;</span> <span>Seat Matrix (Khali/Booked)</span>
+            </a>
+        </li>
+        <li>
             <a href="<?= BASE_URL ?>/admin/settings.php" class="sidebar-link <?= $adminCurrent === 'settings' ? 'active' : '' ?>">
                 <span>&#9881;</span> <span>Settings & UPI</span>
             </a>

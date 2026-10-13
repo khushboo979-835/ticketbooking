@@ -70,6 +70,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $upStmt = $db->prepare("UPDATE bookings SET payment_status = 'verified' WHERE id = :id");
                 $upStmt->execute([':id' => $bookingId]);
 
+                // Ensure allocated seats are marked as sold
+                if (!empty($booking['seat_numbers'])) {
+                    $seatArr = array_map('trim', explode(',', $booking['seat_numbers']));
+                    $upSeat = $db->prepare("UPDATE event_seats SET status = 'sold', booking_uid = :uid WHERE seat_code = :code");
+                    foreach ($seatArr as $sCode) {
+                        $upSeat->execute([':uid' => $booking['booking_uid'], ':code' => $sCode]);
+                    }
+                }
+
                 $db->commit();
                 set_flash('success', "Booking #{$booking['booking_uid']} verified! Digital pass activated for {$booking['customer_name']}.");
             } else {
@@ -102,6 +111,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
+                // Free up any assigned seats
+                if (!empty($bRow['seat_numbers'])) {
+                    $seatArr = array_map('trim', explode(',', $bRow['seat_numbers']));
+                    $freeSeat = $db->prepare("UPDATE event_seats SET status = 'available', booking_uid = NULL WHERE seat_code = :code");
+                    foreach ($seatArr as $sCode) {
+                        $freeSeat->execute([':code' => $sCode]);
+                    }
+                }
+
                 $db->prepare("DELETE FROM booking_items WHERE booking_id = :id")->execute([':id' => $bookingId]);
                 $db->prepare("DELETE FROM bookings WHERE id = :id")->execute([':id' => $bookingId]);
 
@@ -114,6 +132,101 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($db->inTransaction()) $db->rollBack();
             error_log('[admin/bookings.php delete error]: ' . $e->getMessage());
             set_flash('error', "Error deleting booking: " . $e->getMessage());
+        }
+    }
+    // Action: Direct Ticket Creation by UTR / Reference ID
+    elseif ($action === 'create_ticket_utr') {
+        $utr = preg_replace('/[^A-Za-z0-9]/', '', trim($_POST['transaction_ref'] ?? ''));
+        $name = trim($_POST['customer_name'] ?? '');
+        $phone = preg_replace('/[^\d]/', '', trim($_POST['customer_phone'] ?? ''));
+        $catId = (int)($_POST['category_id'] ?? 1);
+        $qty = max(1, (int)($_POST['quantity'] ?? 1));
+        $assignedSeats = trim($_POST['seat_codes'] ?? '');
+
+        if (empty($name)) $name = 'Garba Attendee';
+        if (empty($phone) || strlen($phone) < 10) $phone = '7004665804';
+        if (empty($utr)) $utr = 'UTR-' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
+
+        try {
+            $db->beginTransaction();
+
+            $cStmt = $db->prepare("SELECT * FROM ticket_categories WHERE id = :id");
+            $cStmt->execute([':id' => $catId]);
+            $category = $cStmt->fetch();
+
+            if ($category) {
+                $totalAmt = $qty * (float)$category['price'];
+                $bookingUid = generate_booking_uid();
+                $qrToken = generate_qr_token();
+
+                // If seats not given, pick available
+                if (empty($assignedSeats)) {
+                    $seatStmt = $db->prepare("SELECT seat_code FROM event_seats WHERE category_id = :cid AND status = 'available' LIMIT :lim");
+                    $seatStmt->bindValue(':cid', $catId, PDO::PARAM_INT);
+                    $seatStmt->bindValue(':lim', $qty, PDO::PARAM_INT);
+                    $seatStmt->execute();
+                    $picked = $seatStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+                    $assignedSeats = implode(', ', $picked);
+                }
+
+                $insB = $db->prepare("
+                    INSERT INTO bookings (
+                        booking_uid, event_id, customer_name, customer_phone, customer_email,
+                        total_amount, payment_method, payment_status, transaction_ref, qr_token,
+                        is_checked_in, seat_numbers, created_at
+                    ) VALUES (
+                        :uid, 1, :name, :phone, :email,
+                        :amt, 'direct_upi', 'verified', :utr, :qr,
+                        0, :seats, NOW()
+                    )
+                ");
+                $insB->execute([
+                    ':uid'   => $bookingUid,
+                    ':name'  => $name,
+                    ':phone' => $phone,
+                    ':email' => $phone . '@millenniumindiagroup.com',
+                    ':amt'   => $totalAmt,
+                    ':utr'   => $utr,
+                    ':qr'    => $qrToken,
+                    ':seats' => $assignedSeats
+                ]);
+                $newBookingId = (int)$db->lastInsertId();
+
+                $insItem = $db->prepare("
+                    INSERT INTO booking_items (booking_id, ticket_category_id, quantity, unit_price, subtotal)
+                    VALUES (:b_id, :c_id, :qty, :price, :sub)
+                ");
+                $insItem->execute([
+                    ':b_id'  => $newBookingId,
+                    ':c_id'  => $catId,
+                    ':qty'   => $qty,
+                    ':price' => $category['price'],
+                    ':sub'   => $totalAmt
+                ]);
+
+                // Mark assigned seats as SOLD
+                if (!empty($assignedSeats)) {
+                    $seatArr = array_map('trim', explode(',', $assignedSeats));
+                    $updSeat = $db->prepare("UPDATE event_seats SET status = 'sold', booking_uid = :uid WHERE seat_code = :code");
+                    foreach ($seatArr as $sCode) {
+                        $updSeat->execute([':uid' => $bookingUid, ':code' => $sCode]);
+                    }
+                }
+
+                // Deduct category available quantity
+                $db->prepare("UPDATE ticket_categories SET available_quantity = GREATEST(0, available_quantity - :q) WHERE id = :id")
+                   ->execute([':q' => $qty, ':id' => $catId]);
+
+                $db->commit();
+                set_flash('success', "Ticket pass issued for {$name}! Booking UID: #{$bookingUid} (UTR: {$utr}) &bull; Seats: {$assignedSeats}. <a href='" . BASE_URL . "/ticket.php?uid={$bookingUid}' target='_blank' style='color:#fff; text-decoration:underline; font-weight:bold;'>View Pass &rarr;</a>");
+            } else {
+                $db->rollBack();
+                set_flash('error', "Category not found.");
+            }
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) $db->rollBack();
+            error_log('[admin/bookings.php create_ticket_utr error]: ' . $e->getMessage());
+            set_flash('error', "Error issuing ticket: " . $e->getMessage());
         }
     }
     // Clean Dummy / Test Data
@@ -327,8 +440,14 @@ try {
                 <div class="admin-subtitle">Live transactions, UTR receipt checks, and entry authorizations</div>
             </div>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <button type="button" class="btn-bms-gold" style="background: linear-gradient(135deg, #10b981, #059669); color:#fff;" onclick="openWalkinModal()">
-                    <span>&#9889;</span> <span>Issue Walk-In Pass</span>
+                <button type="button" class="btn-bms-gold" style="background: linear-gradient(135deg, #10b981, #059669); color:#fff;" onclick="openUtrModal()">
+                    <span>&#9889;</span> <span>Issue Ticket by UTR</span>
+                </button>
+                <a href="<?= BASE_URL ?>/admin/seats.php" class="btn-bms-dark" style="border-color: #3b82f6; color: #60a5fa;" title="Manage Khali & Booked Seats">
+                    <span>&#128186;</span> <span>Seat Matrix</span>
+                </a>
+                <button type="button" class="btn-bms-dark" onclick="openWalkinModal()">
+                    <span>&#127915;</span> <span>Walk-In Pass</span>
                 </button>
                 <form action="<?= BASE_URL ?>/admin/bookings.php" method="POST" style="margin:0;" onsubmit="return confirm('Purge all dummy and test records permanently?');">
                     <?= csrf_field() ?>
@@ -470,6 +589,11 @@ try {
                                             <span style="font-size: 0.75rem; color: var(--admin-primary); font-weight: 700;">
                                                 &#128101; <?= (int)$b['total_persons'] ?> Persons
                                             </span>
+                                            <?php if (!empty($b['seat_numbers'])): ?>
+                                                <span style="font-size: 0.74rem; background: rgba(59, 130, 246, 0.18); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); padding: 1px 6px; border-radius: 4px; font-weight: 700;">
+                                                    &#128186; Seats: <?= e($b['seat_numbers']) ?>
+                                                </span>
+                                            <?php endif; ?>
                                             <?php if ($hasFood): ?>
                                                 <span class="badge-food-yes">&#127869; Food Incl.</span>
                                             <?php else: ?>
@@ -621,12 +745,80 @@ try {
     </div>
 </div>
 
+<!-- MODAL: Issue Ticket by UTR / Reference ID -->
+<div class="modal-overlay" id="utr-modal">
+    <div class="modal-content" style="max-width: 540px; background: #161926; border: 1px solid #2e344a; border-radius: 14px; padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="color: var(--admin-primary); margin: 0; font-size: 1.25rem;">
+                &#9889; Issue Ticket Pass by Payment Reference / UTR
+            </h3>
+            <button type="button" onclick="closeUtrModal()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+        <p style="font-size: 0.84rem; color: #94a3b8; margin-bottom: 16px;">
+            Enter the 12-digit UPI UTR / Reference ID received on PhonePe / Google Pay / Paytm / SBI. This will immediately issue a verified digital pass with allocated seats.
+        </p>
+        <form action="<?= BASE_URL ?>/admin/bookings.php" method="POST">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="create_ticket_utr">
+
+            <div style="margin-bottom: 14px;">
+                <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">12-Digit UTR / Transaction Reference *</label>
+                <input type="text" name="transaction_ref" required placeholder="e.g. 005821998431" class="form-control" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px; font-family:monospace; font-size:1rem; letter-spacing:1px;">
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:14px;">
+                <div>
+                    <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">Attendee Full Name *</label>
+                    <input type="text" name="customer_name" required placeholder="Full Name" class="form-control" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px;">
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">Attendee Phone Number *</label>
+                    <input type="tel" name="customer_phone" required pattern="[0-9]{10}" placeholder="10 Digits" class="form-control" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px;">
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 2fr 1fr; gap:12px; margin-bottom:14px;">
+                <div>
+                    <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">Select Pass Category *</label>
+                    <select name="category_id" class="form-control" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px;">
+                        <?php foreach ($allCategories as $c): ?>
+                            <option value="<?= $c['id'] ?>">
+                                <?= e($c['name']) ?> &mdash; <?= format_inr($c['price']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">Quantity *</label>
+                    <input type="number" name="quantity" min="1" max="10" value="1" required class="form-control" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px;">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">Seat Codes (Optional, leave blank for auto-assignment)</label>
+                <input type="text" name="seat_codes" placeholder="e.g. A-01, A-02 or C-05" class="form-control" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px;">
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" class="btn-sm" style="background:#202434; border:1px solid #2e344a; color:#fff; cursor:pointer;" onclick="closeUtrModal()">Cancel</button>
+                <button type="submit" class="btn-bms-gold" style="background: linear-gradient(135deg, #10b981, #059669); border:none; padding:10px 20px; font-weight:700;">Issue Pass &amp; Lock Seats &rarr;</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 function openWalkinModal() {
     document.getElementById('walkin-modal').classList.add('active');
 }
 function closeWalkinModal() {
     document.getElementById('walkin-modal').classList.remove('active');
+}
+function openUtrModal() {
+    document.getElementById('utr-modal').classList.add('active');
+}
+function closeUtrModal() {
+    document.getElementById('utr-modal').classList.remove('active');
 }
 </script>
 </body>

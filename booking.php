@@ -1,14 +1,17 @@
 <?php
-// booking.php - Streamlined Dynamic Ticket Booking Engine (Matches Official Infographic Specification)
+/**
+ * booking.php - BookMyShow-Grade Interactive Seat Selection & Pass Booking Engine
+ * Millennium India Group - Jashn-E-Garba 2026
+ * Real-time cinema/arena seating map matching BookMyShow specification
+ */
 ob_start();
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/config/functions.php';
 
 send_no_cache_headers();
+ensure_seat_inventory_table();
 
 $eventId = (int)($_GET['event_id'] ?? 1);
-$preselectedCatId = (int)($_GET['cat'] ?? 0);
-
 $event = get_event($eventId);
 if (!$event || (int)$event['is_published'] !== 1) {
     set_flash('error', 'The requested event is currently unavailable or unpublished.');
@@ -17,128 +20,205 @@ if (!$event || (int)$event['is_published'] !== 1) {
 }
 
 $categories = get_event_categories($event['id'], true);
-$step = isset($_GET['step']) && $_GET['step'] === '2' ? 2 : 1;
+$allSeats = get_all_seats($event['id']);
+$seatSummary = get_seat_summary($event['id']);
 $errors = [];
 
-// Handle Unified 1-Step POST: Ticket Selection + Attendee Details -> Direct UPI Payment
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && in_array($_POST['action'], ['quick_checkout', 'select_tickets', 'save_customer'])) {
+// Handle Form POST: Seat Selection + Attendee Details -> Direct UPI Checkout
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && in_array($_POST['action'], ['seat_checkout', 'quick_checkout'])) {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
         $errors[] = 'Security session expired. Please refresh and try again.';
     } else {
-        $quantities = $_POST['quantities'] ?? [];
-        $selectedItems = [];
-        $totalAmount = 0;
-        $totalTickets = 0;
-        $totalPeople = 0;
+        $selectedSeatsStr = trim($_POST['selected_seats'] ?? '');
+        $seatCodes = array_filter(array_map('trim', explode(',', $selectedSeatsStr)));
 
-        // Auto-select 1 ticket if user submitted without choosing any quantity
-        $hasAnyQty = false;
-        foreach ($quantities as $q) {
-            if ((int)$q > 0) { $hasAnyQty = true; break; }
-        }
-        if (!$hasAnyQty && !empty($categories)) {
-            $quantities[$categories[0]['id']] = 1;
-        }
+        $db = getDB();
 
-        try {
-            $db = getDB();
+        if (!empty($seatCodes)) {
+            // Validate all selected seats are actually available
+            $inClause = implode(',', array_fill(0, count($seatCodes), '?'));
+            $chkStmt = $db->prepare("SELECT * FROM event_seats WHERE event_id = ? AND seat_code IN ($inClause)");
+            $chkParams = array_merge([$event['id']], $seatCodes);
+            $chkStmt->execute($chkParams);
+            $foundSeats = $chkStmt->fetchAll() ?: [];
+
+            $totalAmount = 0.0;
+            $totalTickets = count($foundSeats);
+            $selectedItems = [];
+            $totalPeople = 0;
+
+            foreach ($foundSeats as $sRow) {
+                if ($sRow['status'] !== 'available') {
+                    $errors[] = "Seat {$sRow['seat_code']} was just booked by another attendee. Please choose an available seat.";
+                    break;
+                }
+
+                $cId = (int)$sRow['category_id'];
+                $sPrice = (float)$sRow['tier_price'];
+                $totalAmount += $sPrice;
+
+                // Lookup category details
+                $catInfo = null;
+                foreach ($categories as $cat) {
+                    if ((int)$cat['id'] === $cId) { $catInfo = $cat; break; }
+                }
+                $ppl = $catInfo ? (int)$catInfo['people_allowed'] : 1;
+                $totalPeople += $ppl;
+
+                if (!isset($selectedItems[$cId])) {
+                    $selectedItems[$cId] = [
+                        'id'             => $cId,
+                        'name'           => $sRow['category_name'],
+                        'price'          => $sPrice,
+                        'people_allowed' => $ppl,
+                        'quantity'       => 1,
+                        'subtotal'       => $sPrice,
+                        'seats'          => [$sRow['seat_code']]
+                    ];
+                } else {
+                    $selectedItems[$cId]['quantity']++;
+                    $selectedItems[$cId]['subtotal'] += $sPrice;
+                    $selectedItems[$cId]['seats'][] = $sRow['seat_code'];
+                }
+            }
+
+            if (empty($errors)) {
+                $name = trim($_POST['customer_name'] ?? '');
+                $phone = preg_replace('/[^\d]/', '', trim($_POST['customer_phone'] ?? ''));
+                $email = strtolower(trim($_POST['customer_email'] ?? ''));
+
+                if (empty($name)) $name = 'Garba Attendee';
+                if (empty($phone) || strlen($phone) < 10) $phone = '7004665804';
+                if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) $email = $phone . '@millenniumindiagroup.com';
+
+                $_SESSION['booking_cart'] = [
+                    'event_id'      => $event['id'],
+                    'event_title'   => $event['title'],
+                    'event_date'    => $event['date'],
+                    'event_venue'   => $event['venue'],
+                    'start_time'    => $event['start_time'],
+                    'end_time'      => $event['end_time'],
+                    'items'         => $selectedItems,
+                    'seat_numbers'  => implode(', ', $seatCodes),
+                    'total_amount'  => $totalAmount,
+                    'total_tickets' => $totalTickets,
+                    'total_people'  => $totalPeople,
+                    'timestamp'     => time()
+                ];
+
+                $_SESSION['booking_customer'] = [
+                    'customer_name'  => $name,
+                    'customer_phone' => $phone,
+                    'customer_email' => $email
+                ];
+
+                unset($_SESSION['current_booking_uid'], $_SESSION['current_booking_id'], $_SESSION['current_qr_token']);
+
+                header("Location: " . BASE_URL . "/payment.php");
+                exit;
+            }
+        } else {
+            // Fallback: If user submitted without choosing specific seat squares, auto-pick from quantities
+            $quantities = $_POST['quantities'] ?? [];
+            $hasAny = false;
+            foreach ($quantities as $q) { if ((int)$q > 0) { $hasAny = true; break; } }
+            if (!$hasAny && !empty($categories)) {
+                $quantities[$categories[0]['id']] = 2; // Default 2 seats like BookMyShow
+            }
+
+            $totalAmount = 0.0;
+            $totalTickets = 0;
+            $totalPeople = 0;
+            $selectedItems = [];
+            $assignedSeatCodes = [];
+
             foreach ($quantities as $catId => $qty) {
                 $qty = (int)$qty;
                 if ($qty <= 0) continue;
 
-                $stmt = $db->prepare("SELECT * FROM ticket_categories WHERE id = :id AND event_id = :e_id AND status = 'active' LIMIT 1");
-                $stmt->execute([':id' => (int)$catId, ':e_id' => $event['id']]);
-                $cat = $stmt->fetch();
+                $catStmt = $db->prepare("SELECT * FROM ticket_categories WHERE id = :id AND status = 'active' LIMIT 1");
+                $catStmt->execute([':id' => (int)$catId]);
+                $cRow = $catStmt->fetch();
+                if ($cRow) {
+                    $sub = $qty * (float)$cRow['price'];
+                    $totalAmount += $sub;
+                    $totalTickets += $qty;
+                    $totalPeople += ($qty * (int)$cRow['people_allowed']);
 
-                if (!$cat) {
-                    $errors[] = "One of the selected categories is no longer available.";
-                    break;
+                    // Auto-assign available seats in this category
+                    $sStmt = $db->prepare("SELECT seat_code FROM event_seats WHERE category_id = :cid AND status = 'available' LIMIT :lim");
+                    $sStmt->bindValue(':cid', (int)$catId, PDO::PARAM_INT);
+                    $sStmt->bindValue(':lim', $qty, PDO::PARAM_INT);
+                    $sStmt->execute();
+                    $picked = $sStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+                    $assignedSeatCodes = array_merge($assignedSeatCodes, $picked);
+
+                    $selectedItems[$cRow['id']] = [
+                        'id'             => $cRow['id'],
+                        'name'           => $cRow['name'],
+                        'price'          => (float)$cRow['price'],
+                        'people_allowed' => (int)$cRow['people_allowed'],
+                        'quantity'       => $qty,
+                        'subtotal'       => $sub,
+                        'seats'          => $picked
+                    ];
                 }
-
-                if ($qty > (int)$cat['available_quantity']) {
-                    $errors[] = "Only {$cat['available_quantity']} tickets left for '{$cat['name']}'. Please adjust your selection.";
-                    break;
-                }
-
-                $subtotal = $qty * (float)$cat['price'];
-                $totalAmount += $subtotal;
-                $totalPeople += ($qty * (int)$cat['people_allowed']);
-                $totalTickets += $qty;
-
-                $selectedItems[$cat['id']] = [
-                    'id'             => $cat['id'],
-                    'name'           => $cat['name'],
-                    'price'          => (float)$cat['price'],
-                    'people_allowed' => (int)$cat['people_allowed'],
-                    'quantity'       => $qty,
-                    'subtotal'       => $subtotal
-                ];
             }
 
-            if (empty($errors)) {
-                if ($totalTickets <= 0) {
-                    $errors[] = "Please select at least 1 ticket quantity to proceed.";
-                } else {
-                    $name = trim($_POST['customer_name'] ?? '');
-                    $phone = preg_replace('/[^\d]/', '', trim($_POST['customer_phone'] ?? ''));
-                    $email = strtolower(trim($_POST['customer_email'] ?? ''));
+            $name = trim($_POST['customer_name'] ?? 'Garba Attendee');
+            $phone = preg_replace('/[^\d]/', '', trim($_POST['customer_phone'] ?? '7004665804'));
+            $email = $phone . '@millenniumindiagroup.com';
 
-                    if (empty($name)) {
-                        $name = 'Guest Attendee';
-                    }
-                    if (empty($phone) || strlen($phone) < 10) {
-                        $phone = '7004665804';
-                    }
-                    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                        $email = 'guest@millenniumindiagroup.com';
-                    }
+            $_SESSION['booking_cart'] = [
+                'event_id'      => $event['id'],
+                'event_title'   => $event['title'],
+                'event_date'    => $event['date'],
+                'event_venue'   => $event['venue'],
+                'start_time'    => $event['start_time'],
+                'end_time'      => $event['end_time'],
+                'items'         => $selectedItems,
+                'seat_numbers'  => implode(', ', $assignedSeatCodes),
+                'total_amount'  => $totalAmount,
+                'total_tickets' => $totalTickets,
+                'total_people'  => $totalPeople,
+                'timestamp'     => time()
+            ];
 
-                    $_SESSION['booking_cart'] = [
-                        'event_id'      => $event['id'],
-                        'event_title'   => $event['title'],
-                        'event_date'    => $event['date'],
-                        'event_venue'   => $event['venue'],
-                        'start_time'    => $event['start_time'],
-                        'end_time'      => $event['end_time'],
-                        'items'         => $selectedItems,
-                        'total_amount'  => $totalAmount,
-                        'total_tickets' => $totalTickets,
-                        'total_people'  => $totalPeople,
-                        'timestamp'     => time()
-                    ];
+            $_SESSION['booking_customer'] = [
+                'customer_name'  => $name,
+                'customer_phone' => $phone,
+                'customer_email' => $email
+            ];
 
-                    $_SESSION['booking_customer'] = [
-                        'customer_name'  => $name,
-                        'customer_phone' => $phone,
-                        'customer_email' => $email
-                    ];
+            unset($_SESSION['current_booking_uid'], $_SESSION['current_booking_id'], $_SESSION['current_qr_token']);
 
-                    unset($_SESSION['current_booking_uid'], $_SESSION['current_booking_id'], $_SESSION['current_qr_token']);
-
-                    header("Location: " . BASE_URL . "/payment.php");
-                    exit;
-                }
-            }
-        } catch (PDOException $e) {
-            error_log('[booking.php error]: ' . $e->getMessage());
-            $errors[] = "Database connectivity issue while checking inventory. Please try again.";
+            header("Location: " . BASE_URL . "/payment.php");
+            exit;
         }
     }
 }
 
-$pageTitle = 'Book Passes | ' . e($event['title']);
+// Group seats by tier and row for the BookMyShow visual grid
+$tieredRows = [];
+foreach ($allSeats as $s) {
+    $tier = $s['category_name'] . ' &bull; ' . format_inr($s['tier_price']);
+    $rName = $s['row_name'];
+    $tieredRows[$tier][$rName][] = $s;
+}
+
+$pageTitle = 'Select Seats | ' . e($event['title']);
 $currentNav = 'garba';
 
 include __DIR__ . '/includes/header.php';
 ?>
 
-<div class="container" style="padding-top: 30px; padding-bottom: 70px;">
+<div class="container" style="padding-top: 25px; padding-bottom: 70px;">
 
-    <!-- Top Step Progression Indicator -->
+    <!-- Top Progression Bar -->
     <div style="display: flex; justify-content: center; margin-bottom: 25px;">
         <div style="display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 0.95rem;">
             <span style="background: var(--gold-accent); color: #1f0411; padding: 6px 18px; border-radius: 50px; font-weight: 800;">
-                1. Select Tickets &amp; Details
+                1. Select Seats
             </span>
             <span style="color: #666;">&rarr;</span>
             <span style="background: rgba(255,255,255,0.1); color: #aaa; padding: 6px 16px; border-radius: 50px;">
@@ -147,235 +227,311 @@ include __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-    <!-- Error Alerts -->
     <?php if (!empty($errors)): ?>
-        <div class="alert alert-danger" style="max-width: 840px; margin: 0 auto 25px;">
-            <ul style="margin: 0; padding-left: 20px;">
-                <?php foreach ($errors as $err): ?>
-                    <li><?= e($err) ?></li>
-                <?php endforeach; ?>
+        <div class="alert alert-danger" style="max-width: 880px; margin: 0 auto 20px;">
+            <ul style="margin:0; padding-left:20px;">
+                <?php foreach ($errors as $er): ?><li><?= e($er) ?></li><?php endforeach; ?>
             </ul>
         </div>
     <?php endif; ?>
 
-    <!-- Main Container Card -->
-    <div class="festive-card" style="max-width: 860px; margin: 0 auto; border: 2px solid var(--gold-accent); padding: 28px 24px;">
+    <!-- ========================================================
+         STEP 1: BookMyShow "How many seats?" Selector Card
+         Matches Official Screenshot Specification
+         ======================================================== -->
+    <div class="bms-seat-modal-card" id="bms-step-count">
+        <h2 style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-bottom: 6px;">
+            How many seats?
+        </h2>
+        <div style="font-size: 0.88rem; color: #64748b;">
+            Choose your group size for <strong>Jashn-E-Garba 2026</strong>
+        </div>
 
-        <!-- Event Header Banner Section -->
-        <div style="display: flex; align-items: center; gap: 20px; border-bottom: 1px solid rgba(245,183,34,0.3); padding-bottom: 20px; margin-bottom: 25px; flex-wrap: wrap;">
-            <img src="<?= BASE_URL ?>/assets/uploads/garba-banner.jpg" alt="<?= e($event['title']) ?>" style="width: 130px; height: 85px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--gold-accent);" onerror="this.style.display='none'">
-            <div style="flex: 1; min-width: 250px;">
-                <span class="hero-badge" style="margin-bottom: 4px; padding: 3px 10px; font-size: 0.75rem;">Millennium India Group Presents</span>
-                <h1 style="font-size: 1.8rem; font-weight: 900; color: #fff; margin: 2px 0 6px;"><?= e($event['title']) ?></h1>
-                <div style="color: var(--gold-light); font-size: 0.9rem; display: flex; flex-wrap: wrap; gap: 15px;">
-                    <span>&#128197; <?= date('d F Y (l)', strtotime($event['date'])) ?></span>
-                    <span>&#9200; <?= date('h:i A', strtotime($event['start_time'])) ?> &ndash; <?= date('h:i A', strtotime($event['end_time'])) ?></span>
-                    <span>&#128205; <?= e($event['venue']) ?></span>
+        <!-- Festive Graphic / Scooter Illustration -->
+        <div style="margin: 16px auto; font-size: 3rem;">
+            &#127949;&#65039;
+        </div>
+
+        <!-- 1 to 10 Seat Number Selector (2 Selected by Default like BMS) -->
+        <div class="bms-seat-count-strip">
+            <?php for ($num = 1; $num <= 10; $num++): ?>
+                <div class="bms-seat-num-circle <?= $num === 2 ? 'active' : '' ?>" 
+                     data-count="<?= $num ?>" 
+                     onclick="setSeatTargetCount(<?= $num ?>)">
+                    <?= $num ?>
                 </div>
+            <?php endfor; ?>
+        </div>
+
+        <!-- Tier Preview Tags (Matches Screenshot) -->
+        <div class="bms-tier-preview-grid">
+            <div class="bms-tier-preview-item">
+                <div class="bms-tier-preview-title">VIP Recliner</div>
+                <div class="bms-tier-preview-price">₹699</div>
+                <div class="bms-tier-preview-status" style="color: #f84464;">ALMOST FULL</div>
+            </div>
+            <div class="bms-tier-preview-item">
+                <div class="bms-tier-preview-title">Prime Sofa</div>
+                <div class="bms-tier-preview-price">₹399</div>
+                <div class="bms-tier-preview-status" style="color: #f59e0b;">FILLING FAST</div>
+            </div>
+            <div class="bms-tier-preview-item">
+                <div class="bms-tier-preview-title">Picture Perfect</div>
+                <div class="bms-tier-preview-price">₹299</div>
+                <div class="bms-tier-preview-status" style="color: #f84464;">ALMOST FULL</div>
+            </div>
+            <div class="bms-tier-preview-item">
+                <div class="bms-tier-preview-title">Prime Rows</div>
+                <div class="bms-tier-preview-price">₹199</div>
+                <div class="bms-tier-preview-status" style="color: #10b981;">AVAILABLE</div>
             </div>
         </div>
 
-        <!-- UNIFIED 1-STEP BOOKING FORM -->
-        <form action="<?= BASE_URL ?>/booking.php?event_id=<?= $event['id'] ?>" method="POST" id="unified-booking-form">
-            <?= csrf_field() ?>
-            <input type="hidden" name="action" value="quick_checkout">
+        <button type="button" class="btn-bms-red" style="width: 100%; justify-content: center;" onclick="scrollToSeatMap()">
+            Select Seats &rarr;
+        </button>
+    </div>
 
-            <!-- SECTION 1: PASS SELECTION -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
-                <h3 style="color: var(--gold-accent); font-size: 1.35rem; margin: 0; font-weight: 800;">
-                    &#127915; Step 1: Select Your Passes
-                </h3>
-                <span style="font-size: 0.85rem; color: var(--gold-light); font-weight: 700;">&#127869; Food included with ₹399 &amp; ₹699 passes</span>
-            </div>
-
-            <!-- Ticket Cards -->
-            <div class="ticket-cards-list" style="margin-bottom: 25px; display: flex; flex-direction: column; gap: 14px;">
-                <?php 
-                    $firstActiveDone = false;
-                    foreach ($categories as $idx => $cat): 
-                        $isPre = ($cat['id'] == $preselectedCatId);
-                        $isSoldOut = ($cat['available_quantity'] <= 0 || $cat['status'] === 'sold_out');
-                        $maxAllowed = min(10, (int)$cat['available_quantity']);
-                        $hasFood = ((float)$cat['price'] >= 350 || stripos($cat['name'], 'With Food') !== false);
-                        
-                        // Default first active category to quantity 1
-                        $defaultQty = 0;
-                        if (!$isSoldOut && !$firstActiveDone && ($preselectedCatId <= 0 || $isPre)) {
-                            $defaultQty = 1;
-                            $firstActiveDone = true;
-                        }
-                ?>
-                    <div class="ticket-selection-mobile-card" style="background: linear-gradient(135deg, rgba(35, 4, 20, 0.96), rgba(18, 2, 10, 0.98)); border: 1.5px solid <?= $defaultQty > 0 ? 'var(--gold-accent)' : 'rgba(245, 183, 34, 0.35)' ?>; border-radius: 16px; padding: 20px 22px; box-shadow: 0 8px 25px rgba(0,0,0,0.5);">
-                        <div class="head" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
-                            <div>
-                                <h4 style="color: #fff; font-size: 1.25rem; font-weight: 800; margin: 0 0 4px;"><?= e($cat['name']) ?></h4>
-                                <div style="font-size: 0.88rem; color: var(--gold-light); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                    <span>&#128101; Admits <strong><?= (int)$cat['people_allowed'] ?> Person<?= $cat['people_allowed'] > 1 ? 's' : '' ?></strong></span>
-                                    <span style="color: #666;">&bull;</span>
-                                    <?php if ($hasFood): ?>
-                                        <span style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); font-size: 0.78rem; font-weight: 800; padding: 2px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
-                                            <span>&#127869;</span> <span>Delicious Food Included</span>
-                                        </span>
-                                    <?php else: ?>
-                                        <span style="background: rgba(239, 68, 68, 0.12); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); font-size: 0.78rem; font-weight: 800; padding: 2px 10px; border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;">
-                                            <span>&#10060;</span> <span>No Food</span>
-                                        </span>
-                                    <?php endif; ?>
-                                </div>
-                                <div style="font-size: 0.82rem; color: <?= $cat['available_quantity'] < 25 ? '#f87171' : '#34d399' ?>; margin-top: 5px; font-weight: 700;">
-                                    &#9889; <?= $isSoldOut ? 'Sold Out' : ((int)$cat['available_quantity'] . ' passes remaining') ?>
-                                </div>
-                            </div>
-                            <div style="text-align: right; flex-shrink: 0;">
-                                <div style="font-size: 1.75rem; font-weight: 900; color: var(--gold-accent); line-height: 1;">
-                                    <?= format_inr($cat['price']) ?>
-                                </div>
-                                <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 3px; font-weight: 600;">all taxes included</div>
-                            </div>
-                        </div>
-
-                        <div class="bottom" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(245, 183, 34, 0.25); padding-top: 14px;">
-                            <span style="font-size: 0.95rem; color: #cbd5e1; font-weight: 700;">Select Quantity:</span>
-                            <div>
-                                <?php if ($isSoldOut): ?>
-                                    <span style="color: #ef4444; font-weight: bold; font-size: 0.9rem; background: rgba(239,68,68,0.15); padding: 4px 12px; border-radius: 6px;">SOLD OUT</span>
-                                <?php else: ?>
-                                    <select name="quantities[<?= $cat['id'] ?>]" 
-                                            class="form-control qty-select-field" 
-                                            data-price="<?= (float)$cat['price'] ?>"
-                                            data-people="<?= (int)$cat['people_allowed'] ?>"
-                                            style="background: #141724; border: 1.5px solid var(--gold-accent); color: #fff; font-weight: 800; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 1.1rem; min-width: 90px; text-align: center;">
-                                        <?php for ($i = 0; $i <= $maxAllowed; $i++): ?>
-                                            <option value="<?= $i ?>" <?= $i === $defaultQty ? 'selected' : '' ?>><?= $i ?></option>
-                                        <?php endfor; ?>
-                                    </select>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-
-            <!-- SECTION 2: ATTENDEE DETAILS -->
-            <div style="background: rgba(20, 2, 11, 0.85); border: 1.5px solid rgba(245, 183, 34, 0.35); border-radius: 14px; padding: 22px 20px; margin-bottom: 25px;">
-                <h3 style="color: var(--gold-accent); font-size: 1.3rem; margin: 0 0 16px; font-weight: 800;">
-                    &#128100; Step 2: Attendee Details
-                </h3>
-
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label class="form-label" for="customer_name" style="color: #fff; font-weight: 700; font-size: 0.95rem;">
-                        Your Full Name *
-                    </label>
-                    <input type="text" 
-                           name="customer_name" 
-                           id="customer_name" 
-                           class="form-control" 
-                           placeholder="Enter your name (e.g. Rahul Sharma)" 
-                           value="<?= e($_SESSION['booking_customer']['customer_name'] ?? '') ?>" 
-                           required 
-                           style="padding: 13px 16px; font-size: 1.05rem; border-radius: 8px; background: #141724; border: 1.5px solid var(--gold-accent); color: #fff; width: 100%; box-sizing: border-box;">
-                </div>
-
-                <div class="form-group" style="margin-bottom: 12px;">
-                    <label class="form-label" for="customer_phone" style="color: #fff; font-weight: 700; font-size: 0.95rem;">
-                        WhatsApp / Mobile Number *
-                    </label>
-                    <input type="tel" 
-                           name="customer_phone" 
-                           id="customer_phone" 
-                           class="form-control" 
-                           placeholder="10-digit mobile number (e.g. 9876543210)" 
-                           value="<?= e($_SESSION['booking_customer']['customer_phone'] ?? '') ?>" 
-                           maxlength="15" 
-                           required 
-                           style="padding: 13px 16px; font-size: 1.05rem; border-radius: 8px; background: #141724; border: 1.5px solid var(--gold-accent); color: #fff; width: 100%; box-sizing: border-box;">
-                    <small style="color: #cbd5e1; font-size: 0.8rem; margin-top: 5px; display: block;">
-                        &#128241; Your digital QR ticket pass will be delivered to this mobile number.
-                    </small>
-                </div>
-            </div>
-
-            <!-- Total Calculation & Direct Action Bar -->
-            <div style="background: linear-gradient(135deg, rgba(61,7,32,0.96), rgba(20,2,11,0.98)); border: 2px solid var(--gold-accent); border-radius: 12px; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.6);">
-                <div>
-                    <span style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 700;">Total Attendees:</span>
-                    <strong id="live-people-count" style="color: #fff; margin-left: 6px; font-size: 1.1rem;">1 Person</strong>
-                </div>
-                <div style="font-size: 1.3rem; font-weight: 800; color: #fff;">
-                    Total: <span id="live-total-price" style="color: var(--gold-accent); font-size: 1.85rem; font-weight: 900;">₹199</span>
-                </div>
-            </div>
-
-            <!-- Big Golden Action Button -->
+    <!-- ========================================================
+         STEP 2: BookMyShow Cinema / Arena Seat Layout Matrix
+         Matches Screenshot: media_1791887372542_1e1b0725.png
+         ======================================================== -->
+    <div class="bms-arena-wrapper" id="bms-seat-map">
+        <!-- Event Header Bar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
             <div>
-                <button type="submit" id="step1-proceed-btn" class="btn btn-primary btn-block" style="padding: 16px; font-size: 1.25rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; width: 100%; border-radius: 10px; box-shadow: 0 6px 25px rgba(245,183,34,0.45); cursor: pointer;">
-                    <span id="btn-text">&#9889; Proceed to Direct UPI Payment (₹199) &rarr;</span>
-                </button>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">
+                    <?= e($event['title']) ?>
+                </h3>
+                <div style="font-size: 0.85rem; color: #64748b; margin-top: 2px;">
+                    &#128197; <?= date('D, d M Y', strtotime($event['date'])) ?> &bull; &#9200; 05:00 PM – 09:00 PM &bull; Patna
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <span style="background: rgba(245,183,34,0.15); color: #d97706; padding: 4px 12px; border-radius: 20px; font-weight: 800; font-size: 0.82rem;">
+                    &#9889; <span id="target-count-display">2</span> Seats Selected
+                </span>
+            </div>
+        </div>
+
+        <!-- Curved Central Performance Stage -->
+        <div class="bms-arena-screen">
+            <div class="bms-stage-curve"></div>
+            <div class="bms-stage-text">&#9733; CENTRAL PERFORMANCE STAGE &#9733;</div>
+        </div>
+
+        <!-- Seating Rows Grouped By Category -->
+        <form action="<?= BASE_URL ?>/booking.php?event_id=<?= $event['id'] ?>" method="POST" id="seat-checkout-form">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="seat_checkout">
+            <input type="hidden" name="selected_seats" id="input-selected-seats" value="">
+
+            <?php foreach ($tieredRows as $tierHeader => $rows): ?>
+                <div class="bms-tier-section">
+                    <div class="bms-tier-header">
+                        <span><?= $tierHeader ?></span>
+                    </div>
+
+                    <?php foreach ($rows as $rowLetter => $seatsInRow): ?>
+                        <div class="bms-seat-row">
+                            <span class="bms-row-letter"><?= e($rowLetter) ?></span>
+                            
+                            <!-- Left Block (Seats 01-05) -->
+                            <div class="bms-seat-block">
+                                <?php for ($i = 0; $i < min(5, count($seatsInRow)); $i++): ?>
+                                    <?php $st = $seatsInRow[$i]; ?>
+                                    <div class="bms-seat-box <?= e($st['status']) ?>" 
+                                         id="seat-box-<?= e($st['seat_code']) ?>"
+                                         data-code="<?= e($st['seat_code']) ?>"
+                                         data-price="<?= (float)$st['tier_price'] ?>"
+                                         data-status="<?= e($st['status']) ?>"
+                                         onclick="handleSeatClick('<?= e($st['seat_code']) ?>', <?= (float)$st['tier_price'] ?>)">
+                                        <?= str_pad($st['seat_num'], 2, '0', STR_PAD_LEFT) ?>
+                                    </div>
+                                <?php endfor; ?>
+                            </div>
+
+                            <!-- Center Walkway Aisle -->
+                            <div class="bms-seat-aisle"></div>
+
+                            <!-- Right Block (Seats 06-10) -->
+                            <div class="bms-seat-block">
+                                <?php for ($i = 5; $i < count($seatsInRow); $i++): ?>
+                                    <?php $st = $seatsInRow[$i]; ?>
+                                    <div class="bms-seat-box <?= e($st['status']) ?>" 
+                                         id="seat-box-<?= e($st['seat_code']) ?>"
+                                         data-code="<?= e($st['seat_code']) ?>"
+                                         data-price="<?= (float)$st['tier_price'] ?>"
+                                         data-status="<?= e($st['status']) ?>"
+                                         onclick="handleSeatClick('<?= e($st['seat_code']) ?>', <?= (float)$st['tier_price'] ?>)">
+                                        <?= str_pad($st['seat_num'], 2, '0', STR_PAD_LEFT) ?>
+                                    </div>
+                                <?php endfor; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endforeach; ?>
+
+            <!-- Legend Bar Matching BookMyShow Screenshot -->
+            <div class="bms-legend-bar">
+                <div class="bms-legend-item">
+                    <span class="bms-legend-swatch" style="border: 1.5px solid #10b981; background: #fff;"></span>
+                    <span>Available</span>
+                </div>
+                <div class="bms-legend-item">
+                    <span class="bms-legend-swatch" style="background: #e2e8f0; border: 1.5px solid #cbd5e1;"></span>
+                    <span>Sold (Booked)</span>
+                </div>
+                <div class="bms-legend-item">
+                    <span class="bms-legend-swatch" style="background: #f5b722;"></span>
+                    <span>Bestseller</span>
+                </div>
+                <div class="bms-legend-item">
+                    <span class="bms-legend-swatch" style="background: #10b981;"></span>
+                    <span>Selected</span>
+                </div>
             </div>
 
-        </form>
+            <!-- Floating / Bottom Checkout Bar -->
+            <div class="bms-seat-checkout-card">
+                <div>
+                    <div style="font-size: 0.82rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">
+                        Selected Seats
+                    </div>
+                    <div id="selected-seats-label" style="font-size: 1.2rem; font-weight: 800; color: #ffd966;">
+                        None selected (Please tap seats above)
+                    </div>
+                </div>
 
+                <div>
+                    <div style="font-size: 0.82rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">
+                        Total Payable
+                    </div>
+                    <div id="selected-total-label" style="font-size: 1.6rem; font-weight: 900; color: #34d399;">
+                        ₹0.00
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; width: 100%; max-width: 480px;">
+                    <input type="text" name="customer_name" required placeholder="Attendee Full Name *" class="form-control" style="background: #12141d; border: 1px solid #2e344a; color: #fff; flex: 1; padding: 10px 14px; border-radius: 8px;">
+                    <input type="tel" name="customer_phone" required pattern="[0-9]{10}" placeholder="Mobile (10 Digits) *" class="form-control" style="background: #12141d; border: 1px solid #2e344a; color: #fff; flex: 1; padding: 10px 14px; border-radius: 8px;">
+                </div>
+
+                <div>
+                    <button type="submit" id="btn-submit-seat-pay" class="btn-bms-red" disabled style="opacity: 0.5;">
+                        <span>Proceed to Pay (Direct UPI) &rarr;</span>
+                    </button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 
 <script>
-// Zero-Lag Client Side Real-Time Price Calculation
-document.addEventListener('DOMContentLoaded', function() {
-    const selects = document.querySelectorAll('.qty-select-field');
-    const totalEl = document.getElementById('live-total-price');
-    const peopleEl = document.getElementById('live-people-count');
-    const proceedBtn = document.getElementById('step1-proceed-btn');
-    const btnText = document.getElementById('btn-text');
-    const stickyPrice = document.getElementById('sticky-bar-price');
+let targetCount = 2;
+let selectedSeats = [];
+let seatPrices = {};
 
-    function calculateLive() {
-        let grandTotal = 0;
-        let totalPeople = 0;
-        let totalTickets = 0;
+function setSeatTargetCount(n) {
+    targetCount = parseInt(n);
+    document.querySelectorAll('.bms-seat-num-circle').forEach(el => {
+        el.classList.toggle('active', parseInt(el.getAttribute('data-count')) === targetCount);
+    });
+    const disp = document.getElementById('target-count-display');
+    if (disp) disp.innerText = targetCount;
 
-        selects.forEach(select => {
-            const qty = parseInt(select.value) || 0;
-            const price = parseFloat(select.dataset.price) || 0;
-            const people = parseInt(select.dataset.people) || 1;
+    // Reset current selection if count changes
+    clearSelectedSeats();
+}
 
-            if (qty > 0) {
-                grandTotal += (qty * price);
-                totalPeople += (qty * people);
-                totalTickets += qty;
-            }
-        });
+function scrollToSeatMap() {
+    const el = document.getElementById('bms-seat-map');
+    if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+    }
+}
 
-        const formatted = '₹' + grandTotal.toLocaleString('en-IN');
-        if (totalEl) totalEl.textContent = formatted;
-        if (peopleEl) peopleEl.textContent = totalPeople + ' Person' + (totalPeople > 1 ? 's' : '');
-        if (stickyPrice) stickyPrice.textContent = formatted;
+function handleSeatClick(code, price) {
+    const box = document.getElementById('seat-box-' + code);
+    if (!box || box.classList.contains('sold')) return;
 
-        if (btnText) {
-            if (grandTotal > 0) {
-                btnText.innerHTML = '&#9889; Proceed to Direct UPI Payment (' + formatted + ') &rarr;';
-            } else {
-                btnText.innerHTML = '&#9889; Select at least 1 Pass to Proceed';
-            }
-        }
-
-        if (proceedBtn) {
-            if (totalTickets > 0) {
-                proceedBtn.disabled = false;
-                proceedBtn.style.opacity = '1';
-                proceedBtn.style.cursor = 'pointer';
-            } else {
-                proceedBtn.disabled = true;
-                proceedBtn.style.opacity = '0.6';
-                proceedBtn.style.cursor = 'not-allowed';
+    const idx = selectedSeats.indexOf(code);
+    if (idx > -1) {
+        // Deselect
+        selectedSeats.splice(idx, 1);
+        delete seatPrices[code];
+        box.classList.remove('selected');
+        box.classList.add('available');
+    } else {
+        // Select up to target count
+        if (selectedSeats.length >= targetCount) {
+            // Remove first selected seat
+            const oldest = selectedSeats.shift();
+            delete seatPrices[oldest];
+            const oldBox = document.getElementById('seat-box-' + oldest);
+            if (oldBox) {
+                oldBox.classList.remove('selected');
+                oldBox.classList.add('available');
             }
         }
+        selectedSeats.push(code);
+        seatPrices[code] = price;
+        box.classList.remove('available');
+        box.classList.add('selected');
     }
 
-    selects.forEach(select => {
-        select.addEventListener('change', calculateLive);
-    });
+    updateCheckoutSummary();
+}
 
-    calculateLive();
+function clearSelectedSeats() {
+    selectedSeats.forEach(code => {
+        const box = document.getElementById('seat-box-' + code);
+        if (box) {
+            box.classList.remove('selected');
+            box.classList.add('available');
+        }
+    });
+    selectedSeats = [];
+    seatPrices = {};
+    updateCheckoutSummary();
+}
+
+function updateCheckoutSummary() {
+    const inputSeats = document.getElementById('input-selected-seats');
+    const labelSeats = document.getElementById('selected-seats-label');
+    const labelTotal = document.getElementById('selected-total-label');
+    const btnPay = document.getElementById('btn-submit-seat-pay');
+
+    inputSeats.value = selectedSeats.join(',');
+
+    let total = 0;
+    for (let c in seatPrices) {
+        total += seatPrices[c];
+    }
+
+    if (selectedSeats.length > 0) {
+        labelSeats.innerText = selectedSeats.join(', ') + ' (' + selectedSeats.length + ' Seats)';
+        labelTotal.innerText = '₹' + total.toFixed(2);
+        btnPay.disabled = false;
+        btnPay.style.opacity = '1';
+        btnPay.innerHTML = '<span>Pay ₹' + total.toFixed(2) + ' &rarr;</span>';
+    } else {
+        labelSeats.innerText = 'None selected (Please tap seats above)';
+        labelTotal.innerText = '₹0.00';
+        btnPay.disabled = true;
+        btnPay.style.opacity = '0.5';
+        btnPay.innerHTML = '<span>Proceed to Pay (Direct UPI) &rarr;</span>';
+    }
+}
+
+// Auto-select first 2 available seats on load for frictionless booking
+document.addEventListener('DOMContentLoaded', function() {
+    const availBoxes = document.querySelectorAll('.bms-seat-box.available');
+    if (availBoxes.length >= 2) {
+        handleSeatClick(availBoxes[0].getAttribute('data-code'), parseFloat(availBoxes[0].getAttribute('data-price')));
+        handleSeatClick(availBoxes[1].getAttribute('data-code'), parseFloat(availBoxes[1].getAttribute('data-price')));
+    }
 });
 </script>
 
