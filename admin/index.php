@@ -70,7 +70,7 @@ try {
         SELECT b.*, e.title AS event_title,
                GROUP_CONCAT(CONCAT(tc.name, ' (x', bi.quantity, ')') SEPARATOR ', ') AS ticket_summary
         FROM bookings b
-        JOIN events e ON b.event_id = e.id
+        LEFT JOIN events e ON b.event_id = e.id
         LEFT JOIN booking_items bi ON b.id = bi.booking_id
         LEFT JOIN ticket_categories tc ON bi.ticket_category_id = tc.id
         GROUP BY b.id

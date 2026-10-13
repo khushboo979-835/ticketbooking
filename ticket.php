@@ -67,28 +67,49 @@ try {
         $stmt->execute([':uid' => $uid]);
         $booking = $stmt->fetch();
     } elseif (!empty($searchQuery)) {
-        $cleanSearch = trim($searchQuery);
-        $cleanDigits = preg_replace('/[^\d]/', '', $cleanSearch);
-        $last10 = (strlen($cleanDigits) >= 10) ? substr($cleanDigits, -10) : '';
+        $rawSearch = trim($searchQuery);
+        $extractedUid = '';
+        $extractedUtr = '';
+        $extractedPhone = '';
+
+        // Extract Booking UID (e.g. MIG20261013F65A0F) if present
+        if (preg_match('/(MIG\d{8}[A-Za-z0-9]+)/i', $rawSearch, $mUid)) {
+            $extractedUid = strtoupper($mUid[1]);
+        }
+
+        // Extract 12-digit UTR if present
+        if (preg_match('/(?:\b|UTR[:\s]*)([0-9]{12})(?:\b|\))/i', $rawSearch, $mUtr)) {
+            $extractedUtr = $mUtr[1];
+        }
+
+        // Extract 10-digit phone
+        $allDigits = preg_replace('/[^\d]/', '', $rawSearch);
+        if (strlen($allDigits) >= 10) {
+            $extractedPhone = substr($allDigits, -10);
+        }
+
+        $cleanSearch = $extractedUid ?: ($extractedUtr ?: $rawSearch);
 
         $sql = "
             SELECT b.*, e.title AS event_title, e.date AS event_date, e.venue AS event_venue, e.start_time, e.end_time
             FROM bookings b
             LEFT JOIN events e ON b.event_id = e.id
             WHERE b.booking_uid = :q_uid 
+               OR b.booking_uid = :q_raw
                OR b.customer_phone = :q_phone
                OR b.transaction_ref = :q_utr
         ";
         $params = [
-            ':q_uid'   => $cleanSearch,
+            ':q_uid'   => $extractedUid ?: $cleanSearch,
+            ':q_raw'   => $cleanSearch,
             ':q_phone' => $cleanSearch,
-            ':q_utr'   => $cleanSearch
+            ':q_utr'   => $extractedUtr ?: $cleanSearch
         ];
 
-        if (!empty($last10)) {
+        if (!empty($extractedPhone)) {
             $sql .= " OR b.customer_phone LIKE :q_10 OR REPLACE(REPLACE(b.customer_phone, ' ', ''), '+91', '') LIKE :q_10b";
-            $params[':q_10']  = "%$last10%";
-            $params[':q_10b'] = "%$last10%";
+            $params[':q_10']  = "%$extractedPhone%";
+            $params[':q_10b'] = "%$extractedPhone%";
         }
 
         $sql .= " ORDER BY b.id DESC LIMIT 1";
@@ -187,34 +208,58 @@ include __DIR__ . '/includes/header.php';
         </div>
 
     <?php elseif (!$hasSearched && !$booking): ?>
-        <!-- FIRST VISIT DEFAULT VIEW: SECURITY POLICY & INSTRUCTIONS -->
-        <div class="festive-card" style="max-width: 720px; margin: 20px auto; text-align: center; border: 2px solid var(--gold-accent); padding: 35px 25px;">
-            <div style="font-size: 3.2rem; margin-bottom: 12px;">&#128274;</div>
-            <span style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1.5px solid #ef4444; font-size: 0.8rem; font-weight: 800; padding: 4px 14px; border-radius: 50px; text-transform: uppercase; letter-spacing: 0.5px;">
-                Verified Payment Mandatory For Passes
+        <!-- FIRST VISIT DEFAULT VIEW: INSTANT PASS & RECEIPT DOWNLOAD GUIDE -->
+        <div class="festive-card" style="max-width: 760px; margin: 20px auto; text-align: center; border: 2px solid var(--gold-accent); padding: 35px 25px;">
+            <div style="width: 70px; height: 70px; background: rgba(245,183,34,0.15); border: 2px solid var(--gold-accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 2.2rem; color: var(--gold-accent);">
+                &#127915;
+            </div>
+            <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1.5px solid #10b981; font-size: 0.8rem; font-weight: 800; padding: 4px 14px; border-radius: 50px; text-transform: uppercase; letter-spacing: 0.5px;">
+                Instant Pass &amp; Tax Invoice Retrieval
             </span>
-            <h2 class="card-title" style="justify-content: center; margin-top: 14px; font-size: 1.7rem;">Official Ticket Security &amp; Verification Policy</h2>
+            <h2 class="card-title" style="justify-content: center; margin-top: 14px; font-size: 1.8rem;">How to Download Your Pass &amp; Receipt</h2>
             
-            <div style="background: rgba(20, 2, 11, 0.85); border: 1.5px dashed var(--gold-accent); border-radius: 12px; padding: 20px; margin: 20px 0; text-align: left; font-size: 0.92rem; line-height: 1.8; color: #e2e8f0;">
-                <strong style="color: var(--gold-accent); display: block; font-size: 1.05rem; margin-bottom: 8px;">
-                    &#9888; Official Notice: Digital QR Passes are issued strictly upon confirmed payment:
-                </strong>
-                <p style="margin: 0 0 10px;">
-                    1. <strong>Strict Payment Policy:</strong> According to the official regulations of Millennium India Group, Digital QR Gate Entry Passes are issued exclusively to attendees whose payment has been verified.
-                </p>
-                <p style="margin: 0 0 10px;">
-                    2. <strong>Instant Booking Reference:</strong> When you complete your reservation and submit your 12-digit UPI Transaction Reference (UTR) for UPI ID (<code>chandni0984@oksbi</code>), your booking reference and pass are immediately unlocked in our system.
-                </p>
-                <p style="margin: 0;">
-                    3. <strong>Authorized Entry Only:</strong> Any pass without payment confirmation or without a valid verified UTR will be treated as invalid for admission at the event gate.
-                </p>
+            <p style="color: #cbd5e1; font-size: 0.95rem; max-width: 580px; margin: 0 auto 24px; line-height: 1.6;">
+                Every booking made with UPI ID (<code style="color:var(--gold-accent);">chandni0984@oksbi</code>) is stored securely in our official database. Enter your details in the search box above to access your pass.
+            </p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 25px; text-align: left;">
+                <div style="background: rgba(20,2,11,0.9); border: 1px solid rgba(245,183,34,0.3); border-radius: 10px; padding: 18px 16px;">
+                    <span style="color: var(--gold-accent); font-weight: 900; font-size: 1.1rem; display: block; margin-bottom: 6px;">Step 1: Enter ID</span>
+                    <p style="font-size: 0.86rem; color: #cbd5e1; margin: 0; line-height: 1.5;">
+                        Type your <strong>10-digit mobile number</strong>, <strong>Booking ID</strong> (e.g. <code>MIG2026...</code>), or <strong>UPI UTR</strong>.
+                    </p>
+                </div>
+                <div style="background: rgba(20,2,11,0.9); border: 1px solid rgba(245,183,34,0.3); border-radius: 10px; padding: 18px 16px;">
+                    <span style="color: var(--gold-accent); font-weight: 900; font-size: 1.1rem; display: block; margin-bottom: 6px;">Step 2: Instant QR Pass</span>
+                    <p style="font-size: 0.86rem; color: #cbd5e1; margin: 0; line-height: 1.5;">
+                        Your BookMyShow-style boarding pass with active Gate Entry QR code opens immediately.
+                    </p>
+                </div>
+                <div style="background: rgba(20,2,11,0.9); border: 1px solid rgba(245,183,34,0.3); border-radius: 10px; padding: 18px 16px;">
+                    <span style="color: var(--gold-accent); font-weight: 900; font-size: 1.1rem; display: block; margin-bottom: 6px;">Step 3: Save Receipt</span>
+                    <p style="font-size: 0.86rem; color: #cbd5e1; margin: 0; line-height: 1.5;">
+                        Click <strong>Print / Save PDF</strong> to keep your official Tax Invoice and gate pass on your phone.
+                    </p>
+                </div>
             </div>
 
-            <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-top: 25px;">
-                <a href="<?= BASE_URL ?>/booking.php?event_id=1" class="btn btn-primary" style="padding: 14px 28px; font-weight: 800; font-size: 1rem;">
+            <!-- Quick Direct Search Input inside card -->
+            <form action="<?= BASE_URL ?>/ticket.php" method="GET" style="max-width: 520px; margin: 0 auto 20px; display: flex; gap: 8px; flex-wrap: wrap;">
+                <input type="text" 
+                       name="search" 
+                       placeholder="Enter Mobile or Booking ID..." 
+                       required
+                       style="flex: 1; min-width: 200px; padding: 12px 14px; font-size: 1rem; border-radius: 8px; background: #0a0106; border: 1.5px solid var(--gold-accent); color: #fff; box-sizing: border-box;">
+                <button type="submit" class="btn btn-primary" style="padding: 12px 22px; font-weight: 800; font-size: 0.95rem; border-radius: 8px; cursor: pointer;">
+                    &#128269; Get Pass &rarr;
+                </button>
+            </form>
+
+            <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;">
+                <a href="<?= BASE_URL ?>/booking.php?event_id=1" class="btn btn-secondary" style="padding: 12px 24px; font-weight: 800; font-size: 0.95rem;">
                     &#127915; Book Passes (From ₹199)
                 </a>
-                <a href="https://wa.me/917004665804" target="_blank" class="btn btn-secondary" style="padding: 14px 22px; font-weight: 700; font-size: 0.95rem;">
+                <a href="https://wa.me/917004665804" target="_blank" class="btn btn-secondary" style="padding: 12px 20px; font-weight: 700; font-size: 0.95rem;">
                     &#128222; Helpline: +91 7004665804
                 </a>
             </div>

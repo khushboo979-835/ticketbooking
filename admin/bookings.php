@@ -96,7 +96,7 @@ try {
                GROUP_CONCAT(CONCAT(tc.name, ' (x', bi.quantity, ')') SEPARATOR ', ') AS ticket_summary,
                SUM(bi.quantity * tc.people_allowed) AS total_persons
         FROM bookings b
-        JOIN events e ON b.event_id = e.id
+        LEFT JOIN events e ON b.event_id = e.id
         LEFT JOIN booking_items bi ON b.id = bi.booking_id
         LEFT JOIN ticket_categories tc ON bi.ticket_category_id = tc.id
         WHERE 1=1
