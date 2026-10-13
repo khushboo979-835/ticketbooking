@@ -80,13 +80,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $newUid = generate_booking_uid();
         $qrToken = generate_qr_token();
 
+        // Auto-assign available seats
+        $assignedSeats = '';
+        try {
+            $seatStmt = $db->prepare("SELECT seat_code FROM event_seats WHERE category_id = :cid AND status = 'available' LIMIT :lim");
+            $seatStmt->bindValue(':cid', (int)$cat['id'], PDO::PARAM_INT);
+            $seatStmt->bindValue(':lim', $qty, PDO::PARAM_INT);
+            $seatStmt->execute();
+            $picked = $seatStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+            $assignedSeats = implode(', ', $picked);
+        } catch (Throwable $se) {}
+
         $insB = $db->prepare("
             INSERT INTO bookings (
                 booking_uid, event_id, customer_name, customer_phone, customer_email,
-                total_amount, payment_method, payment_status, transaction_ref, qr_token
+                total_amount, payment_method, payment_status, transaction_ref, qr_token,
+                seat_numbers
             ) VALUES (
                 :uid, :e_id, :name, :phone, :email,
-                :total, 'direct_upi', 'verified', :utr, :qr_token
+                :total, 'direct_upi', 'verified', :utr, :qr_token,
+                :seats
             )
         ");
         $insB->execute([
@@ -97,7 +110,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             ':email'    => $custPhone . '@millenniumindiagroup.com',
             ':total'    => $totalAmount,
             ':utr'      => $utr,
-            ':qr_token' => $qrToken
+            ':qr_token' => $qrToken,
+            ':seats'    => $assignedSeats
         ]);
         $newBookingId = $db->lastInsertId();
 
@@ -112,6 +126,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             ':price'    => (float)$cat['price'],
             ':subtotal' => $totalAmount
         ]);
+
+        // Mark assigned seats as SOLD
+        if (!empty($assignedSeats)) {
+            $seatArr = array_map('trim', explode(',', $assignedSeats));
+            $updSeat = $db->prepare("UPDATE event_seats SET status = 'sold', booking_uid = :uid WHERE seat_code = :code");
+            foreach ($seatArr as $sCode) {
+                $updSeat->execute([':uid' => $newUid, ':code' => $sCode]);
+            }
+        }
 
         // Deduct inventory
         $db->prepare("UPDATE ticket_categories SET available_quantity = GREATEST(0, available_quantity - :q) WHERE id = :c_id")
@@ -129,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 $uid = trim($_GET['uid'] ?? '');
-$searchQuery = trim($_GET['search'] ?? '');
+$searchQuery = trim($_GET['search'] ?? $_GET['query'] ?? $_GET['utr'] ?? $_GET['ref'] ?? $_GET['q'] ?? '');
 $booking = null;
 $items = [];
 $totalPersons = 0;
@@ -149,48 +172,43 @@ try {
         $booking = $stmt->fetch();
     } elseif (!empty($searchQuery)) {
         $rawSearch = trim($searchQuery);
+        $extractedDigits = preg_replace('/[^\d]/', '', $rawSearch);
         $extractedUid = '';
-        $extractedUtr = '';
-        $extractedPhone = '';
-
-        // Extract Booking UID (e.g. MIG20261013F65A0F) if present
         if (preg_match('/(MIG\d{8}[A-Za-z0-9]+)/i', $rawSearch, $mUid)) {
             $extractedUid = strtoupper($mUid[1]);
         }
-
-        // Extract 12-digit UTR if present
-        if (preg_match('/(?:\b|UTR[:\s]*)([0-9]{12})(?:\b|\))/i', $rawSearch, $mUtr)) {
-            $extractedUtr = $mUtr[1];
-        }
-
-        // Extract 10-digit phone
-        $allDigits = preg_replace('/[^\d]/', '', $rawSearch);
-        if (strlen($allDigits) >= 10) {
-            $extractedPhone = substr($allDigits, -10);
-        }
-
-        $cleanSearch = $extractedUid ?: ($extractedUtr ?: $rawSearch);
 
         $sql = "
             SELECT b.*, e.title AS event_title, e.date AS event_date, e.venue AS event_venue, e.start_time, e.end_time
             FROM bookings b
             LEFT JOIN events e ON b.event_id = e.id
-            WHERE b.booking_uid = :q_uid 
-               OR b.booking_uid = :q_raw
-               OR b.customer_phone = :q_phone
-               OR b.transaction_ref = :q_utr
+            WHERE b.booking_uid = :q_raw
+               OR b.booking_uid LIKE :q_like
+               OR b.transaction_ref = :q_raw
+               OR b.transaction_ref LIKE :q_like
+               OR b.customer_phone = :q_raw
         ";
         $params = [
-            ':q_uid'   => $extractedUid ?: $cleanSearch,
-            ':q_raw'   => $cleanSearch,
-            ':q_phone' => $cleanSearch,
-            ':q_utr'   => $extractedUtr ?: $cleanSearch
+            ':q_raw'  => $rawSearch,
+            ':q_like' => "%$rawSearch%"
         ];
 
-        if (!empty($extractedPhone)) {
-            $sql .= " OR b.customer_phone LIKE :q_10 OR REPLACE(REPLACE(b.customer_phone, ' ', ''), '+91', '') LIKE :q_10b";
-            $params[':q_10']  = "%$extractedPhone%";
-            $params[':q_10b'] = "%$extractedPhone%";
+        if (!empty($extractedUid)) {
+            $sql .= " OR b.booking_uid = :q_uid";
+            $params[':q_uid'] = $extractedUid;
+        }
+
+        if (!empty($extractedDigits) && strlen($extractedDigits) >= 6) {
+            $sql .= " OR b.transaction_ref LIKE :q_dig OR REPLACE(b.transaction_ref, 'UTR-', '') LIKE :q_dig2";
+            $params[':q_dig']  = "%$extractedDigits%";
+            $params[':q_dig2'] = "%$extractedDigits%";
+        }
+
+        if (!empty($extractedDigits) && strlen($extractedDigits) >= 10) {
+            $last10 = substr($extractedDigits, -10);
+            $sql .= " OR b.customer_phone LIKE :q_p10 OR REPLACE(REPLACE(b.customer_phone, ' ', ''), '+91', '') LIKE :q_p10b";
+            $params[':q_p10']  = "%$last10%";
+            $params[':q_p10b'] = "%$last10%";
         }
 
         $sql .= " ORDER BY b.id DESC LIMIT 1";
@@ -683,6 +701,15 @@ include __DIR__ . '/includes/header.php';
                         <?= date('d M Y, h:i A', strtotime($booking['created_at'])) ?>
                     </div>
                 </div>
+
+                <?php if (!empty($booking['seat_numbers'])): ?>
+                <div>
+                    <span style="font-size: 0.76rem; color: #888; text-transform: uppercase; font-weight: 700;">Allocated Arena Seats</span>
+                    <div style="color: #34d399; font-size: 1.05rem; font-weight: 800; margin-top: 2px; font-family: monospace;">
+                        &#129681; <?= e($booking['seat_numbers']) ?>
+                    </div>
+                </div>
+                <?php endif; ?>
 
                 <div>
                     <span style="font-size: 0.76rem; color: #888; text-transform: uppercase; font-weight: 700;">Payment Status</span>

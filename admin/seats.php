@@ -146,7 +146,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                    ->execute([':q' => $qty, ':id' => $catId]);
 
                 $db->commit();
-                set_flash('success', "Ticket pass issued for {$name}! Booking UID: #{$bookingUid} (UTR: {$utr}) &bull; Seats: {$assignedSeats}. <a href='" . BASE_URL . "/ticket.php?uid={$bookingUid}' target='_blank' style='color:#fff; text-decoration:underline; font-weight:bold;'>View Pass &rarr;</a>");
+                $waText = "Hello {$name}, greetings from Millennium India Group! Your payment (UTR: {$utr}) for Jashn-E-Garba 2026 has been verified. Here is your official Digital Entry Pass & Receipt: " . BASE_URL . "/ticket.php?uid={$bookingUid} (Allocated Seats: {$assignedSeats}). See you at Unique Garden, Patna!";
+                $waShareUrl = "https://wa.me/91" . $phone . "?text=" . urlencode($waText);
+                set_flash('success', "Ticket pass issued for {$name}! Booking UID: <strong>#{$bookingUid}</strong> (UTR: {$utr}) &bull; Allocated Seats: <strong>{$assignedSeats}</strong>.<br><div style='margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;'><a href='" . BASE_URL . "/ticket.php?uid={$bookingUid}' target='_blank' style='background:#10b981; color:#042f2e; padding:6px 14px; border-radius:6px; font-weight:800; text-decoration:none;'>&#127915; View / Print Pass &rarr;</a><a href='{$waShareUrl}' target='_blank' style='background:#25d366; color:#fff; padding:6px 14px; border-radius:6px; font-weight:800; text-decoration:none;'>&#128172; Send Ticket on WhatsApp &rarr;</a></div>");
             } else {
                 $db->rollBack();
                 set_flash('error', "Category not found.");

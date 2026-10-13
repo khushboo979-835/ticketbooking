@@ -218,7 +218,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                    ->execute([':q' => $qty, ':id' => $catId]);
 
                 $db->commit();
-                set_flash('success', "Ticket pass issued for {$name}! Booking UID: #{$bookingUid} (UTR: {$utr}) &bull; Seats: {$assignedSeats}. <a href='" . BASE_URL . "/ticket.php?uid={$bookingUid}' target='_blank' style='color:#fff; text-decoration:underline; font-weight:bold;'>View Pass &rarr;</a>");
+                $waText = "Hello {$name}, greetings from Millennium India Group! Your payment (UTR: {$utr}) for Jashn-E-Garba 2026 has been verified. Here is your official Digital Entry Pass & Receipt: " . BASE_URL . "/ticket.php?uid={$bookingUid} (Allocated Seats: {$assignedSeats}). See you at Unique Garden, Patna!";
+                $waShareUrl = "https://wa.me/91" . $phone . "?text=" . urlencode($waText);
+                set_flash('success', "Ticket pass issued for {$name}! Booking UID: <strong>#{$bookingUid}</strong> (UTR: {$utr}) &bull; Allocated Seats: <strong>{$assignedSeats}</strong>.<br><div style='margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;'><a href='" . BASE_URL . "/ticket.php?uid={$bookingUid}' target='_blank' style='background:#10b981; color:#042f2e; padding:6px 14px; border-radius:6px; font-weight:800; text-decoration:none;'>&#127915; View / Print Pass &rarr;</a><a href='{$waShareUrl}' target='_blank' style='background:#25d366; color:#fff; padding:6px 14px; border-radius:6px; font-weight:800; text-decoration:none;'>&#128172; Send Ticket on WhatsApp &rarr;</a></div>");
             } else {
                 $db->rollBack();
                 set_flash('error', "Category not found.");
@@ -474,6 +476,78 @@ try {
             <div style="font-size: 0.82rem; color: #94a3b8;">
                 Real-time synchronized with Hostinger MySQL Database
             </div>
+        </div>
+
+        <!-- ========================================================
+             Direct UTR Pass Generator Console (Embedded Right on Bookings Page)
+             "admin panel ko jo payment hua wo reference id se uska ticket generate kare and de"
+             ======================================================== -->
+        <div class="admin-card" style="border: 2px solid #10b981; background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(22, 25, 38, 0.98)); padding: 22px 24px; border-radius: 14px; margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <span style="background: #10b981; color: #042f2e; font-weight: 800; font-size: 0.74rem; padding: 3px 12px; border-radius: 20px; text-transform: uppercase;">
+                        &#9889; 1-Click Ticket Generator
+                    </span>
+                    <h3 style="color: #fff; font-size: 1.3rem; font-weight: 800; margin: 6px 0 0;">
+                        &#9889; Issue Verified Ticket by Payment Reference / UTR
+                    </h3>
+                    <div style="font-size: 0.84rem; color: #94a3b8; margin-top: 2px;">
+                        Payment received on PhonePe / Google Pay / SBI? Enter attendee details and 12-digit UTR to immediately generate verified pass and lock seats!
+                    </div>
+                </div>
+                <div>
+                    <a href="<?= BASE_URL ?>/admin/seats.php" class="btn-bms-dark" style="border-color: #3b82f6; color: #60a5fa; font-size: 0.85rem;">
+                        <span>&#128186;</span> <span>View Seat Matrix</span>
+                    </a>
+                </div>
+            </div>
+
+            <form action="<?= BASE_URL ?>/admin/bookings.php" method="POST" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) 160px; gap: 12px; align-items: end;">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="create_ticket_utr">
+
+                <div>
+                    <label style="display:block; font-size:0.8rem; color:#cbd5e1; font-weight:700; margin-bottom:4px;">12-Digit UPI UTR / Ref *</label>
+                    <input type="text" name="transaction_ref" required placeholder="e.g. 005821998431" class="form-control" style="background:#10131f; border:1.5px solid #2e344a; color:#fff; width:100%; padding:9px 12px; border-radius:6px; font-family:monospace; font-size:0.95rem; box-sizing:border-box;">
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.8rem; color:#cbd5e1; font-weight:700; margin-bottom:4px;">Attendee Name *</label>
+                    <input type="text" name="customer_name" required placeholder="Full Name" class="form-control" style="background:#10131f; border:1.5px solid #2e344a; color:#fff; width:100%; padding:9px 12px; border-radius:6px; font-size:0.95rem; box-sizing:border-box;">
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.8rem; color:#cbd5e1; font-weight:700; margin-bottom:4px;">Attendee Mobile *</label>
+                    <input type="tel" name="customer_phone" required pattern="[0-9]{10}" placeholder="10 Digits" class="form-control" style="background:#10131f; border:1.5px solid #2e344a; color:#fff; width:100%; padding:9px 12px; border-radius:6px; font-size:0.95rem; box-sizing:border-box;">
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.8rem; color:#cbd5e1; font-weight:700; margin-bottom:4px;">Pass Category *</label>
+                    <select name="category_id" class="form-control" style="background:#10131f; border:1.5px solid #2e344a; color:#fff; width:100%; padding:9px 12px; border-radius:6px; font-size:0.92rem; box-sizing:border-box;">
+                        <?php foreach ($allCategories as $c): ?>
+                            <option value="<?= $c['id'] ?>">
+                                <?= e($c['name']) ?> (<?= format_inr($c['price']) ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.8rem; color:#cbd5e1; font-weight:700; margin-bottom:4px;">Seats / Qty *</label>
+                    <input type="number" name="quantity" min="1" max="10" value="1" required class="form-control" style="background:#10131f; border:1.5px solid #2e344a; color:#fff; width:100%; padding:9px 12px; border-radius:6px; font-size:0.95rem; box-sizing:border-box;">
+                </div>
+
+                <div>
+                    <label style="display:block; font-size:0.8rem; color:#cbd5e1; font-weight:700; margin-bottom:4px;">Seat Codes (Optional)</label>
+                    <input type="text" name="seat_codes" placeholder="Auto-assign if blank" class="form-control" style="background:#10131f; border:1.5px solid #2e344a; color:#fff; width:100%; padding:9px 12px; border-radius:6px; font-size:0.95rem; box-sizing:border-box;">
+                </div>
+
+                <div>
+                    <button type="submit" class="btn-bms-gold" style="background: linear-gradient(135deg, #10b981, #059669); border:none; padding:10px 14px; font-weight:800; font-size:0.92rem; width:100%; height:42px; border-radius:6px; cursor:pointer;">
+                        <span>&#9889; Issue Pass</span>
+                    </button>
+                </div>
+            </form>
         </div>
 
         <!-- Filter Navigation Tabs -->
