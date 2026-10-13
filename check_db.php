@@ -11,8 +11,8 @@ try {
     $recent = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $searchPhone = '6204954936';
-    $searchStmt = $db->prepare("SELECT * FROM bookings WHERE customer_phone LIKE :p OR booking_uid LIKE :p OR transaction_ref LIKE :p");
-    $searchStmt->execute([':p' => "%$searchPhone%"]);
+    $searchStmt = $db->prepare("SELECT * FROM bookings WHERE customer_phone LIKE :p1 OR booking_uid LIKE :p2 OR transaction_ref LIKE :p3");
+    $searchStmt->execute([':p1' => "%$searchPhone%", ':p2' => "%$searchPhone%", ':p3' => "%$searchPhone%"]);
     $found = $searchStmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([
