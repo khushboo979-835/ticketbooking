@@ -135,8 +135,10 @@ try {
                             <th>Category Name</th>
                             <th>Price (INR)</th>
                             <th>Entry Allowance</th>
+                            <th>Food Inclusion</th>
                             <th>Total Quota</th>
-                            <th>Remaining Available</th>
+                            <th>Booked (Sold)</th>
+                            <th>Khali (Available)</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -144,12 +146,16 @@ try {
                     <tbody>
                         <?php if (empty($categories)): ?>
                             <tr>
-                                <td colspan="7" style="text-align: center; color: var(--admin-text-muted); padding: 30px;">
+                                <td colspan="9" style="text-align: center; color: var(--admin-text-muted); padding: 30px;">
                                     No ticket tiers created for this event yet.
                                 </td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($categories as $cat): ?>
+                                <?php 
+                                $hasFood = stripos($cat['name'], 'With Food') !== false;
+                                $soldQty = max(0, (int)$cat['total_quantity'] - (int)$cat['available_quantity']);
+                                ?>
                                 <tr>
                                     <td>
                                         <strong><?= e($cat['name']) ?></strong>
@@ -162,7 +168,17 @@ try {
                                             <?= (int)$cat['people_allowed'] ?> Person<?= $cat['people_allowed'] > 1 ? 's' : '' ?>
                                         </span>
                                     </td>
+                                    <td>
+                                        <?php if ($hasFood): ?>
+                                            <span class="badge-food-yes">&#127869; Food Included</span>
+                                        <?php else: ?>
+                                            <span class="badge-food-no">&#10060; No Food</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?= number_format($cat['total_quantity']) ?></td>
+                                    <td>
+                                        <strong style="color: #ffd966;"><?= number_format($soldQty) ?></strong>
+                                    </td>
                                     <td>
                                         <span style="font-weight: 800; color: <?= $cat['available_quantity'] < 20 ? '#f87171' : '#34d399' ?>;">
                                             <?= number_format($cat['available_quantity']) ?>

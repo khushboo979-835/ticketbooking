@@ -1,8 +1,8 @@
 <?php
 /**
- * admin/bookings.php - Real-Time Ledger & 1-Click UPI Verification Console
- * Matches Infographic Box 8 Specification
+ * admin/bookings.php - BookMyShow-Grade Attendee Ledger & 1-Click UPI Verification Console
  * Millennium India Group - Jashn-E-Garba 2026
+ * Comprehensive tracking of who booked, payment verification, and entry authorizations.
  */
 ob_start();
 require_once __DIR__ . '/../config/config.php';
@@ -14,10 +14,10 @@ send_no_cache_headers();
 $adminCurrent = 'bookings';
 $db = getDB();
 
-// 1-Click Payment Verification & Status Transitions
+// Handle Actions (Verify, Mark Failed, Toggle Check-In, Walk-In Booking)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
-        set_flash('error', 'Security token expired. Please refresh.');
+        set_flash('error', 'Security session token expired. Please refresh and try again.');
         header("Location: " . BASE_URL . "/admin/bookings.php");
         exit;
     }
@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $bookingId = (int)($_POST['booking_id'] ?? 0);
 
+    // 1-Click Verify UPI Payment
     if ($action === 'verify_payment' && $bookingId > 0) {
         try {
             $db->beginTransaction();
@@ -48,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $upStmt->execute([':id' => $bookingId]);
 
                 $db->commit();
-                set_flash('success', "Booking #{$booking['booking_uid']} verified! Digital pass activated for attendee {$booking['customer_name']}.");
+                set_flash('success', "Booking #{$booking['booking_uid']} verified! Digital pass activated for {$booking['customer_name']}.");
             } else {
                 $db->rollBack();
                 set_flash('info', "Booking was already verified or not found.");
@@ -58,7 +59,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             error_log('[admin/bookings.php verification error]: ' . $e->getMessage());
             set_flash('error', "Database error approving booking: " . $e->getMessage());
         }
-    } elseif ($action === 'mark_failed' && $bookingId > 0) {
+    } 
+    // Mark as Failed / Rejected
+    elseif ($action === 'mark_failed' && $bookingId > 0) {
         try {
             $stmt = $db->prepare("UPDATE bookings SET payment_status = 'failed' WHERE id = :id");
             $stmt->execute([':id' => $bookingId]);
@@ -66,7 +69,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (PDOException $e) {
             error_log('[admin/bookings.php mark_failed error]: ' . $e->getMessage());
         }
-    } elseif ($action === 'toggle_checkin' && $bookingId > 0) {
+    } 
+    // Toggle Gate Check-in
+    elseif ($action === 'toggle_checkin' && $bookingId > 0) {
         try {
             $stmt = $db->prepare("
                 UPDATE bookings 
@@ -80,6 +85,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             error_log('[admin/bookings.php toggle_checkin error]: ' . $e->getMessage());
         }
     }
+    // Issue Walk-In Pass
+    elseif ($action === 'walkin_booking') {
+        $custName = trim($_POST['customer_name'] ?? '');
+        $custPhone = preg_replace('/[^\d]/', '', trim($_POST['customer_phone'] ?? ''));
+        $catId = (int)($_POST['category_id'] ?? 1);
+        $qty = max(1, (int)($_POST['quantity'] ?? 1));
+        $payMethod = in_array($_POST['payment_method'] ?? '', ['cash', 'upi']) ? $_POST['payment_method'] : 'cash';
+        $refNote = trim($_POST['transaction_ref'] ?? ($payMethod === 'cash' ? 'CASH-COUNTER' : 'UPI-DIRECT'));
+
+        if (empty($custName)) $custName = 'Walk-In Attendee';
+        if (empty($custPhone) || strlen($custPhone) < 10) $custPhone = '7004665804';
+
+        try {
+            $db->beginTransaction();
+
+            $cStmt = $db->prepare("SELECT * FROM ticket_categories WHERE id = :id FOR UPDATE");
+            $cStmt->execute([':id' => $catId]);
+            $category = $cStmt->fetch();
+
+            if ($category) {
+                $totalAmt = $qty * (float)$category['price'];
+                $bookingUid = 'MIG' . date('Ymd') . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
+                $qrToken = 'MIG-QR-' . bin2hex(random_bytes(16));
+
+                $insB = $db->prepare("
+                    INSERT INTO bookings (booking_uid, event_id, customer_name, customer_phone, customer_email, total_amount, payment_method, payment_status, transaction_ref, qr_token, is_checked_in, created_at)
+                    VALUES (:uid, 1, :name, :phone, :email, :amt, :method, 'verified', :ref, :qr, 0, NOW())
+                ");
+                $insB->execute([
+                    ':uid'    => $bookingUid,
+                    ':name'   => $custName,
+                    ':phone'  => $custPhone,
+                    ':email'  => $custPhone . '@counter.mig',
+                    ':amt'    => $totalAmt,
+                    ':method' => $payMethod,
+                    ':ref'    => $refNote,
+                    ':qr'     => $qrToken
+                ]);
+                $newBookingId = (int)$db->lastInsertId();
+
+                $insItem = $db->prepare("
+                    INSERT INTO booking_items (booking_id, ticket_category_id, quantity, unit_price, subtotal)
+                    VALUES (:b_id, :c_id, :qty, :price, :sub)
+                ");
+                $insItem->execute([
+                    ':b_id'  => $newBookingId,
+                    ':c_id'  => $catId,
+                    ':qty'   => $qty,
+                    ':price' => $category['price'],
+                    ':sub'   => $totalAmt
+                ]);
+
+                // Deduct inventory
+                $deduct = $db->prepare("UPDATE ticket_categories SET available_quantity = GREATEST(0, available_quantity - :q) WHERE id = :id");
+                $deduct->execute([':q' => $qty, ':id' => $catId]);
+
+                $db->commit();
+                set_flash('success', "Walk-In Pass #{$bookingUid} generated for {$custName}! <a href='" . BASE_URL . "/ticket.php?uid={$bookingUid}' target='_blank' style='color:#fff; text-decoration:underline; font-weight:bold;'>View Digital Pass &rarr;</a>");
+            } else {
+                $db->rollBack();
+                set_flash('error', "Selected category not found.");
+            }
+        } catch (PDOException $e) {
+            if ($db->inTransaction()) $db->rollBack();
+            error_log('[admin/bookings.php walkin error]: ' . $e->getMessage());
+            set_flash('error', "Error generating walk-in pass: " . $e->getMessage());
+        }
+    }
 
     header("Location: " . BASE_URL . "/admin/bookings.php");
     exit;
@@ -87,14 +160,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Filters & Search
 $statusFilter = $_GET['status'] ?? 'all';
+$categoryFilter = (int)($_GET['category'] ?? 0);
 $search = trim($_GET['search'] ?? '');
 
+$allCategories = [];
+try {
+    $allCategories = $db->query("SELECT id, name, price FROM ticket_categories WHERE event_id = 1 ORDER BY price ASC")->fetchAll() ?: [];
+} catch (PDOException $e) {}
+
 $bookings = [];
+$filterTotalAmount = 0.0;
+$filterTotalPersons = 0;
+
 try {
     $sql = "
-        SELECT b.*, e.title AS event_title,
+        SELECT b.*, MAX(e.title) AS event_title,
                GROUP_CONCAT(CONCAT(tc.name, ' (x', bi.quantity, ')') SEPARATOR ', ') AS ticket_summary,
-               SUM(bi.quantity * tc.people_allowed) AS total_persons
+               SUM(bi.quantity * tc.people_allowed) AS total_persons,
+               SUM(bi.quantity) AS total_tickets
         FROM bookings b
         LEFT JOIN events e ON b.event_id = e.id
         LEFT JOIN booking_items bi ON b.id = bi.booking_id
@@ -112,6 +195,11 @@ try {
         $sql .= " AND b.is_checked_in = 1";
     }
 
+    if ($categoryFilter > 0) {
+        $sql .= " AND bi.ticket_category_id = :cat_id";
+        $params[':cat_id'] = $categoryFilter;
+    }
+
     if (!empty($search)) {
         $sql .= " AND (b.booking_uid LIKE :s1 OR b.customer_name LIKE :s2 OR b.customer_phone LIKE :s3 OR b.transaction_ref LIKE :s4)";
         $params[':s1'] = "%$search%";
@@ -125,6 +213,13 @@ try {
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
     $bookings = $stmt->fetchAll() ?: [];
+
+    foreach ($bookings as $bk) {
+        if ($bk['payment_status'] === 'verified') {
+            $filterTotalAmount += (float)$bk['total_amount'];
+            $filterTotalPersons += (int)$bk['total_persons'];
+        }
+    }
 } catch (PDOException $e) {
     error_log('[admin/bookings.php list error]: ' . $e->getMessage());
     $bookings = [];
@@ -135,7 +230,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bookings Ledger &amp; Verification | Millennium Admin</title>
+    <title>Attendee Ledger &amp; Verification | Millennium Admin</title>
     <link rel="stylesheet" href="<?= asset_v('assets/css/admin.css') ?>">
 </head>
 <body>
@@ -145,11 +240,14 @@ try {
     <main class="admin-main">
         <div class="admin-header">
             <div>
-                <h1 class="admin-title">Bookings &amp; Verification Ledger</h1>
+                <h1 class="admin-title">&#128179; Bookings Ledger &amp; Attendee Verification</h1>
                 <div class="admin-subtitle">Live transactions, UTR receipt checks, and entry authorizations</div>
             </div>
-            <div style="display: flex; gap: 10px;">
-                <a href="<?= BASE_URL ?>/api/export-csv.php?status=<?= urlencode($statusFilter) ?>" class="btn-verify" style="background:#202434; border:1px solid #2e344a; color:#fff; text-decoration:none;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button type="button" class="btn-bms-gold" style="background: linear-gradient(135deg, #10b981, #059669); color:#fff;" onclick="openWalkinModal()">
+                    <span>&#9889;</span> <span>Issue Walk-In Pass</span>
+                </button>
+                <a href="<?= BASE_URL ?>/api/export-csv.php?status=<?= urlencode($statusFilter) ?>" class="btn-bms-dark" title="Export Ledger as CSV">
                     <span>&#128196;</span> <span>Export CSV</span>
                 </a>
             </div>
@@ -157,11 +255,23 @@ try {
 
         <?= render_flash() ?>
 
-        <!-- Search & Status Filter Bar -->
+        <!-- Summary Strip for Filtered Results -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #191c2b; border: 1px solid #282f45; border-radius: 12px; padding: 14px 20px; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+            <div style="font-size: 0.92rem; color: #cbd5e1;">
+                Showing <strong><?= count($bookings) ?></strong> Bookings &bull;
+                Verified Revenue: <strong style="color: #34d399; font-size: 1.05rem;"><?= format_inr($filterTotalAmount) ?></strong> &bull;
+                Total Headcount: <strong style="color: #60a5fa;"><?= number_format($filterTotalPersons) ?> Persons</strong>
+            </div>
+            <div style="font-size: 0.82rem; color: #94a3b8;">
+                Real-time synchronized with Hostinger MySQL Database
+            </div>
+        </div>
+
+        <!-- Search & Filter Controls -->
         <div class="admin-card" style="padding: 18px 24px;">
-            <form action="<?= BASE_URL ?>/admin/bookings.php" method="GET" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+            <form action="<?= BASE_URL ?>/admin/bookings.php" method="GET" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
                 <div style="flex: 2; min-width: 250px;">
-                    <input type="text" name="search" class="form-control" placeholder="Search Booking UID, Attendee Name, Mobile, or UTR..." value="<?= e($search) ?>" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px 14px; border-radius:8px;">
+                    <input type="text" name="search" class="form-control" placeholder="Search Attendee Name, Mobile, UTR, or Booking UID..." value="<?= e($search) ?>" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px 14px; border-radius:8px;">
                 </div>
 
                 <div>
@@ -173,17 +283,28 @@ try {
                     </select>
                 </div>
 
-                <button type="submit" class="btn-verify" style="background:var(--admin-primary); color:#12141d;">
+                <div>
+                    <select name="category" class="form-control" style="background:#12141d; border:1px solid #2e344a; color:#fff; padding:10px 14px; border-radius:8px;" onchange="this.form.submit()">
+                        <option value="0">All Ticket Categories</option>
+                        <?php foreach ($allCategories as $c): ?>
+                            <option value="<?= $c['id'] ?>" <?= $categoryFilter == $c['id'] ? 'selected' : '' ?>>
+                                <?= e($c['name']) ?> (<?= format_inr($c['price']) ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-bms-gold" style="padding: 9px 18px;">
                     &#128269; Filter
                 </button>
 
-                <?php if (!empty($search) || $statusFilter !== 'all'): ?>
-                    <a href="<?= BASE_URL ?>/admin/bookings.php" style="color: #9aa1b8; font-size: 0.9rem; text-decoration: none;">Reset</a>
+                <?php if (!empty($search) || $statusFilter !== 'all' || $categoryFilter > 0): ?>
+                    <a href="<?= BASE_URL ?>/admin/bookings.php" class="btn-bms-dark" style="font-size: 0.88rem;">Reset</a>
                 <?php endif; ?>
             </form>
         </div>
 
-        <!-- Ledger Table (Matches Box 8 in Infographic) -->
+        <!-- Ledger Table (Who booked, what pass, and payment details) -->
         <div class="admin-card">
             <div class="table-responsive">
                 <table class="admin-table">
@@ -191,8 +312,8 @@ try {
                         <tr>
                             <th>#</th>
                             <th>Booking ID</th>
-                            <th>Attendee Name</th>
-                            <th>Ticket Type &amp; Qty</th>
+                            <th>Attendee &amp; Mobile</th>
+                            <th>Ticket Pass &amp; Headcount</th>
                             <th>Amount</th>
                             <th>Payment Status</th>
                             <th>UTR / Ref ID</th>
@@ -203,31 +324,50 @@ try {
                     <tbody>
                         <?php if (empty($bookings)): ?>
                             <tr>
-                                <td colspan="9" style="text-align: center; color: var(--admin-text-muted); padding: 35px;">
-                                    No booking records found.
+                                <td colspan="9" style="text-align: center; color: var(--admin-text-muted); padding: 40px;">
+                                    No booking records matched your search filters.
                                 </td>
                             </tr>
                         <?php else: ?>
                             <?php $counter = 1; ?>
                             <?php foreach ($bookings as $b): ?>
+                                <?php 
+                                $cleanPhone = preg_replace('/[^\d]/', '', $b['customer_phone']);
+                                $waUrl = "https://wa.me/91" . $cleanPhone . "?text=" . urlencode("Hello " . $b['customer_name'] . ", greetings from Millennium India Group! Your booking reference for Jashn-E-Garba 2026 is " . $b['booking_uid'] . ".");
+                                $hasFood = stripos($b['ticket_summary'] ?? '', 'With Food') !== false;
+                                ?>
                                 <tr>
                                     <td><?= $counter++ ?></td>
                                     <td>
-                                        <a href="<?= BASE_URL ?>/ticket.php?uid=<?= urlencode($b['booking_uid']) ?>" target="_blank" style="font-family: monospace; font-weight: 800; color: var(--admin-primary);">
+                                        <a href="<?= BASE_URL ?>/ticket.php?uid=<?= urlencode($b['booking_uid']) ?>" target="_blank" style="font-family: monospace; font-weight: 800; color: var(--admin-primary); text-decoration: none;">
                                             <?= e($b['booking_uid']) ?>
                                         </a>
-                                        <div style="font-size: 0.72rem; color: var(--admin-text-muted);">
+                                        <div style="font-size: 0.72rem; color: var(--admin-text-muted); margin-top: 2px;">
                                             <?= date('d M Y, h:i A', strtotime($b['created_at'])) ?>
                                         </div>
                                     </td>
                                     <td>
-                                        <strong><?= e($b['customer_name']) ?></strong>
-                                        <div style="font-size: 0.8rem; color: #cbd5e1;"><?= e($b['customer_phone']) ?></div>
+                                        <strong style="color: #fff; font-size: 0.95rem;"><?= e($b['customer_name']) ?></strong>
+                                        <div style="margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+                                            <span style="font-size: 0.82rem; color: #cbd5e1;"><?= e($b['customer_phone']) ?></span>
+                                            <?php if (!empty($cleanPhone)): ?>
+                                                <a href="<?= $waUrl ?>" target="_blank" class="btn-whatsapp" title="Chat with attendee on WhatsApp">
+                                                    <span>&#128172;</span> WhatsApp
+                                                </a>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                     <td>
-                                        <div style="font-size: 0.85rem;"><?= e($b['ticket_summary'] ?: 'Pass') ?></div>
-                                        <div style="font-size: 0.75rem; color: var(--admin-primary); font-weight: 700;">
-                                            Valid for: <?= (int)$b['total_persons'] ?> Persons
+                                        <div style="font-size: 0.88rem; color: #fff;"><?= e($b['ticket_summary'] ?: 'Entry Pass') ?></div>
+                                        <div style="display: flex; gap: 6px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
+                                            <span style="font-size: 0.75rem; color: var(--admin-primary); font-weight: 700;">
+                                                &#128101; <?= (int)$b['total_persons'] ?> Persons
+                                            </span>
+                                            <?php if ($hasFood): ?>
+                                                <span class="badge-food-yes">&#127869; Food Incl.</span>
+                                            <?php else: ?>
+                                                <span class="badge-food-no">&#10060; No Food</span>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                     <td style="font-weight: 800; color: #fff; font-size: 1.05rem;">
@@ -244,9 +384,9 @@ try {
                                     </td>
                                     <td>
                                         <?php if (!empty($b['transaction_ref'])): ?>
-                                            <div style="font-family: monospace; font-size: 0.9rem; color: #ffd966; background: rgba(245,183,34,0.12); padding: 3px 8px; border-radius: 4px; display: inline-block;">
-                                                <?= e($b['transaction_ref']) ?>
-                                            </div>
+                                            <span class="btn-copy-tag" onclick="navigator.clipboard.writeText('<?= e($b['transaction_ref']) ?>'); alert('Copied UTR: <?= e($b['transaction_ref']) ?>');" title="Click to copy UTR">
+                                                &#128203; <?= e($b['transaction_ref']) ?>
+                                            </span>
                                         <?php else: ?>
                                             <span style="color: #64748b; font-size: 0.8rem;">None</span>
                                         <?php endif; ?>
@@ -261,12 +401,11 @@ try {
                                     <td>
                                         <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
                                             <?php if ($b['payment_status'] === 'pending'): ?>
-                                                <!-- 1-Click Verify Button -->
                                                 <form action="<?= BASE_URL ?>/admin/bookings.php" method="POST" style="margin:0;" onsubmit="return confirm('Verify UTR receipt <?= e($b['transaction_ref']) ?> for <?= e($b['customer_name']) ?>?');">
                                                     <?= csrf_field() ?>
                                                     <input type="hidden" name="action" value="verify_payment">
                                                     <input type="hidden" name="booking_id" value="<?= $b['id'] ?>">
-                                                    <button type="submit" class="btn-verify" title="Confirm Payment & Unlock Ticket">
+                                                    <button type="submit" class="btn-verify" title="Confirm Payment &amp; Unlock Ticket">
                                                         &#10004; Verify
                                                     </button>
                                                 </form>
@@ -281,12 +420,10 @@ try {
                                                 </form>
                                             <?php endif; ?>
 
-                                            <!-- View / Print Pass -->
-                                            <a href="<?= BASE_URL ?>/ticket.php?uid=<?= urlencode($b['booking_uid']) ?>" target="_blank" class="btn-sm" style="background:#202434; border:1px solid #2e344a; color:#fff; text-decoration:none;" title="View Digital Pass">
-                                                View
+                                            <a href="<?= BASE_URL ?>/ticket.php?uid=<?= urlencode($b['booking_uid']) ?>" target="_blank" class="btn-sm" style="background:#202434; border:1px solid #2e344a; color:#fff; text-decoration:none;" title="View E-Ticket &amp; Invoice">
+                                                View Pass
                                             </a>
 
-                                            <!-- Manual Check-In Toggle -->
                                             <form action="<?= BASE_URL ?>/admin/bookings.php" method="POST" style="margin:0;">
                                                 <?= csrf_field() ?>
                                                 <input type="hidden" name="action" value="toggle_checkin">
@@ -306,5 +443,73 @@ try {
         </div>
     </main>
 </div>
+
+<!-- MODAL: Issue Walk-In / Counter Pass -->
+<div class="modal-overlay" id="walkin-modal">
+    <div class="modal-content" style="max-width: 520px;">
+        <h3 style="color: var(--admin-primary); margin-bottom: 16px; font-size: 1.25rem;">
+            &#9889; Issue Walk-In Pass (Counter / Offline)
+        </h3>
+        <form action="<?= BASE_URL ?>/admin/bookings.php" method="POST">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="walkin_booking">
+
+            <div style="margin-bottom: 14px;">
+                <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">Attendee Full Name *</label>
+                <input type="text" name="customer_name" required class="form-control" placeholder="e.g. Rahul Sharma" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px;">
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">Mobile Number (10 Digits) *</label>
+                <input type="tel" name="customer_phone" required pattern="[0-9]{10}" class="form-control" placeholder="9876543210" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px;">
+            </div>
+
+            <div style="display:grid; grid-template-columns: 2fr 1fr; gap:12px; margin-bottom:14px;">
+                <div>
+                    <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">Select Pass Category *</label>
+                    <select name="category_id" class="form-control" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px;">
+                        <?php foreach ($allCategories as $c): ?>
+                            <option value="<?= $c['id'] ?>">
+                                <?= e($c['name']) ?> &mdash; <?= format_inr($c['price']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">Quantity *</label>
+                    <input type="number" name="quantity" min="1" max="10" value="1" required class="form-control" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px;">
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:20px;">
+                <div>
+                    <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">Payment Mode</label>
+                    <select name="payment_method" class="form-control" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px;">
+                        <option value="cash">Cash Paid at Counter</option>
+                        <option value="upi">Direct UPI (PhonePe / GPay)</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.85rem; color:#cbd5e1; margin-bottom:4px;">UTR or Counter Note</label>
+                    <input type="text" name="transaction_ref" placeholder="CASH / UTR..." class="form-control" style="background:#12141d; border:1px solid #2e344a; color:#fff; width:100%; padding:10px; border-radius:6px;">
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" class="btn-sm" style="background:#202434; border:1px solid #2e344a; color:#fff; cursor:pointer;" onclick="closeWalkinModal()">Cancel</button>
+                <button type="submit" class="btn-bms-gold">Generate Pass &rarr;</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openWalkinModal() {
+    document.getElementById('walkin-modal').classList.add('active');
+}
+function closeWalkinModal() {
+    document.getElementById('walkin-modal').classList.remove('active');
+}
+</script>
 </body>
 </html>

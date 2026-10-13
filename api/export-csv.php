@@ -1,5 +1,5 @@
 <?php
-// api/export-csv.php - Export Bookings to CSV (Admin Only)
+// api/export-csv.php - Export Bookings & Attendee Ledger to CSV (Admin Only)
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/functions.php';
 
@@ -11,10 +11,12 @@ $db = getDB();
 $sql = "
     SELECT 
         b.booking_uid,
-        e.title AS event_title,
+        COALESCE(MAX(e.title), 'Jashn-E-Garba 2026') AS event_title,
         b.customer_name,
         b.customer_phone,
         b.customer_email,
+        GROUP_CONCAT(CONCAT(tc.name, ' (x', bi.quantity, ')') SEPARATOR ', ') AS ticket_summary,
+        SUM(bi.quantity * tc.people_allowed) AS total_persons,
         b.total_amount,
         b.payment_method,
         b.payment_status,
@@ -23,18 +25,21 @@ $sql = "
         b.checked_in_at,
         b.created_at
     FROM bookings b
-    JOIN events e ON b.event_id = e.id
+    LEFT JOIN events e ON b.event_id = e.id
+    LEFT JOIN booking_items bi ON b.id = bi.booking_id
+    LEFT JOIN ticket_categories tc ON bi.ticket_category_id = tc.id
+    WHERE 1=1
 ";
 
 $params = [];
 if ($status === 'verified') {
-    $sql .= " WHERE b.payment_status = 'verified'";
+    $sql .= " AND b.payment_status = 'verified'";
 } elseif ($status === 'pending') {
-    $sql .= " WHERE b.payment_status = 'pending'";
+    $sql .= " AND b.payment_status = 'pending'";
 } elseif ($status === 'checked_in') {
-    $sql .= " WHERE b.is_checked_in = 1";
+    $sql .= " AND b.is_checked_in = 1";
 }
-$sql .= " ORDER BY b.id DESC";
+$sql .= " GROUP BY b.id ORDER BY b.id DESC";
 
 $rows = [];
 try {
@@ -65,22 +70,29 @@ fputcsv($output, [
     'Attendee Name',
     'Phone',
     'Email',
+    'Ticket Categories & Qty',
+    'Headcount (Persons)',
+    'Food Included',
     'Total Amount (INR)',
     'Payment Method',
     'Payment Status',
     'UTR / Transaction Ref',
-    'Checked In?',
+    'Gate Entered?',
     'Check-in Timestamp',
     'Booking Date'
 ]);
 
 foreach ($rows as $row) {
+    $hasFood = stripos($row['ticket_summary'] ?? '', 'With Food') !== false ? 'YES' : 'NO';
     fputcsv($output, [
         $row['booking_uid'],
         $row['event_title'],
         $row['customer_name'],
         $row['customer_phone'],
         $row['customer_email'],
+        $row['ticket_summary'] ?: 'Standard Entry',
+        (int)($row['total_persons'] ?: 1),
+        $hasFood,
         number_format((float)$row['total_amount'], 2, '.', ''),
         strtoupper($row['payment_method']),
         strtoupper($row['payment_status']),
