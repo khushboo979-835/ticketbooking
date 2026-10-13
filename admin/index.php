@@ -14,9 +14,47 @@ send_no_cache_headers();
 $adminCurrent = 'dashboard';
 $db = getDB();
 
-// Quick action: Single-click Verify UPI Payment from Dashboard
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'quick_verify') {
-    if (verify_csrf_token($_POST['csrf_token'] ?? '')) {
+// -------------------------------------------------------------
+// Auto-Purge Legacy Dummy & Test Records Permanently
+// -------------------------------------------------------------
+try {
+    $db->exec("
+        DELETE bi FROM booking_items bi 
+        JOIN bookings b ON bi.booking_id = b.id 
+        WHERE b.customer_name LIKE '%Test%' 
+           OR b.customer_name = 'Live Test Customer'
+           OR b.customer_name = 'Live Test'
+           OR b.customer_name = 'Test User'
+           OR b.customer_phone = '9876543210' 
+           OR b.transaction_ref = '123456789012'
+    ");
+    $db->exec("
+        DELETE FROM bookings 
+        WHERE customer_name LIKE '%Test%' 
+           OR customer_name = 'Live Test Customer'
+           OR customer_name = 'Live Test'
+           OR customer_name = 'Test User'
+           OR customer_phone = '9876543210' 
+           OR transaction_ref = '123456789012'
+    ");
+} catch (Throwable $e) {
+    error_log('[admin/index.php auto_purge error]: ' . $e->getMessage());
+}
+
+// -------------------------------------------------------------
+// POST Handlers: Actions (Verify, Delete, Walk-In, Quota, Clean)
+// -------------------------------------------------------------
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        set_flash('error', 'Security session token expired. Please refresh.');
+        header("Location: " . BASE_URL . "/admin/index.php");
+        exit;
+    }
+
+    $action = $_POST['action'] ?? '';
+
+    // Action 1: Single-click Verify UPI Payment
+    if ($action === 'quick_verify') {
         $bookingId = (int)($_POST['booking_id'] ?? 0);
         try {
             $db->beginTransaction();
@@ -39,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $upStmt->execute([':id' => $bookingId]);
 
                 $db->commit();
-                set_flash('success', "Booking #{$bRow['booking_uid']} verified! Digital pass activated for {$bRow['customer_name']}.");
+                set_flash('success', "Booking #{$bRow['booking_uid']} verified! Ticket pass issued and activated for {$bRow['customer_name']}.");
             } else {
                 $db->rollBack();
             }
@@ -49,13 +87,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             set_flash('error', "Database error verifying booking: " . $e->getMessage());
         }
     }
-    header("Location: " . BASE_URL . "/admin/index.php");
-    exit;
-}
 
-// Quick action: Fast Quota / Capacity Adjustment from Modal
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_quota') {
-    if (verify_csrf_token($_POST['csrf_token'] ?? '')) {
+    // Action 2: Delete Booking Permanently
+    elseif ($action === 'delete_booking') {
+        $bookingId = (int)($_POST['booking_id'] ?? 0);
+        try {
+            $db->beginTransaction();
+
+            $bStmt = $db->prepare("SELECT * FROM bookings WHERE id = :id FOR UPDATE");
+            $bStmt->execute([':id' => $bookingId]);
+            $bRow = $bStmt->fetch();
+
+            if ($bRow) {
+                // Restore quota if it was verified
+                if ($bRow['payment_status'] === 'verified') {
+                    $itStmt = $db->prepare("SELECT ticket_category_id, quantity FROM booking_items WHERE booking_id = :b_id");
+                    $itStmt->execute([':b_id' => $bookingId]);
+                    $items = $itStmt->fetchAll() ?: [];
+                    foreach ($items as $item) {
+                        $db->prepare("UPDATE ticket_categories SET available_quantity = LEAST(total_quantity, available_quantity + :q) WHERE id = :c_id")
+                           ->execute([':q' => (int)$item['quantity'], ':c_id' => (int)$item['ticket_category_id']]);
+                    }
+                }
+
+                $db->prepare("DELETE FROM booking_items WHERE booking_id = :id")->execute([':id' => $bookingId]);
+                $db->prepare("DELETE FROM bookings WHERE id = :id")->execute([':id' => $bookingId]);
+
+                $db->commit();
+                set_flash('success', "Booking #{$bRow['booking_uid']} ({$bRow['customer_name']}) removed from database.");
+            } else {
+                $db->rollBack();
+            }
+        } catch (PDOException $e) {
+            if ($db->inTransaction()) $db->rollBack();
+            error_log('[admin/index.php delete_booking error]: ' . $e->getMessage());
+            set_flash('error', "Error deleting booking: " . $e->getMessage());
+        }
+    }
+
+    // Action 3: Purge All Dummy & Test Records
+    elseif ($action === 'clean_dummy_data') {
+        try {
+            $dummyStmt = $db->query("
+                SELECT id FROM bookings 
+                WHERE customer_name LIKE '%Test%' 
+                   OR customer_name = 'Live Test Customer' 
+                   OR customer_name = 'Live Test' 
+                   OR customer_name = 'Test User' 
+                   OR customer_phone = '9876543210' 
+                   OR transaction_ref = '123456789012'
+            ");
+            $dummyRows = $dummyStmt->fetchAll() ?: [];
+            $delCount = count($dummyRows);
+            if ($delCount > 0) {
+                $ids = array_column($dummyRows, 'id');
+                $inQuery = implode(',', array_map('intval', $ids));
+                $db->exec("DELETE FROM booking_items WHERE booking_id IN ($inQuery)");
+                $db->exec("DELETE FROM bookings WHERE id IN ($inQuery)");
+                set_flash('success', "Successfully deleted $delCount test/dummy bookings. All displayed records are now 100% genuine.");
+            } else {
+                set_flash('info', "No dummy records found. Your database is already 100% clean.");
+            }
+        } catch (PDOException $e) {
+            set_flash('error', "Error purging dummy data: " . $e->getMessage());
+        }
+    }
+
+    // Action 4: Fast Quota / Capacity Adjustment
+    elseif ($action === 'update_quota') {
         $catId = (int)($_POST['category_id'] ?? 0);
         $totalQty = max(1, (int)($_POST['total_quantity'] ?? 100));
         $availQty = max(0, min($totalQty, (int)($_POST['available_quantity'] ?? $totalQty)));
@@ -70,13 +169,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             set_flash('error', "Error updating category quota: " . $e->getMessage());
         }
     }
-    header("Location: " . BASE_URL . "/admin/index.php");
-    exit;
-}
 
-// Quick action: Issue Walk-In / Counter Pass
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'walkin_booking') {
-    if (verify_csrf_token($_POST['csrf_token'] ?? '')) {
+    // Action 5: Issue Walk-In / Counter Pass
+    elseif ($action === 'walkin_booking') {
         $custName = trim($_POST['customer_name'] ?? '');
         $custPhone = preg_replace('/[^\d]/', '', trim($_POST['customer_phone'] ?? ''));
         $catId = (int)($_POST['category_id'] ?? 1);
@@ -143,6 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             set_flash('error', "Error generating pass: " . $e->getMessage());
         }
     }
+
     header("Location: " . BASE_URL . "/admin/index.php");
     exit;
 }
@@ -150,6 +246,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // -------------------------------------------------------------
 // Live Real-Time Analytics & Quota Matrix Queries
 // -------------------------------------------------------------
+$tab = $_GET['tab'] ?? 'all'; // 'all', 'issued', 'pending'
+
 $totalBookings = 0;
 $verifiedBookingsCount = 0;
 $pendingPaymentsCount = 0;
@@ -217,7 +315,6 @@ try {
         $availFromDb = (int)$cat['available_quantity'];
         $actualBooked = $catBookedCounts[$cId]['qty'] ?? 0;
 
-        // Use the maximum of (total - available) and actual confirmed items
         $soldQty = max(0, $totalCap - $availFromDb);
         if ($actualBooked > $soldQty) {
             $soldQty = $actualBooked;
@@ -249,7 +346,14 @@ try {
 
     $hallOccupancyPct = $hallTotalCapacity > 0 ? round(($hallTotalSold / $hallTotalCapacity) * 100, 1) : 0;
 
-    // 5. Recent Bookings list (Last 15)
+    // 5. Recent Bookings query with Tab filter
+    $tabSql = "1=1";
+    if ($tab === 'issued') {
+        $tabSql = "b.payment_status = 'verified'";
+    } elseif ($tab === 'pending') {
+        $tabSql = "b.payment_status = 'pending'";
+    }
+
     $recentStmt = $db->query("
         SELECT b.*, MAX(e.title) AS event_title,
                GROUP_CONCAT(CONCAT(tc.name, ' (x', bi.quantity, ')') SEPARATOR ', ') AS ticket_summary,
@@ -258,9 +362,10 @@ try {
         LEFT JOIN events e ON b.event_id = e.id
         LEFT JOIN booking_items bi ON b.id = bi.booking_id
         LEFT JOIN ticket_categories tc ON bi.ticket_category_id = tc.id
+        WHERE $tabSql
         GROUP BY b.id
         ORDER BY b.id DESC 
-        LIMIT 15
+        LIMIT 25
     ");
     $recentBookings = $recentStmt->fetchAll() ?: [];
 } catch (PDOException $e) {
@@ -320,6 +425,14 @@ try {
                     <a href="<?= BASE_URL ?>/api/export-csv.php" class="btn-bms-dark" title="Download Attendee Ledger as CSV">
                         <span>&#128196;</span> <span>Export CSV</span>
                     </a>
+                    <!-- Purge Dummy Data Button -->
+                    <form action="<?= BASE_URL ?>/admin/index.php" method="POST" style="margin:0;" onsubmit="return confirm('Purge all dummy and test records permanently? Real customer bookings will remain intact.');">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="clean_dummy_data">
+                        <button type="submit" class="btn-bms-dark" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.35); color: #f87171;" title="Remove Test / Dummy Data">
+                            <span>&#129529;</span> <span>Clean Dummy Data</span>
+                        </button>
+                    </form>
                     <button type="button" class="btn-bms-dark" onclick="location.reload()" title="Refresh Live Data">
                         <span>&#128260;</span> <span>Refresh</span>
                     </button>
@@ -329,69 +442,67 @@ try {
 
         <!-- ========================================================
              Top KPI Metrics Strip (Total Booked & Total Revenue)
+             "Kitna logo ko ticket mila, jitna payment hua wo sb show hona chahiye"
              ======================================================== -->
         <div class="bms-kpi-grid">
-            <!-- 1. Total Bookings -->
-            <div class="bms-kpi-card">
+            <!-- 1. Tickets Issued (Kitna Logo Ko Ticket Mila) -->
+            <div class="bms-kpi-card" style="border-top: 3px solid #10b981;">
                 <div class="bms-kpi-header">
-                    <span class="bms-kpi-title">Total Bookings</span>
-                    <div class="bms-kpi-icon" style="background: rgba(245, 183, 34, 0.15); color: #f5b722;">&#127915;</div>
+                    <span class="bms-kpi-title">Tickets Issued (Ticket Mila)</span>
+                    <div class="bms-kpi-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">&#127915;</div>
                 </div>
-                <div class="bms-kpi-value"><?= number_format($totalBookings) ?></div>
+                <div class="bms-kpi-value" style="color: #34d399;">
+                    <?= number_format($verifiedBookingsCount) ?> <span style="font-size:1rem; font-weight:600; color:#94a3b8;">Passes</span>
+                </div>
                 <div class="bms-kpi-sub">
-                    <span style="color: #34d399; font-weight: 700;"><?= $verifiedBookingsCount ?> Verified</span> &bull;
-                    <span style="color: #fbbf24; font-weight: 700;"><?= $pendingPaymentsCount ?> Pending</span>
+                    <span style="color: #34d399; font-weight: 700;">&#10004; <?= number_format($totalPersonsAdmitted) ?> Persons Admitted</span> &bull; Active
                 </div>
             </div>
 
-            <!-- 2. Total Headcount / Attendees Admitted -->
-            <div class="bms-kpi-card">
+            <!-- 2. Total Verified Revenue (Jitna Payment Hua) -->
+            <div class="bms-kpi-card" style="border-top: 3px solid #f5b722;">
                 <div class="bms-kpi-header">
-                    <span class="bms-kpi-title">Total Headcount</span>
-                    <div class="bms-kpi-icon" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">&#128101;</div>
+                    <span class="bms-kpi-title">Total Payment Received</span>
+                    <div class="bms-kpi-icon" style="background: rgba(245, 183, 34, 0.15); color: #f5b722;">&#8377;</div>
                 </div>
-                <div class="bms-kpi-value" style="color: #60a5fa;"><?= number_format($totalPersonsAdmitted) ?> <span style="font-size:1rem; font-weight:600; color:#94a3b8;">Persons</span></div>
+                <div class="bms-kpi-value" style="color: #ffd966;"><?= format_inr($totalRevenue) ?></div>
                 <div class="bms-kpi-sub">
-                    Across <?= number_format($totalPassesSold) ?> total passes booked
+                    <span>100% Verified in UPI (chandni0984@oksbi)</span>
                 </div>
             </div>
 
-            <!-- 3. Total Revenue Collected -->
-            <div class="bms-kpi-card">
+            <!-- 3. Payment Pending (Ticket Nahi Mila) -->
+            <div class="bms-kpi-card" style="border-top: 3px solid #f59e0b;">
                 <div class="bms-kpi-header">
-                    <span class="bms-kpi-title">Total Revenue</span>
-                    <div class="bms-kpi-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">&#8377;</div>
+                    <span class="bms-kpi-title">Awaiting Payment (Pending)</span>
+                    <div class="bms-kpi-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">&#9203;</div>
                 </div>
-                <div class="bms-kpi-value" style="color: #34d399;"><?= format_inr($totalRevenue) ?></div>
+                <div class="bms-kpi-value" style="color: #fbbf24;"><?= number_format($pendingPaymentsCount) ?></div>
                 <div class="bms-kpi-sub">
-                    <?php if ($pendingRevenue > 0): ?>
-                        <span style="color: #fbbf24;">+ <?= format_inr($pendingRevenue) ?> pending UPI</span>
-                    <?php else: ?>
-                        <span style="color: #94a3b8;">100% verified collections</span>
-                    <?php endif; ?>
+                    <span style="color: #fbbf24; font-weight: 700;">Ticket Nahi Mila</span> &bull; Awaiting UTR
                 </div>
             </div>
 
             <!-- 4. Gate Entry Check-Ins -->
-            <div class="bms-kpi-card">
+            <div class="bms-kpi-card" style="border-top: 3px solid #8b5cf6;">
                 <div class="bms-kpi-header">
-                    <span class="bms-kpi-title">Gate Admitted</span>
+                    <span class="bms-kpi-title">Gate Entered (Check-In)</span>
                     <div class="bms-kpi-icon" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">&#9989;</div>
                 </div>
                 <div class="bms-kpi-value" style="color: #c4b5fd;"><?= number_format($checkedInCount) ?></div>
                 <div class="bms-kpi-sub">
                     <?php 
-                    $turnout = $totalBookings > 0 ? round(($checkedInCount / $totalBookings) * 100, 1) : 0;
+                    $turnout = $verifiedBookingsCount > 0 ? round(($checkedInCount / $verifiedBookingsCount) * 100, 1) : 0;
                     ?>
-                    <span>Turnout: <?= $turnout ?>% checked-in</span>
+                    <span>Turnout: <?= $turnout ?>% entry rate</span>
                 </div>
             </div>
 
             <!-- 5. Real-Time Hall Availability ("Kon Seats Khali Hai") -->
-            <div class="bms-kpi-card">
+            <div class="bms-kpi-card" style="border-top: 3px solid #3b82f6;">
                 <div class="bms-kpi-header">
                     <span class="bms-kpi-title">Seats Khali (Available)</span>
-                    <div class="bms-kpi-icon" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">&#127978;</div>
+                    <div class="bms-kpi-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">&#127978;</div>
                 </div>
                 <div class="bms-kpi-value" style="color: <?= $hallTotalAvailable < 50 ? '#f87171' : '#34d399' ?>;">
                     <?= number_format($hallTotalAvailable) ?>
@@ -509,22 +620,38 @@ try {
         </div>
 
         <!-- ========================================================
-             RECENT BOOKINGS & ATTENDEE LEDGER
-             Client Feedback: "Kaise malum chalega kon book kiya"
+             ATTENDEE BOOKINGS LEDGER WITH TICKET MILA / NAHI MILA TABS
+             "Yaha pr wo show hona chahiye abhi tk kitna logo ko ticket mila"
              ======================================================== -->
         <div class="admin-card">
-            <div class="admin-card-header">
+            <div class="admin-card-header" style="flex-wrap: wrap; gap: 14px;">
                 <div>
-                    <h3 class="admin-card-title">&#128179; Live Attendee Bookings &amp; Verification Ledger</h3>
+                    <h3 class="admin-card-title">&#128179; Attendee Bookings &amp; Verification Ledger</h3>
                     <div style="font-size: 0.85rem; color: var(--admin-text-muted); margin-top: 3px;">
-                        Instant overview of recent purchasers, UTR reference numbers, and digital entry pass statuses.
+                        Full real-time management of confirmed ticket passes, pending UPI verifications, and attendee records.
                     </div>
                 </div>
-                <div style="display: flex; gap: 10px; align-items: center;">
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                     <a href="<?= BASE_URL ?>/admin/bookings.php" class="btn-bms-gold" style="font-size: 0.84rem; padding: 7px 14px;">
-                        <span>View Full Ledger (<?= $totalBookings ?>)</span> &rarr;
+                        <span>Full Search Ledger (<?= $totalBookings ?>)</span> &rarr;
                     </a>
                 </div>
+            </div>
+
+            <!-- Tab Filter Strip: All Bookings | Ticket Mila (Confirmed) | Ticket Nahi Mila (Pending) -->
+            <div class="bms-tabs-bar">
+                <a href="<?= BASE_URL ?>/admin/index.php?tab=all" class="bms-tab-btn <?= $tab === 'all' ? 'active' : '' ?>">
+                    <span>&#128203; All Bookings</span>
+                    <span class="bms-tab-count"><?= $totalBookings ?></span>
+                </a>
+                <a href="<?= BASE_URL ?>/admin/index.php?tab=issued" class="bms-tab-btn <?= $tab === 'issued' ? 'active' : '' ?>" style="<?= $tab === 'issued' ? 'background:rgba(16,185,129,0.2); border-color:#10b981; color:#34d399;' : '' ?>">
+                    <span>&#9989; Ticket Mila (Pass Issued)</span>
+                    <span class="bms-tab-count" style="background: rgba(16,185,129,0.3); color:#34d399;"><?= $verifiedBookingsCount ?></span>
+                </a>
+                <a href="<?= BASE_URL ?>/admin/index.php?tab=pending" class="bms-tab-btn <?= $tab === 'pending' ? 'active' : '' ?>" style="<?= $tab === 'pending' ? 'background:rgba(245,158,11,0.2); border-color:#f59e0b; color:#fbbf24;' : '' ?>">
+                    <span>&#9203; Ticket Nahi Mila (Payment Pending)</span>
+                    <span class="bms-tab-count" style="background: rgba(245,158,11,0.3); color:#fbbf24;"><?= $pendingPaymentsCount ?></span>
+                </a>
             </div>
 
             <div class="table-responsive">
@@ -533,12 +660,12 @@ try {
                         <tr>
                             <th>#</th>
                             <th>Booking ID</th>
-                            <th>Attendee Name &amp; Contact</th>
+                            <th>Attendee &amp; Contact</th>
                             <th>Ticket Pass &amp; Headcount</th>
-                            <th>Amount</th>
+                            <th>Amount Paid</th>
                             <th>UTR / Ref ID</th>
-                            <th>Status</th>
-                            <th>Entry</th>
+                            <th>Ticket Status</th>
+                            <th>Gate Entry</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -546,7 +673,13 @@ try {
                         <?php if (empty($recentBookings)): ?>
                             <tr>
                                 <td colspan="9" style="text-align: center; color: var(--admin-text-muted); padding: 35px;">
-                                    No ticket bookings recorded yet.
+                                    <?php if ($tab === 'issued'): ?>
+                                        No tickets have been verified yet. When attendees complete UPI payment, verified passes will show here.
+                                    <?php elseif ($tab === 'pending'): ?>
+                                        Zero pending payments. All bookings have verified tickets!
+                                    <?php else: ?>
+                                        No booking records found.
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php else: ?>
@@ -555,6 +688,7 @@ try {
                                 <?php 
                                 $cleanPhone = preg_replace('/[^\d]/', '', $b['customer_phone']);
                                 $waUrl = "https://wa.me/91" . $cleanPhone . "?text=" . urlencode("Hello " . $b['customer_name'] . ", greetings from Millennium India Group! Your booking reference for Jashn-E-Garba 2026 is " . $b['booking_uid'] . ".");
+                                $isVerified = ($b['payment_status'] === 'verified');
                                 ?>
                                 <tr>
                                     <td><?= $counter++ ?></td>
@@ -596,12 +730,19 @@ try {
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <?php if ($b['payment_status'] === 'verified'): ?>
-                                            <span class="badge badge-verified">Verified</span>
+                                        <!-- TICKET MILA VS TICKET NAHI MILA (Crystal Clear Status) -->
+                                        <?php if ($isVerified): ?>
+                                            <div class="ticket-status-badge ticket-status-issued">
+                                                &#9989; TICKET MILA
+                                            </div>
                                         <?php elseif ($b['payment_status'] === 'pending'): ?>
-                                            <span class="badge badge-pending">Pending</span>
+                                            <div class="ticket-status-badge ticket-status-pending">
+                                                &#9203; NAHI MILA (Pending)
+                                            </div>
                                         <?php else: ?>
-                                            <span class="badge badge-failed"><?= e($b['payment_status']) ?></span>
+                                            <div class="ticket-status-badge ticket-status-failed">
+                                                &#10060; <?= strtoupper(e($b['payment_status'])) ?>
+                                            </div>
                                         <?php endif; ?>
                                     </td>
                                     <td>
@@ -613,20 +754,32 @@ try {
                                     </td>
                                     <td>
                                         <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-                                            <?php if ($b['payment_status'] === 'pending'): ?>
-                                                <form action="<?= BASE_URL ?>/admin/index.php" method="POST" style="margin:0;" onsubmit="return confirm('Verify UPI payment for <?= e($b['customer_name']) ?>?');">
+                                            <?php if (!$isVerified): ?>
+                                                <!-- 1-Click Verify & Issue Ticket -->
+                                                <form action="<?= BASE_URL ?>/admin/index.php" method="POST" style="margin:0;" onsubmit="return confirm('Verify UPI payment and ISSUE TICKET PASS to <?= e($b['customer_name']) ?>?');">
                                                     <?= csrf_field() ?>
                                                     <input type="hidden" name="action" value="quick_verify">
                                                     <input type="hidden" name="booking_id" value="<?= $b['id'] ?>">
-                                                    <button type="submit" class="btn-verify" title="Confirm Payment &amp; Unlock Ticket">
-                                                        &#10004; Verify UTR
+                                                    <button type="submit" class="btn-verify" title="Confirm Payment &amp; Issue Ticket Pass">
+                                                        &#10004; Verify &amp; Issue Pass
                                                     </button>
                                                 </form>
                                             <?php else: ?>
+                                                <!-- View Pass -->
                                                 <a href="<?= BASE_URL ?>/ticket.php?uid=<?= urlencode($b['booking_uid']) ?>" target="_blank" class="btn-sm" style="background:#202434; border:1px solid #2e344a; color:#fff; text-decoration:none;" title="View Digital Pass &amp; Tax Invoice">
                                                     View Pass
                                                 </a>
                                             <?php endif; ?>
+
+                                            <!-- Delete Booking Button -->
+                                            <form action="<?= BASE_URL ?>/admin/index.php" method="POST" style="margin:0;" onsubmit="return confirm('Permanently delete booking #<?= e($b['booking_uid']) ?> (<?= e($b['customer_name']) ?>)? This cannot be undone.');">
+                                                <?= csrf_field() ?>
+                                                <input type="hidden" name="action" value="delete_booking">
+                                                <input type="hidden" name="booking_id" value="<?= $b['id'] ?>">
+                                                <button type="submit" class="btn-delete-row" title="Delete Booking permanently">
+                                                    &#128465; Delete
+                                                </button>
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>

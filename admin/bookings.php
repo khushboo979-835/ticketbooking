@@ -14,7 +14,30 @@ send_no_cache_headers();
 $adminCurrent = 'bookings';
 $db = getDB();
 
-// Handle Actions (Verify, Mark Failed, Toggle Check-In, Walk-In Booking)
+// Auto-purge legacy dummy/test records
+try {
+    $db->exec("
+        DELETE bi FROM booking_items bi 
+        JOIN bookings b ON bi.booking_id = b.id 
+        WHERE b.customer_name LIKE '%Test%' 
+           OR b.customer_name = 'Live Test Customer'
+           OR b.customer_name = 'Live Test'
+           OR b.customer_name = 'Test User'
+           OR b.customer_phone = '9876543210' 
+           OR b.transaction_ref = '123456789012'
+    ");
+    $db->exec("
+        DELETE FROM bookings 
+        WHERE customer_name LIKE '%Test%' 
+           OR customer_name = 'Live Test Customer'
+           OR customer_name = 'Live Test'
+           OR customer_name = 'Test User'
+           OR customer_phone = '9876543210' 
+           OR transaction_ref = '123456789012'
+    ");
+} catch (Throwable $e) {}
+
+// Handle Actions (Verify, Delete, Clean, Toggle Check-In, Walk-In)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
         set_flash('error', 'Security session token expired. Please refresh and try again.');
@@ -35,7 +58,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $booking = $bStmt->fetch();
 
             if ($booking && $booking['payment_status'] !== 'verified') {
-                // Deduct ticket category quantities atomically
                 $itStmt = $db->prepare("SELECT ticket_category_id, quantity FROM booking_items WHERE booking_id = :b_id");
                 $itStmt->execute([':b_id' => $bookingId]);
                 $items = $itStmt->fetchAll() ?: [];
@@ -60,16 +82,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             set_flash('error', "Database error approving booking: " . $e->getMessage());
         }
     } 
-    // Mark as Failed / Rejected
-    elseif ($action === 'mark_failed' && $bookingId > 0) {
+    // Delete Booking Permanently
+    elseif ($action === 'delete_booking' && $bookingId > 0) {
         try {
-            $stmt = $db->prepare("UPDATE bookings SET payment_status = 'failed' WHERE id = :id");
-            $stmt->execute([':id' => $bookingId]);
-            set_flash('warning', "Booking #$bookingId marked as Failed/Unpaid.");
+            $db->beginTransaction();
+
+            $bStmt = $db->prepare("SELECT * FROM bookings WHERE id = :id FOR UPDATE");
+            $bStmt->execute([':id' => $bookingId]);
+            $bRow = $bStmt->fetch();
+
+            if ($bRow) {
+                if ($bRow['payment_status'] === 'verified') {
+                    $itStmt = $db->prepare("SELECT ticket_category_id, quantity FROM booking_items WHERE booking_id = :b_id");
+                    $itStmt->execute([':b_id' => $bookingId]);
+                    $items = $itStmt->fetchAll() ?: [];
+                    foreach ($items as $item) {
+                        $db->prepare("UPDATE ticket_categories SET available_quantity = LEAST(total_quantity, available_quantity + :q) WHERE id = :c_id")
+                           ->execute([':q' => (int)$item['quantity'], ':c_id' => (int)$item['ticket_category_id']]);
+                    }
+                }
+
+                $db->prepare("DELETE FROM booking_items WHERE booking_id = :id")->execute([':id' => $bookingId]);
+                $db->prepare("DELETE FROM bookings WHERE id = :id")->execute([':id' => $bookingId]);
+
+                $db->commit();
+                set_flash('success', "Booking #{$bRow['booking_uid']} ({$bRow['customer_name']}) removed from database.");
+            } else {
+                $db->rollBack();
+            }
         } catch (PDOException $e) {
-            error_log('[admin/bookings.php mark_failed error]: ' . $e->getMessage());
+            if ($db->inTransaction()) $db->rollBack();
+            error_log('[admin/bookings.php delete error]: ' . $e->getMessage());
+            set_flash('error', "Error deleting booking: " . $e->getMessage());
         }
-    } 
+    }
+    // Clean Dummy / Test Data
+    elseif ($action === 'clean_dummy_data') {
+        try {
+            $dummyStmt = $db->query("
+                SELECT id FROM bookings 
+                WHERE customer_name LIKE '%Test%' 
+                   OR customer_name = 'Live Test Customer' 
+                   OR customer_name = 'Live Test' 
+                   OR customer_name = 'Test User' 
+                   OR customer_phone = '9876543210' 
+                   OR transaction_ref = '123456789012'
+            ");
+            $dummyRows = $dummyStmt->fetchAll() ?: [];
+            $delCount = count($dummyRows);
+            if ($delCount > 0) {
+                $ids = array_column($dummyRows, 'id');
+                $inQuery = implode(',', array_map('intval', $ids));
+                $db->exec("DELETE FROM booking_items WHERE booking_id IN ($inQuery)");
+                $db->exec("DELETE FROM bookings WHERE id IN ($inQuery)");
+                set_flash('success', "Purged $delCount dummy bookings successfully.");
+            } else {
+                set_flash('info', "No dummy or test records found.");
+            }
+        } catch (PDOException $e) {
+            set_flash('error', "Error purging dummy data: " . $e->getMessage());
+        }
+    }
     // Toggle Gate Check-in
     elseif ($action === 'toggle_checkin' && $bookingId > 0) {
         try {
@@ -168,6 +241,16 @@ try {
     $allCategories = $db->query("SELECT id, name, price FROM ticket_categories WHERE event_id = 1 ORDER BY price ASC")->fetchAll() ?: [];
 } catch (PDOException $e) {}
 
+// Counts for tabs
+$totalCount = 0;
+$verifiedCount = 0;
+$pendingCount = 0;
+try {
+    $totalCount = (int)$db->query("SELECT COUNT(*) FROM bookings")->fetchColumn();
+    $verifiedCount = (int)$db->query("SELECT COUNT(*) FROM bookings WHERE payment_status = 'verified'")->fetchColumn();
+    $pendingCount = (int)$db->query("SELECT COUNT(*) FROM bookings WHERE payment_status = 'pending'")->fetchColumn();
+} catch (PDOException $e) {}
+
 $bookings = [];
 $filterTotalAmount = 0.0;
 $filterTotalPersons = 0;
@@ -247,6 +330,13 @@ try {
                 <button type="button" class="btn-bms-gold" style="background: linear-gradient(135deg, #10b981, #059669); color:#fff;" onclick="openWalkinModal()">
                     <span>&#9889;</span> <span>Issue Walk-In Pass</span>
                 </button>
+                <form action="<?= BASE_URL ?>/admin/bookings.php" method="POST" style="margin:0;" onsubmit="return confirm('Purge all dummy and test records permanently?');">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="clean_dummy_data">
+                    <button type="submit" class="btn-bms-dark" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.35); color: #f87171;" title="Remove Test / Dummy Data">
+                        <span>&#129529;</span> <span>Clean Dummy Data</span>
+                    </button>
+                </form>
                 <a href="<?= BASE_URL ?>/api/export-csv.php?status=<?= urlencode($statusFilter) ?>" class="btn-bms-dark" title="Export Ledger as CSV">
                     <span>&#128196;</span> <span>Export CSV</span>
                 </a>
@@ -267,6 +357,22 @@ try {
             </div>
         </div>
 
+        <!-- Filter Navigation Tabs -->
+        <div class="bms-tabs-bar">
+            <a href="<?= BASE_URL ?>/admin/bookings.php?status=all" class="bms-tab-btn <?= $statusFilter === 'all' ? 'active' : '' ?>">
+                <span>&#128203; All Bookings</span>
+                <span class="bms-tab-count"><?= $totalCount ?></span>
+            </a>
+            <a href="<?= BASE_URL ?>/admin/bookings.php?status=verified" class="bms-tab-btn <?= $statusFilter === 'verified' ? 'active' : '' ?>" style="<?= $statusFilter === 'verified' ? 'background:rgba(16,185,129,0.2); border-color:#10b981; color:#34d399;' : '' ?>">
+                <span>&#9989; Ticket Mila (Pass Issued)</span>
+                <span class="bms-tab-count" style="background: rgba(16,185,129,0.3); color:#34d399;"><?= $verifiedCount ?></span>
+            </a>
+            <a href="<?= BASE_URL ?>/admin/bookings.php?status=pending" class="bms-tab-btn <?= $statusFilter === 'pending' ? 'active' : '' ?>" style="<?= $statusFilter === 'pending' ? 'background:rgba(245,158,11,0.2); border-color:#f59e0b; color:#fbbf24;' : '' ?>">
+                <span>&#9203; Ticket Nahi Mila (Payment Pending)</span>
+                <span class="bms-tab-count" style="background: rgba(245,158,11,0.3); color:#fbbf24;"><?= $pendingCount ?></span>
+            </a>
+        </div>
+
         <!-- Search & Filter Controls -->
         <div class="admin-card" style="padding: 18px 24px;">
             <form action="<?= BASE_URL ?>/admin/bookings.php" method="GET" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
@@ -277,8 +383,8 @@ try {
                 <div>
                     <select name="status" class="form-control" style="background:#12141d; border:1px solid #2e344a; color:#fff; padding:10px 14px; border-radius:8px;" onchange="this.form.submit()">
                         <option value="all" <?= $statusFilter === 'all' ? 'selected' : '' ?>>All Statuses</option>
-                        <option value="pending" <?= $statusFilter === 'pending' ? 'selected' : '' ?>>Pending Verification Only</option>
-                        <option value="verified" <?= $statusFilter === 'verified' ? 'selected' : '' ?>>Verified &amp; Paid Only</option>
+                        <option value="verified" <?= $statusFilter === 'verified' ? 'selected' : '' ?>>Ticket Mila (Verified Only)</option>
+                        <option value="pending" <?= $statusFilter === 'pending' ? 'selected' : '' ?>>Ticket Nahi Mila (Pending Only)</option>
                         <option value="checked_in" <?= $statusFilter === 'checked_in' ? 'selected' : '' ?>>Gate Checked-In Only</option>
                     </select>
                 </div>
@@ -314,9 +420,9 @@ try {
                             <th>Booking ID</th>
                             <th>Attendee &amp; Mobile</th>
                             <th>Ticket Pass &amp; Headcount</th>
-                            <th>Amount</th>
-                            <th>Payment Status</th>
+                            <th>Amount Paid</th>
                             <th>UTR / Ref ID</th>
+                            <th>Ticket Status</th>
                             <th>Gate Entry</th>
                             <th>Action</th>
                         </tr>
@@ -335,6 +441,7 @@ try {
                                 $cleanPhone = preg_replace('/[^\d]/', '', $b['customer_phone']);
                                 $waUrl = "https://wa.me/91" . $cleanPhone . "?text=" . urlencode("Hello " . $b['customer_name'] . ", greetings from Millennium India Group! Your booking reference for Jashn-E-Garba 2026 is " . $b['booking_uid'] . ".");
                                 $hasFood = stripos($b['ticket_summary'] ?? '', 'With Food') !== false;
+                                $isVerified = ($b['payment_status'] === 'verified');
                                 ?>
                                 <tr>
                                     <td><?= $counter++ ?></td>
@@ -374,21 +481,28 @@ try {
                                         <?= format_inr($b['total_amount']) ?>
                                     </td>
                                     <td>
-                                        <?php if ($b['payment_status'] === 'verified'): ?>
-                                            <span class="badge badge-verified">Verified</span>
-                                        <?php elseif ($b['payment_status'] === 'pending'): ?>
-                                            <span class="badge badge-pending">Pending</span>
-                                        <?php else: ?>
-                                            <span class="badge badge-failed"><?= e($b['payment_status']) ?></span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
                                         <?php if (!empty($b['transaction_ref'])): ?>
                                             <span class="btn-copy-tag" onclick="navigator.clipboard.writeText('<?= e($b['transaction_ref']) ?>'); alert('Copied UTR: <?= e($b['transaction_ref']) ?>');" title="Click to copy UTR">
                                                 &#128203; <?= e($b['transaction_ref']) ?>
                                             </span>
                                         <?php else: ?>
-                                            <span style="color: #64748b; font-size: 0.8rem;">None</span>
+                                            <span style="color: #64748b; font-size: 0.8rem;">Awaiting UTR</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <!-- TICKET MILA VS TICKET NAHI MILA -->
+                                        <?php if ($isVerified): ?>
+                                            <div class="ticket-status-badge ticket-status-issued">
+                                                &#9989; TICKET MILA
+                                            </div>
+                                        <?php elseif ($b['payment_status'] === 'pending'): ?>
+                                            <div class="ticket-status-badge ticket-status-pending">
+                                                &#9203; NAHI MILA (Pending)
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="ticket-status-badge ticket-status-failed">
+                                                &#10060; <?= strtoupper(e($b['payment_status'])) ?>
+                                            </div>
                                         <?php endif; ?>
                                     </td>
                                     <td>
@@ -400,30 +514,34 @@ try {
                                     </td>
                                     <td>
                                         <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-                                            <?php if ($b['payment_status'] === 'pending'): ?>
-                                                <form action="<?= BASE_URL ?>/admin/bookings.php" method="POST" style="margin:0;" onsubmit="return confirm('Verify UTR receipt <?= e($b['transaction_ref']) ?> for <?= e($b['customer_name']) ?>?');">
+                                            <?php if (!$isVerified): ?>
+                                                <!-- 1-Click Verify Button -->
+                                                <form action="<?= BASE_URL ?>/admin/bookings.php" method="POST" style="margin:0;" onsubmit="return confirm('Verify UTR receipt <?= e($b['transaction_ref']) ?> for <?= e($b['customer_name']) ?> and ISSUE TICKET PASS?');">
                                                     <?= csrf_field() ?>
                                                     <input type="hidden" name="action" value="verify_payment">
                                                     <input type="hidden" name="booking_id" value="<?= $b['id'] ?>">
-                                                    <button type="submit" class="btn-verify" title="Confirm Payment &amp; Unlock Ticket">
-                                                        &#10004; Verify
+                                                    <button type="submit" class="btn-verify" title="Confirm Payment &amp; Issue Ticket Pass">
+                                                        &#10004; Verify &amp; Issue Pass
                                                     </button>
                                                 </form>
-
-                                                <form action="<?= BASE_URL ?>/admin/bookings.php" method="POST" style="margin:0;" onsubmit="return confirm('Mark as Unpaid/Failed?');">
-                                                    <?= csrf_field() ?>
-                                                    <input type="hidden" name="action" value="mark_failed">
-                                                    <input type="hidden" name="booking_id" value="<?= $b['id'] ?>">
-                                                    <button type="submit" class="btn-sm" style="background:#ef4444; color:#fff; border:none; cursor:pointer;" title="Reject">
-                                                        &times;
-                                                    </button>
-                                                </form>
+                                            <?php else: ?>
+                                                <!-- View Pass -->
+                                                <a href="<?= BASE_URL ?>/ticket.php?uid=<?= urlencode($b['booking_uid']) ?>" target="_blank" class="btn-sm" style="background:#202434; border:1px solid #2e344a; color:#fff; text-decoration:none;" title="View Digital Pass">
+                                                    View Pass
+                                                </a>
                                             <?php endif; ?>
 
-                                            <a href="<?= BASE_URL ?>/ticket.php?uid=<?= urlencode($b['booking_uid']) ?>" target="_blank" class="btn-sm" style="background:#202434; border:1px solid #2e344a; color:#fff; text-decoration:none;" title="View E-Ticket &amp; Invoice">
-                                                View Pass
-                                            </a>
+                                            <!-- Delete Booking Button -->
+                                            <form action="<?= BASE_URL ?>/admin/bookings.php" method="POST" style="margin:0;" onsubmit="return confirm('Permanently delete booking #<?= e($b['booking_uid']) ?> (<?= e($b['customer_name']) ?>)? This cannot be undone.');">
+                                                <?= csrf_field() ?>
+                                                <input type="hidden" name="action" value="delete_booking">
+                                                <input type="hidden" name="booking_id" value="<?= $b['id'] ?>">
+                                                <button type="submit" class="btn-delete-row" title="Delete Booking permanently">
+                                                    &#128465; Delete
+                                                </button>
+                                            </form>
 
+                                            <!-- Manual Check-In Toggle -->
                                             <form action="<?= BASE_URL ?>/admin/bookings.php" method="POST" style="margin:0;">
                                                 <?= csrf_field() ?>
                                                 <input type="hidden" name="action" value="toggle_checkin">
