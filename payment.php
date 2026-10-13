@@ -221,7 +221,12 @@ include __DIR__ . '/includes/header.php';
         <div style="background: linear-gradient(135deg, rgba(122,18,68,0.7), rgba(40,6,22,0.95)); border: 1.5px solid var(--gold-accent); border-radius: 12px; padding: 18px 24px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.5);">
             <div>
                 <span style="font-size: 0.8rem; color: var(--gold-light); text-transform: uppercase; font-weight: 700;">Booking Reference ID</span>
-                <div style="font-size: 1.35rem; font-family: monospace; font-weight: 900; color: #fff;"><?= e($bookingUid) ?></div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
+                    <span style="font-size: 1.35rem; font-family: monospace; font-weight: 900; color: #fff;"><?= e($bookingUid) ?></span>
+                    <button type="button" onclick="navigator.clipboard.writeText('<?= e($bookingUid) ?>'); alert('Booking ID copied: <?= e($bookingUid) ?>');" style="background: rgba(245,183,34,0.25); border: 1px solid var(--gold-accent); color: var(--gold-light); font-weight: 700; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer;">
+                        Copy ID
+                    </button>
+                </div>
             </div>
             <div style="text-align: right;">
                 <span style="font-size: 0.8rem; color: #aaa; text-transform: uppercase;">Total Payable Amount</span>

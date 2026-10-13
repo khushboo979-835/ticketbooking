@@ -168,7 +168,7 @@ include __DIR__ . '/includes/header.php';
 <div class="ticket-page-container">
 
     <!-- SEARCH BAR CARD (Always available for attendees to search) -->
-    <div class="festive-card" style="border: 1.5px solid var(--gold-accent); padding: 24px 22px; margin-bottom: 30px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);">
+    <div class="festive-card no-print" style="border: 1.5px solid var(--gold-accent); padding: 24px 22px; margin-bottom: 30px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);">
         <div style="text-align: center; margin-bottom: 16px;">
             <span style="background: rgba(245,183,34,0.15); color: var(--gold-accent); font-weight: 800; font-size: 0.76rem; padding: 3px 14px; border-radius: 20px; text-transform: uppercase;">
                 &#128269; Pass &amp; Receipt Lookup
@@ -349,22 +349,30 @@ include __DIR__ . '/includes/header.php';
         <!-- (BookMyShow-Style Instant Pass Generation) -->
         <!-- ========================================== -->
 
-        <!-- Success Toast Banner -->
-        <div style="background: linear-gradient(135deg, #065f46, #047857); border: 1.5px solid #10b981; border-radius: 12px; padding: 16px 22px; margin-bottom: 22px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; box-shadow: 0 6px 20px rgba(16,185,129,0.3);">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="width: 42px; height: 42px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #fff;">
+        <!-- Success Toast Banner & Reference Number Highlight (BookMyShow-Style) -->
+        <div class="no-print" style="background: linear-gradient(135deg, #065f46, #047857); border: 1.5px solid #10b981; border-radius: 12px; padding: 18px 22px; margin-bottom: 22px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; box-shadow: 0 6px 20px rgba(16,185,129,0.35);">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #fff;">
                     &#10004;
                 </div>
                 <div>
-                    <h3 style="color: #fff; margin: 0; font-size: 1.15rem; font-weight: 900;">Booking Confirmed &amp; Pass Active!</h3>
-                    <p style="color: #d1fae5; margin: 2px 0 0; font-size: 0.88rem;">
-                        Payment Verified &bull; Reference UTR: <strong><?= e($booking['transaction_ref'] ?: 'Direct UPI') ?></strong>
-                    </p>
+                    <div style="font-size: 0.78rem; text-transform: uppercase; color: #a7f3d0; font-weight: 800; letter-spacing: 0.8px;">
+                        BOOKING CONFIRMED &bull; PASS ACTIVE
+                    </div>
+                    <div style="color: #fff; font-size: 1.25rem; font-weight: 900; margin: 2px 0;">
+                        Booking Reference: <span style="font-family: monospace; color: #ffd966;"><?= e($booking['booking_uid']) ?></span>
+                    </div>
+                    <div style="color: #d1fae5; font-size: 0.88rem;">
+                        Payment Verified &bull; Transaction / UTR: <strong style="font-family: monospace; color: #fff;"><?= e($booking['transaction_ref'] ?: 'Direct UPI') ?></strong>
+                    </div>
                 </div>
             </div>
-            <div style="display: flex; gap: 8px;">
-                <button type="button" onclick="window.print()" class="btn" style="background: #fff; color: #065f46; font-weight: 800; font-size: 0.88rem; padding: 8px 18px; border-radius: 6px; border: none; cursor: pointer;">
-                    &#128424; Print Pass
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" onclick="copyBookingId('<?= e($booking['booking_uid']) ?>')" class="btn" style="background: rgba(255,255,255,0.2); color: #fff; font-weight: 800; font-size: 0.85rem; padding: 8px 14px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.4); cursor: pointer;">
+                    &#128203; Copy Booking ID
+                </button>
+                <button type="button" onclick="window.print()" class="btn" style="background: #fff; color: #065f46; font-weight: 900; font-size: 0.88rem; padding: 8px 18px; border-radius: 6px; border: none; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                    &#128424; Print Pass &amp; Receipt
                 </button>
             </div>
         </div>
@@ -602,8 +610,13 @@ include __DIR__ . '/includes/header.php';
 
 </div>
 
-<!-- Fast Client-Side QR Generation -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- Fast Local QR Generation (Zero External CDN Latency) -->
+<script src="<?= asset_v('assets/js/qrcode.min.js') ?>"></script>
+<script>
+if (typeof QRCode === 'undefined') {
+    document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>');
+}
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const qrContainer = document.getElementById('ticket-qrcode');
@@ -622,12 +635,20 @@ document.addEventListener('DOMContentLoaded', function() {
     <?php endif; ?>
 });
 
+function copyBookingId(uid) {
+    navigator.clipboard.writeText(uid).then(() => {
+        alert('Booking Reference ID copied: ' + uid);
+    }).catch(() => {
+        prompt('Copy your Booking Reference ID:', uid);
+    });
+}
+
 function copyTicketLink() {
     const link = window.location.href;
     navigator.clipboard.writeText(link).then(() => {
-        alert('Ticket link copied to clipboard!');
+        alert('Ticket pass link copied to clipboard!');
     }).catch(() => {
-        prompt('Copy your ticket link:', link);
+        prompt('Copy your ticket pass link:', link);
     });
 }
 </script>

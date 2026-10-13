@@ -57,12 +57,12 @@ include __DIR__ . '/includes/header.php';
         <!-- 1-Click Instant Pass & Receipt Lookup (BookMyShow-Style) -->
         <div style="max-width: 680px; margin: 22px auto 0; background: rgba(18,2,11,0.92); border: 1.5px solid var(--gold-accent); border-radius: 14px; padding: 16px 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.6);">
             <div style="font-size: 0.95rem; font-weight: 800; color: #fff; margin-bottom: 8px;">
-                &#127915; Already Paid? Enter Mobile Number to Download Pass &amp; Receipt:
+                &#127915; Already Paid? Enter Mobile Number, Booking ID or UTR to Download Pass:
             </div>
             <form action="<?= BASE_URL ?>/ticket.php" method="GET" style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <input type="text" 
                        name="search" 
-                       placeholder="Enter 10-Digit Mobile (e.g. 6204954936) or Booking ID..." 
+                       placeholder="Enter 10-Digit Mobile, Booking ID (e.g. MIG2026...) or UTR..." 
                        required
                        style="flex: 1; min-width: 220px; padding: 12px 14px; font-size: 1rem; border-radius: 8px; background: #0a0106; border: 1.5px solid var(--gold-accent); color: #fff; box-sizing: border-box;">
                 <button type="submit" class="btn btn-primary" style="padding: 12px 22px; font-weight: 800; font-size: 0.95rem; border-radius: 8px; cursor: pointer; white-space: nowrap;">
