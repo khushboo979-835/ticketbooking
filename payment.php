@@ -133,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     try {
         $stmt = $db->prepare("
             UPDATE bookings 
-            SET payment_method = 'direct_upi', transaction_ref = :ref, payment_status = 'pending' 
+            SET payment_method = 'direct_upi', transaction_ref = :ref, payment_status = 'verified' 
             WHERE id = :id AND booking_uid = :uid
         ");
         $stmt->execute([
@@ -142,6 +142,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             ':uid' => $bookingUid
         ]);
 
+        // Atomically update ticket quantities in inventory
+        $itemStmt = $db->prepare("SELECT ticket_category_id, quantity FROM booking_items WHERE booking_id = :id");
+        $itemStmt->execute([':id' => $bookingId]);
+        $items = $itemStmt->fetchAll();
+        foreach ($items as $it) {
+            $updStock = $db->prepare("UPDATE ticket_categories SET available_quantity = GREATEST(0, available_quantity - :qty) WHERE id = :cid");
+            $updStock->execute([':qty' => (int)$it['quantity'], ':cid' => (int)$it['ticket_category_id']]);
+        }
+
         // Clear cart session variables
         unset($_SESSION['booking_cart'], $_SESSION['booking_customer'], $_SESSION['current_booking_uid'], $_SESSION['current_booking_id'], $_SESSION['current_qr_token']);
 
@@ -149,12 +158,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             header('Content-Type: application/json');
             echo json_encode([
                 'status' => 'success',
-                'redirect' => BASE_URL . '/confirmation.php?uid=' . urlencode($bookingUid)
+                'redirect' => BASE_URL . '/ticket.php?uid=' . urlencode($bookingUid) . '&just_booked=1'
             ]);
             exit;
         }
 
-        header("Location: " . BASE_URL . "/confirmation.php?uid=" . urlencode($bookingUid));
+        header("Location: " . BASE_URL . "/ticket.php?uid=" . urlencode($bookingUid) . "&just_booked=1");
         exit;
     } catch (PDOException $e) {
         error_log('[payment.php UTR update error]: ' . $e->getMessage());

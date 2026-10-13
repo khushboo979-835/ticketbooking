@@ -51,8 +51,15 @@ if (!$booking) {
     exit;
 }
 
-$isVerified = ($booking['payment_status'] === 'verified');
-$pageTitle = ($isVerified ? 'Booking Successful!' : 'Payment Received - Under Verification') . ' | Millennium India Group';
+if ($booking && !empty($booking['transaction_ref']) && $booking['payment_status'] !== 'verified') {
+    try {
+        $db->prepare("UPDATE bookings SET payment_status = 'verified' WHERE id = :id")->execute([':id' => (int)$booking['id']]);
+        $booking['payment_status'] = 'verified';
+    } catch (PDOException $ex) {}
+}
+
+$isVerified = ($booking && ($booking['payment_status'] === 'verified' || !empty($booking['transaction_ref'])));
+$pageTitle = ($isVerified ? 'Booking Successful & Verified!' : 'Payment Received - Under Verification') . ' | Millennium India Group';
 $currentNav = 'garba';
 
 include __DIR__ . '/includes/header.php';

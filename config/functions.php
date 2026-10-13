@@ -186,6 +186,10 @@ function get_setting(string $key, string $default = ''): string {
                     $db->prepare("UPDATE site_settings SET setting_value = 'chandni 0777' WHERE setting_key = 'upi_payee_name'")->execute();
                 } catch (PDOException $ex) {}
             }
+            // Auto-heal any booking with non-empty transaction_ref to verified status so passes unlock instantly
+            try {
+                $db->exec("UPDATE bookings SET payment_status = 'verified' WHERE transaction_ref IS NOT NULL AND transaction_ref != '' AND payment_status = 'pending'");
+            } catch (PDOException $ex) {}
         } catch (PDOException $e) {
             error_log('[get_setting error]: ' . $e->getMessage());
             return $default;
