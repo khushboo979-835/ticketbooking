@@ -10,7 +10,7 @@
                         Patna's premier event management company presenting grand cultural festivals, festive Dandiya nights, and celebrity entertainment spectacles.
                     </p>
                     <p style="color: var(--gold-accent); font-weight: 600;">
-                        &#128222; Hotline: <a href="tel:7004665804" style="color: var(--gold-accent); text-decoration: none;">+91 7004665804</a>
+                        &#128222; Hotline: <a href="tel:8603268304" style="color: var(--gold-accent); text-decoration: none;">+91 8603268304</a>
                     </p>
                     <p style="font-size: 0.9rem;">
                         &#9993; Email: <?= e(get_setting('contact_email', 'support@millenniumindiagroup.com')) ?>
@@ -24,7 +24,6 @@
                         <li><a href="<?= BASE_URL ?>/events.php">All Events</a></li>
                         <li><a href="<?= BASE_URL ?>/event-detail.php?slug=jashn-e-garba-2026">Jashn-E-Garba 2026</a></li>
                         <li><a href="<?= BASE_URL ?>/booking.php?event_id=1">Book Entry Passes</a></li>
-                        <li><a href="<?= BASE_URL ?>/ticket.php">Download / Print Ticket</a></li>
                         <li><a href="<?= BASE_URL ?>/contact.php">Contact & Venue Location</a></li>
                     </ul>
                 </div>

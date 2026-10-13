@@ -79,8 +79,8 @@ include __DIR__ . '/includes/header.php';
                     <a href="<?= BASE_URL ?>/ticket.php?uid=<?= urlencode($booking['booking_uid']) ?>" class="btn btn-primary" style="font-size: 1.1rem; padding: 14px 32px;">
                         &#127915; Download Ticket
                     </a>
-                    <a href="<?= BASE_URL ?>/ticket.php" class="btn btn-secondary" style="font-size: 1.1rem; padding: 14px 32px;">
-                        View My Bookings
+                    <a href="<?= BASE_URL ?>/ticket.php?uid=<?= urlencode($booking['booking_uid']) ?>" class="btn btn-secondary" style="font-size: 1.1rem; padding: 14px 32px;">
+                        View My Pass / Ticket
                     </a>
                 </div>
             </div>
@@ -108,7 +108,7 @@ include __DIR__ . '/includes/header.php';
                     <a href="<?= BASE_URL ?>/ticket.php?uid=<?= urlencode($booking['booking_uid']) ?>" class="btn btn-secondary">
                         &#128269; Check Verification Status
                     </a>
-                    <a href="https://wa.me/919876543210?text=<?= urlencode("Hello Millennium India Group, I have submitted UPI payment for Booking ID " . $booking['booking_uid'] . " with UTR " . $booking['transaction_ref'] . ". Please verify.") ?>" target="_blank" class="btn btn-primary" style="background:#25d366; color:#fff; border-color:#25d366;">
+                    <a href="https://wa.me/918603268304?text=<?= urlencode("Hello Millennium India Group, I have submitted UPI payment for Booking ID " . $booking['booking_uid'] . " with UTR " . $booking['transaction_ref'] . ". Please verify.") ?>" target="_blank" class="btn btn-primary" style="background:#25d366; color:#fff; border-color:#25d366;">
                         &#128172; Instant WhatsApp Support
                     </a>
                 </div>

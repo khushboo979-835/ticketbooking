@@ -82,33 +82,42 @@ include __DIR__ . '/includes/header.php';
 
 <div class="ticket-page-container">
 
-    <!-- Search Form (Fallback when no ticket selected) -->
+    <!-- Payment Verification & Security Policy Statement -->
     <?php if (!$booking): ?>
-        <div class="festive-card" style="max-width: 580px; margin: 40px auto; text-align: center; border: 2px solid var(--gold-accent);">
-            <div style="font-size: 3rem; margin-bottom: 10px;">&#127915;</div>
-            <h2 class="card-title" style="justify-content: center;">Find Your Digital QR Pass</h2>
-            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px;">
-                Enter your Booking ID (e.g. MIG2026...) or registered Mobile Number to retrieve your event pass.
-            </p>
+        <div class="festive-card" style="max-width: 680px; margin: 40px auto; text-align: center; border: 2px solid var(--gold-accent); padding: 35px 25px;">
+            <div style="font-size: 3.2rem; margin-bottom: 12px;">&#128274;</div>
+            <span style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1.5px solid #ef4444; font-size: 0.8rem; font-weight: 800; padding: 4px 14px; border-radius: 50px; text-transform: uppercase; letter-spacing: 0.5px;">
+                Verified Payment Mandatory For Passes
+            </span>
+            <h2 class="card-title" style="justify-content: center; margin-top: 14px; font-size: 1.7rem;">Official Ticket Security &amp; Verification Policy</h2>
+            
+            <div style="background: rgba(20, 2, 11, 0.85); border: 1.5px dashed var(--gold-accent); border-radius: 12px; padding: 20px; margin: 20px 0; text-align: left; font-size: 0.92rem; line-height: 1.8; color: #e2e8f0;">
+                <strong style="color: var(--gold-accent); display: block; font-size: 1.05rem; margin-bottom: 8px;">
+                    &#9888; केवल भुगतान (Payment) की पुष्टि होने के बाद ही मान्य QR टिकट जारी होता है:
+                </strong>
+                <p style="margin: 0 0 10px;">
+                    1. <strong>Strict Payment Policy:</strong> Millennium India Group ke official niyam ke anusaar, Digital QR Gate Entry Pass keval unhi customers ko issue kiya jata hai jinka payment verify ho chuka hai.
+                </p>
+                <p style="margin: 0 0 10px;">
+                    2. <strong>Instant Booking Receipt:</strong> Jab aap booking form bhar kar UPI ID (<code>chandni0984@oksbi</code>) par exact payment karte hain aur apna 12-digit UTR submit karte hain, tabhi aapka booking reference generate hota hai.
+                </p>
+                <p style="margin: 0;">
+                    3. Bina payment confirmation ya bina valid UTR ke koi bhi pass gate entry ke liye aamany (invalid) mana jayega.
+                </p>
+            </div>
 
-            <form action="<?= BASE_URL ?>/ticket.php" method="GET">
-                <div class="form-group">
-                    <input type="text" name="search" class="form-control" placeholder="Enter Booking ID or 10-digit Mobile" value="<?= e($searchQuery) ?>" required style="font-size: 1.1rem; text-align: center;">
-                </div>
-                <button type="submit" class="btn btn-primary btn-block" style="padding: 13px; font-size: 1.05rem;">
-                    &#128269; Retrieve My Pass &rarr;
-                </button>
-            </form>
-
-            <?php if (!empty($searchQuery)): ?>
-                <div class="alert alert-danger" style="margin-top: 20px;">
-                    No ticket found for "<?= e($searchQuery) ?>". Please verify your input or contact our WhatsApp desk.
-                </div>
-            <?php endif; ?>
+            <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-top: 25px;">
+                <a href="<?= BASE_URL ?>/booking.php?event_id=1" class="btn btn-primary" style="padding: 14px 28px; font-weight: 800; font-size: 1rem;">
+                    &#127915; Book Passes (From ₹199)
+                </a>
+                <a href="https://wa.me/918603268304" target="_blank" class="btn btn-secondary" style="padding: 14px 22px; font-weight: 700; font-size: 0.95rem;">
+                    &#128222; Helpline: +91 8603268304
+                </a>
+            </div>
         </div>
 
     <?php elseif (!$isVerified): ?>
-        <!-- PENDING VERIFICATION STATE -->
+        <!-- PENDING VERIFICATION STATE (STRONG NOTICE: TICKET ISSUED ONLY AFTER PAYMENT VERIFICATION) -->
         <div class="festive-card" style="text-align: center; border: 2px solid var(--gold-accent); padding: 35px 25px; max-width: 720px; margin: 40px auto;">
             <span class="badge badge-pending" style="font-size: 0.95rem; padding: 6px 16px;">PAYMENT VERIFICATION PENDING</span>
             <h2 style="font-size: 1.8rem; color: #fff; margin: 15px 0 10px;">Pass Awaiting Admin Verification</h2>
@@ -118,15 +127,16 @@ include __DIR__ . '/includes/header.php';
                 Submitted UTR: <span style="font-family: monospace; color: #fff;"><?= e($booking['transaction_ref'] ?: 'Direct UPI') ?></span>
             </p>
 
-            <div style="background: rgba(245,183,34,0.12); border: 1px dashed var(--gold-accent); border-radius: 10px; padding: 18px; margin: 20px auto; text-align: left; font-size: 0.92rem; color: #ddd;">
-                Your digital QR gate entry code will automatically unlock on this exact page once the organizing committee verifies your bank receipt.
+            <div style="background: rgba(245,183,34,0.12); border: 1.5px dashed var(--gold-accent); border-radius: 10px; padding: 18px; margin: 20px auto; text-align: left; font-size: 0.92rem; color: #ddd; line-height: 1.7;">
+                <strong style="color: #ffd966; display: block; margin-bottom: 6px;">&#9888; Important Payment Notice:</strong>
+                Aapka payment UTR review me hai. Bank receipt verify hote hi digital QR entry pass activate ho jayega. Keval valid payment par hi gate entry pass unlock hota hai.
             </div>
 
             <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
                 <button onclick="window.location.reload();" class="btn btn-secondary">
                     &#128472; Check Status Again
                 </button>
-                <a href="https://wa.me/919876543210?text=<?= urlencode("Hello Millennium India Group, please verify payment for Booking ID " . $booking['booking_uid'] . " (UTR: " . $booking['transaction_ref'] . ")") ?>" target="_blank" class="btn btn-primary" style="background:#25d366; color:#fff; border-color:#25d366;">
+                <a href="https://wa.me/918603268304?text=<?= urlencode("Hello Millennium India Group, please verify payment for Booking ID " . $booking['booking_uid'] . " (UTR: " . $booking['transaction_ref'] . ")") ?>" target="_blank" class="btn btn-primary" style="background:#25d366; color:#fff; border-color:#25d366;">
                     &#128172; Request WhatsApp Verification
                 </a>
             </div>

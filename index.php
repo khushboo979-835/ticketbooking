@@ -12,79 +12,33 @@ $categories = $event ? get_event_categories($event['id']) : [];
 include __DIR__ . '/includes/header.php';
 ?>
 
-<!-- 1. VERY TOP SECTION: ALL 3 VIDEOS PLAYING CONTINUOUSLY AT THE VERY TOP (Client: Tino video chalte huye Daliy Sabse uper me) -->
+<!-- 1. VERY TOP SECTION: ONLY VIDEO 0 (Client: Or ek hi video rakhiy, Only ye) -->
 <section style="background: linear-gradient(180deg, #18020e 0%, #2a0319 50%, #16010c 100%); padding: 18px 0 28px; border-bottom: 2px solid rgba(245, 183, 34, 0.3);">
     <div class="container" style="text-align: center;">
 
-        <!-- 3 Videos Grid (All 3 playing continuously in loop, with one-tap sound buttons) -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; max-width: 1140px; margin: 0 auto;">
-            
-            <!-- Video 0: Official Teaser Promo -->
-            <div style="background: #0d0107; border: 2px solid var(--gold-accent); border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.75); display: flex; flex-direction: column;">
-                <div style="padding: 10px 14px; background: rgba(30,3,17,0.95); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245,183,34,0.25); flex-wrap: wrap; gap: 6px;">
-                    <div style="text-align: left;">
-                        <span style="background: var(--gold-accent); color: #1f0411; font-weight: 800; font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; text-transform: uppercase;">
-                            &#9654; Live Teaser
-                        </span>
-                        <strong style="color: #fff; font-size: 0.9rem; margin-left: 5px;">Promo Video</strong>
-                    </div>
-                    <button type="button" onclick="playWithSound('top-v0-player')" id="btn-sound-v0" style="background: rgba(245,183,34,0.2); border: 1.5px solid var(--gold-accent); color: var(--gold-accent); font-weight: 800; font-size: 0.78rem; padding: 4px 12px; border-radius: 20px; cursor: pointer; transition: all 0.2s ease;">
-                        &#128266; Sound ON
-                    </button>
+        <!-- Featured Video 0 Player -->
+        <div style="max-width: 880px; margin: 0 auto; background: #0d0107; border: 2.5px solid var(--gold-accent); border-radius: 16px; overflow: hidden; box-shadow: 0 15px 45px rgba(0,0,0,0.85);">
+            <div style="padding: 12px 18px; background: rgba(30,3,17,0.95); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245,183,34,0.25); flex-wrap: wrap; gap: 8px;">
+                <div style="text-align: left;">
+                    <span style="background: var(--gold-accent); color: #1f0411; font-weight: 800; font-size: 0.72rem; padding: 2px 10px; border-radius: 20px; text-transform: uppercase;">
+                        &#9654; Official Teaser
+                    </span>
+                    <strong style="color: #fff; font-size: 1rem; margin-left: 6px;">&#127915; Jashn-E-Garba 2026 Promo Video</strong>
                 </div>
-                <video id="top-v0-player" controls autoplay muted loop playsinline preload="auto" style="width: 100%; display: block; aspect-ratio: 16/9; max-height: 250px; object-fit: cover; background: #000; flex: 1;">
-                    <source src="<?= BASE_URL ?>/assets/uploads/Video0.mp4" type="video/mp4">
-                    Your browser does not support HTML5 video.
-                </video>
-                <div style="padding: 8px 12px; background: rgba(20,2,11,0.95); text-align: center; font-size: 0.8rem; color: var(--gold-light); font-weight: 600;">
-                    &#127915; Jashn-E-Garba Promo Teaser
-                </div>
+                <button type="button" onclick="playWithSound('top-v0-player')" id="btn-sound-v0" style="background: rgba(245,183,34,0.2); border: 1.5px solid var(--gold-accent); color: var(--gold-accent); font-weight: 800; font-size: 0.85rem; padding: 6px 16px; border-radius: 20px; cursor: pointer; transition: all 0.2s ease;">
+                    &#128266; Tap For Full Sound
+                </button>
             </div>
 
-            <!-- Video 1: Garba Beats & Vibes -->
-            <div style="background: #0d0107; border: 2px solid var(--gold-accent); border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.75); display: flex; flex-direction: column;">
-                <div style="padding: 10px 14px; background: rgba(30,3,17,0.95); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245,183,34,0.25); flex-wrap: wrap; gap: 6px;">
-                    <div style="text-align: left;">
-                        <span style="background: #e67e22; color: #fff; font-weight: 800; font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; text-transform: uppercase;">
-                            &#128131; Beats
-                        </span>
-                        <strong style="color: #fff; font-size: 0.9rem; margin-left: 5px;">Garba Beats &amp; Vibes</strong>
-                    </div>
-                    <button type="button" onclick="playWithSound('v1-player')" id="btn-sound-v1" style="background: rgba(245,183,34,0.2); border: 1.5px solid var(--gold-accent); color: var(--gold-accent); font-weight: 800; font-size: 0.78rem; padding: 4px 12px; border-radius: 20px; cursor: pointer; transition: all 0.2s ease;">
-                        &#128266; Sound ON
-                    </button>
-                </div>
-                <video id="v1-player" controls autoplay muted loop playsinline preload="auto" style="width: 100%; display: block; aspect-ratio: 16/9; max-height: 250px; object-fit: cover; background: #000; flex: 1;">
-                    <source src="<?= BASE_URL ?>/assets/uploads/Video1.mp4" type="video/mp4">
-                    Your browser does not support HTML5 video.
-                </video>
-                <div style="padding: 8px 12px; background: rgba(20,2,11,0.95); text-align: center; font-size: 0.8rem; color: var(--gold-light); font-weight: 600;">
-                    &#129345; High Energy Folk Garba Beats
-                </div>
-            </div>
+            <!-- Video 0 autoplays on page load with sound toggle -->
+            <video id="top-v0-player" controls autoplay muted loop playsinline preload="auto" style="width: 100%; display: block; aspect-ratio: 16/9; max-height: 480px; object-fit: cover; background: #000;">
+                <source src="<?= BASE_URL ?>/assets/uploads/Video0.mp4" type="video/mp4">
+                Your browser does not support HTML5 video.
+            </video>
 
-            <!-- Video 2: Saurabh Raj Jain Invitation -->
-            <div style="background: #0d0107; border: 2px solid var(--gold-accent); border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.75); display: flex; flex-direction: column;">
-                <div style="padding: 10px 14px; background: rgba(30,3,17,0.95); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245,183,34,0.25); flex-wrap: wrap; gap: 6px;">
-                    <div style="text-align: left;">
-                        <span style="background: #9b59b6; color: #fff; font-weight: 800; font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; text-transform: uppercase;">
-                            &#127881; Celebrity
-                        </span>
-                        <strong style="color: #fff; font-size: 0.9rem; margin-left: 5px;">Saurabh Raj Jain Invite</strong>
-                    </div>
-                    <button type="button" onclick="playWithSound('v2-player')" id="btn-sound-v2" style="background: rgba(245,183,34,0.2); border: 1.5px solid var(--gold-accent); color: var(--gold-accent); font-weight: 800; font-size: 0.78rem; padding: 4px 12px; border-radius: 20px; cursor: pointer; transition: all 0.2s ease;">
-                        &#128266; Sound ON
-                    </button>
-                </div>
-                <video id="v2-player" controls autoplay muted loop playsinline preload="auto" style="width: 100%; display: block; aspect-ratio: 16/9; max-height: 250px; object-fit: cover; background: #000; flex: 1;">
-                    <source src="<?= BASE_URL ?>/assets/uploads/Video2.mp4" type="video/mp4">
-                    Your browser does not support HTML5 video.
-                </video>
-                <div style="padding: 8px 12px; background: rgba(20,2,11,0.95); text-align: center; font-size: 0.8rem; color: var(--gold-light); font-weight: 600;">
-                    &#127775; Saurabh Raj Jain Inviting You
-                </div>
+            <div style="padding: 10px 16px; background: rgba(20,2,11,0.95); text-align: center; font-size: 0.88rem; color: var(--gold-light); font-weight: 600;">
+                &#127915; Patna's Biggest Dandiya Mahotsav &bull; 16 October 2026 &bull; Unique Garden, Bailey Road
             </div>
-
         </div>
 
         <!-- Immediate Action CTAs Under Top Video Section -->
@@ -92,8 +46,8 @@ include __DIR__ . '/includes/header.php';
             <a href="<?= BASE_URL ?>/booking.php?event_id=<?= $event['id'] ?? 1 ?>" class="btn btn-primary" style="font-size: 1.12rem; padding: 14px 34px; box-shadow: 0 6px 20px rgba(245,183,34,0.4); font-weight: 800;">
                 &#127915; Book Passes Now (From ₹199)
             </a>
-            <a href="tel:7004665804" class="btn btn-secondary" style="font-size: 1rem; padding: 14px 24px; font-weight: 700;">
-                &#128222; Helpline: +91 7004665804
+            <a href="tel:8603268304" class="btn btn-secondary" style="font-size: 1rem; padding: 14px 24px; font-weight: 700;">
+                &#128222; Helpline: +91 8603268304
             </a>
         </div>
 
@@ -143,8 +97,8 @@ include __DIR__ . '/includes/header.php';
             <div class="hero-meta-card" style="padding: 14px 18px;">
                 <span style="font-size: 1.7rem;">&#127869;</span>
                 <div>
-                    <strong>Special Privilege:</strong>
-                    <div style="color: var(--gold-accent); font-weight: 800;">Delicious Food Included with All Valid Passes!</div>
+                    <strong>Food Privilege:</strong>
+                    <div style="color: var(--gold-accent); font-weight: 800;">Food Included with Passes of ₹399 &amp; ₹699</div>
                 </div>
             </div>
         </div>
@@ -182,7 +136,7 @@ include __DIR__ . '/includes/header.php';
                 <a href="upi://pay?pa=chandni0984@oksbi&pn=Chandni&cu=INR&tn=GarbaPass" class="btn btn-secondary" style="padding: 10px 18px; font-size: 0.88rem; border-radius: 8px; background: #222634; font-weight: 700;">
                     &#128241; Open UPI App
                 </a>
-                <a href="<?= BASE_URL ?>/booking.php?event_id=1&step=1" class="btn btn-primary" style="padding: 10px 22px; font-weight: 800; font-size: 0.92rem; border-radius: 8px;">
+                <a href="<?= BASE_URL ?>/booking.php?event_id=1" class="btn btn-primary" style="padding: 10px 22px; font-weight: 800; font-size: 0.92rem; border-radius: 8px;">
                     &#127915; Book Passes (From ₹199)
                 </a>
             </div>
@@ -206,6 +160,7 @@ include __DIR__ . '/includes/header.php';
                 $isFamily = stripos($cat['name'], 'Family') !== false;
                 $isVip = stripos($cat['name'], 'VIP') !== false;
                 $isSoldOut = ($cat['available_quantity'] <= 0 || $cat['status'] === 'sold_out');
+                $hasFood = ((float)$cat['price'] >= 350 || stripos($cat['name'], 'With Food') !== false);
             ?>
             <div style="background: rgba(26, 3, 14, 0.95); border: 1.5px solid <?= ($isCouple || $isVip) ? 'var(--gold-accent)' : 'rgba(245, 183, 34, 0.35)' ?>; border-radius: 14px; padding: 20px 22px; box-shadow: 0 6px 20px rgba(0,0,0,0.5); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; position: relative;">
                 
@@ -227,8 +182,16 @@ include __DIR__ . '/includes/header.php';
                     <div style="font-size: 0.88rem; color: var(--gold-light); margin-top: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                         <span>&#128101; Admits <strong><?= (int)$cat['people_allowed'] ?> Person<?= $cat['people_allowed'] > 1 ? 's' : '' ?></strong></span>
                         <span style="color: #666;">&bull;</span>
-                        <span style="color: #4ade80; font-weight: 700;">&#127869; Food Included</span>
+                        <?php if ($hasFood): ?>
+                            <span style="color: #4ade80; font-weight: 700;">&#127869; With Delicious Food</span>
+                        <?php else: ?>
+                            <span style="color: #f87171; font-weight: 700;">&#10060; No Food</span>
+                        <?php endif; ?>
                     </div>
+                    <div style="font-size: 0.82rem; color: <?= $cat['available_quantity'] < 50 ? '#f87171' : '#34d399' ?>; margin-top: 5px; font-weight: 700;">
+                        &#9889; <?= $isSoldOut ? 'Sold Out' : ((int)$cat['available_quantity'] . ' passes remaining') ?>
+                    </div>
+                </div>
                     <div style="font-size: 0.82rem; color: <?= $cat['available_quantity'] < 50 ? '#f87171' : '#34d399' ?>; margin-top: 5px; font-weight: 700;">
                         &#9889; <?= $isSoldOut ? 'Sold Out' : ((int)$cat['available_quantity'] . ' passes remaining') ?>
                     </div>
@@ -293,49 +256,38 @@ include __DIR__ . '/includes/header.php';
 <!-- Interactive Video Sound & Copy UPI Scripts -->
 <script>
 function playWithSound(playerId) {
-    const list = [
-        { id: 'top-v0-player', btn: 'btn-sound-v0' },
-        { id: 'v1-player', btn: 'btn-sound-v1' },
-        { id: 'v2-player', btn: 'btn-sound-v2' }
-    ];
-    
-    list.forEach(function(item) {
-        const v = document.getElementById(item.id);
-        const b = document.getElementById(item.btn);
-        if (v) {
-            if (item.id === playerId) {
-                v.muted = false;
-                v.volume = 1.0;
-                v.play().catch(function(e) { console.log('Play triggered:', e); });
-                if (b) {
-                    b.innerHTML = '&#128264; Playing Sound';
-                    b.style.background = 'var(--gold-accent)';
-                    b.style.color = '#1f0411';
-                }
-            } else {
-                v.muted = true; // Keep playing visually, mute audio to avoid clashing
-                if (b) {
-                    b.innerHTML = '&#128266; Sound ON';
-                    b.style.background = 'rgba(245,183,34,0.2)';
-                    b.style.color = 'var(--gold-accent)';
-                }
+    const v = document.getElementById(playerId);
+    const b = document.getElementById('btn-sound-v0');
+    if (v) {
+        if (v.muted) {
+            v.muted = false;
+            v.volume = 1.0;
+            v.play().catch(function(e) { console.log('Play error:', e); });
+            if (b) {
+                b.innerHTML = '&#128264; Playing Sound';
+                b.style.background = 'var(--gold-accent)';
+                b.style.color = '#1f0411';
+            }
+        } else {
+            v.muted = true;
+            if (b) {
+                b.innerHTML = '&#128266; Sound ON';
+                b.style.background = 'rgba(245,183,34,0.2)';
+                b.style.color = 'var(--gold-accent)';
             }
         }
-    });
+    }
 }
 
-// Ensure all 3 videos run continuously on page load
+// Ensure Video 0 runs continuously on page load
 document.addEventListener('DOMContentLoaded', function() {
-    const videoIds = ['top-v0-player', 'v1-player', 'v2-player'];
-    videoIds.forEach(function(id) {
-        const video = document.getElementById(id);
-        if (video) {
-            video.muted = true;
-            video.play().catch(function(e) {
-                console.log('Autoplay notice for', id, e);
-            });
-        }
-    });
+    const video = document.getElementById('top-v0-player');
+    if (video) {
+        video.muted = true;
+        video.play().catch(function(e) {
+            console.log('Autoplay notice for top-v0-player', e);
+        });
+    }
 });
 
 function copyUpiId() {

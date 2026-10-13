@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && in_array
                         $name = 'Guest Attendee';
                     }
                     if (empty($phone) || strlen($phone) < 10) {
-                        $phone = '7004665804';
+                        $phone = '8603268304';
                     }
                     if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                         $email = 'guest@millenniumindiagroup.com';
@@ -185,7 +185,7 @@ include __DIR__ . '/includes/header.php';
                 <h3 style="color: var(--gold-accent); font-size: 1.35rem; margin: 0; font-weight: 800;">
                     &#127915; Step 1: Select Your Passes
                 </h3>
-                <span style="font-size: 0.85rem; color: #34d399; font-weight: 700;">&#10004; Food Included With All Passes</span>
+                <span style="font-size: 0.85rem; color: var(--gold-light); font-weight: 700;">&#127869; Food included with ₹399 &amp; ₹699 passes</span>
             </div>
 
             <!-- Ticket Cards -->
@@ -196,6 +196,7 @@ include __DIR__ . '/includes/header.php';
                         $isPre = ($cat['id'] == $preselectedCatId);
                         $isSoldOut = ($cat['available_quantity'] <= 0 || $cat['status'] === 'sold_out');
                         $maxAllowed = min(10, (int)$cat['available_quantity']);
+                        $hasFood = ((float)$cat['price'] >= 350 || stripos($cat['name'], 'With Food') !== false);
                         
                         // Default first active category to quantity 1
                         $defaultQty = 0;
@@ -208,11 +209,15 @@ include __DIR__ . '/includes/header.php';
                         <div class="head" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
                             <div>
                                 <h4 style="color: #fff; font-size: 1.18rem; font-weight: 800; margin: 0 0 4px;"><?= e($cat['name']) ?></h4>
-                                <div style="font-size: 0.85rem; color: var(--gold-light); display: flex; align-items: center; gap: 6px;">
+                                <div style="font-size: 0.85rem; color: var(--gold-light); display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                                     <span>&#128101;</span>
                                     <span>Admits <strong><?= (int)$cat['people_allowed'] ?> Person<?= $cat['people_allowed'] > 1 ? 's' : '' ?></strong></span>
                                     <span style="color: #666;">&bull;</span>
-                                    <span style="color: #4ade80;">Delicious Food Included</span>
+                                    <?php if ($hasFood): ?>
+                                        <span style="color: #4ade80; font-weight: 700;">&#127869; Delicious Food Included</span>
+                                    <?php else: ?>
+                                        <span style="color: #f87171; font-weight: 700;">&#10060; No Food</span>
+                                    <?php endif; ?>
                                 </div>
                                 <div style="font-size: 0.8rem; color: <?= $cat['available_quantity'] < 25 ? '#f87171' : '#34d399' ?>; margin-top: 4px; font-weight: 600;">
                                     &#9889; <?= $isSoldOut ? 'Sold Out' : ((int)$cat['available_quantity'] . ' passes remaining') ?>

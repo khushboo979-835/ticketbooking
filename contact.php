@@ -34,7 +34,7 @@ include __DIR__ . '/includes/header.php';
                 <div style="margin-bottom: 20px;">
                     <div style="color: var(--gold-light); font-weight: 700; font-size: 0.9rem; text-transform: uppercase;">Helpline Numbers</div>
                     <div style="font-size: 1.2rem; font-weight: 800; color: #fff; margin-top: 4px;">
-                        <a href="tel:7004665804" style="color: #fff; text-decoration: none;">+91 7004665804</a>
+                        <a href="tel:8603268304" style="color: #fff; text-decoration: none;">+91 8603268304</a>
                     </div>
                     <small style="color: #aaa;">Mon – Sun: 09:00 AM – 10:00 PM IST</small>
                 </div>

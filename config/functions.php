@@ -168,10 +168,10 @@ function get_setting(string $key, string $default = ''): string {
             while ($row = $stmt->fetch()) {
                 $settingsCache[$row['setting_key']] = $row['setting_value'];
             }
-            if (isset($settingsCache['contact_phone']) && $settingsCache['contact_phone'] !== '7004665804') {
-                $settingsCache['contact_phone'] = '7004665804';
+            if (!isset($settingsCache['contact_phone']) || $settingsCache['contact_phone'] !== '8603268304') {
+                $settingsCache['contact_phone'] = '8603268304';
                 try {
-                    $db->prepare("UPDATE site_settings SET setting_value = '7004665804' WHERE setting_key = 'contact_phone'")->execute();
+                    $db->prepare("UPDATE site_settings SET setting_value = '8603268304' WHERE setting_key = 'contact_phone'")->execute();
                 } catch (PDOException $ex) {}
             }
             if (!isset($settingsCache['upi_id']) || $settingsCache['upi_id'] !== 'chandni0984@oksbi') {
@@ -315,14 +315,11 @@ function get_event_categories(int $eventId, bool $activeOnly = true): array {
         if (!$syncedPricing) {
             $syncedPricing = true;
             try {
-                $check = $db->query("SELECT MIN(price) AS min_p FROM ticket_categories WHERE event_id = 1");
-                $minP = (float)($check ? $check->fetchColumn() : 0);
-                if ($minP > 200 || $minP == 0) {
-                    $db->exec("UPDATE ticket_categories SET name = 'Single Pass (No Food)', price = 199.00, people_allowed = 1 WHERE id = 1");
-                    $db->exec("UPDATE ticket_categories SET name = 'Couple Pass (No Food)', price = 299.00, people_allowed = 2 WHERE id = 2");
-                    $db->exec("UPDATE ticket_categories SET name = 'Single Pass (With Food)', price = 399.00, people_allowed = 1 WHERE id = 3");
-                    $db->exec("UPDATE ticket_categories SET name = 'Couple Pass (With Food)', price = 699.00, people_allowed = 2 WHERE id = 4");
-                }
+                $db->exec("UPDATE ticket_categories SET name = 'Single Pass (No Food)', price = 199.00, people_allowed = 1 WHERE id = 1");
+                $db->exec("UPDATE ticket_categories SET name = 'Couple Pass (No Food)', price = 299.00, people_allowed = 2 WHERE id = 2");
+                $db->exec("UPDATE ticket_categories SET name = 'Single Pass (With Food)', price = 399.00, people_allowed = 1 WHERE id = 3");
+                $db->exec("UPDATE ticket_categories SET name = 'Couple Pass (With Food)', price = 699.00, people_allowed = 2 WHERE id = 4");
+                $db->exec("UPDATE events SET description = 'Millennium India Group presents Jashn-E-Garba 2026! Dance, Celebrate, Feel the Vibes! Authentic Gujarati Dandiya beats, live folk orchestra, high-energy lights, contest awards, delicious food options and royal festive celebration.' WHERE id = 1 AND description LIKE '%Saurabh%'");
             } catch (Throwable $e) {}
         }
 

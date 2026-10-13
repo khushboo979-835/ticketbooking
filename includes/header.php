@@ -34,7 +34,6 @@ $currentNav = $currentNav ?? 'home';
                 <li><a href="<?= BASE_URL ?>/index.php" class="<?= $currentNav === 'home' ? 'active' : '' ?>">Home</a></li>
                 <li><a href="<?= BASE_URL ?>/events.php" class="<?= $currentNav === 'events' ? 'active' : '' ?>">Events</a></li>
                 <li><a href="<?= BASE_URL ?>/event-detail.php?slug=jashn-e-garba-2026" class="<?= $currentNav === 'garba' ? 'active' : '' ?>">Jashn-E-Garba</a></li>
-                <li><a href="<?= BASE_URL ?>/ticket.php" class="<?= $currentNav === 'find_ticket' ? 'active' : '' ?>">Find Ticket</a></li>
                 <li><a href="<?= BASE_URL ?>/contact.php" class="<?= $currentNav === 'contact' ? 'active' : '' ?>">Contact</a></li>
                 <li><a href="<?= BASE_URL ?>/booking.php?event_id=1" class="nav-btn">&#127915; Book Passes</a></li>
             </ul>
