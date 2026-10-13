@@ -47,6 +47,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
+// Handle instant claim/activation of a direct UPI payment by UTR
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'claim_utr_ticket') {
+    $custName = trim($_POST['customer_name'] ?? '');
+    $custPhone = preg_replace('/[^\d]/', '', trim($_POST['customer_phone'] ?? ''));
+    $catId = (int)($_POST['category_id'] ?? 1);
+    $qty = max(1, (int)($_POST['quantity'] ?? 1));
+    $utr = preg_replace('/[^A-Za-z0-9]/', '', trim($_POST['transaction_ref'] ?? ''));
+
+    if (empty($custName)) {
+        $custName = 'Garba Attendee';
+    }
+    if (empty($custPhone) || strlen($custPhone) < 10) {
+        $custPhone = '7004665804';
+    }
+    if (strlen($utr) < 6) {
+        set_flash('error', 'Please enter a valid 12-digit UPI UTR / Transaction Reference number.');
+        header("Location: " . BASE_URL . "/ticket.php");
+        exit;
+    }
+
+    try {
+        $catStmt = $db->prepare("SELECT * FROM ticket_categories WHERE id = :id LIMIT 1");
+        $catStmt->execute([':id' => $catId]);
+        $cat = $catStmt->fetch();
+        if (!$cat) {
+            $catStmt = $db->query("SELECT * FROM ticket_categories WHERE status = 'active' ORDER BY price ASC LIMIT 1");
+            $cat = $catStmt->fetch();
+        }
+
+        $totalAmount = (float)$cat['price'] * $qty;
+        $newUid = generate_booking_uid();
+        $qrToken = generate_qr_token();
+
+        $insB = $db->prepare("
+            INSERT INTO bookings (
+                booking_uid, event_id, customer_name, customer_phone, customer_email,
+                total_amount, payment_method, payment_status, transaction_ref, qr_token
+            ) VALUES (
+                :uid, :e_id, :name, :phone, :email,
+                :total, 'direct_upi', 'verified', :utr, :qr_token
+            )
+        ");
+        $insB->execute([
+            ':uid'      => $newUid,
+            ':e_id'     => (int)$cat['event_id'],
+            ':name'     => $custName,
+            ':phone'    => $custPhone,
+            ':email'    => $custPhone . '@millenniumindiagroup.com',
+            ':total'    => $totalAmount,
+            ':utr'      => $utr,
+            ':qr_token' => $qrToken
+        ]);
+        $newBookingId = $db->lastInsertId();
+
+        $insItem = $db->prepare("
+            INSERT INTO booking_items (booking_id, ticket_category_id, quantity, unit_price, subtotal)
+            VALUES (:b_id, :c_id, :qty, :price, :subtotal)
+        ");
+        $insItem->execute([
+            ':b_id'     => $newBookingId,
+            ':c_id'     => (int)$cat['id'],
+            ':qty'      => $qty,
+            ':price'    => (float)$cat['price'],
+            ':subtotal' => $totalAmount
+        ]);
+
+        // Deduct inventory
+        $db->prepare("UPDATE ticket_categories SET available_quantity = GREATEST(0, available_quantity - :q) WHERE id = :c_id")
+           ->execute([':q' => $qty, ':c_id' => (int)$cat['id']]);
+
+        set_flash('success', 'Pass generated successfully! Your official digital gate pass and tax receipt are ready below.');
+        header("Location: " . BASE_URL . "/ticket.php?uid=" . urlencode($newUid) . "&verified=1");
+        exit;
+    } catch (PDOException $e) {
+        error_log('[ticket.php claim_utr_ticket error]: ' . $e->getMessage());
+        set_flash('error', 'Database error generating ticket: ' . $e->getMessage());
+        header("Location: " . BASE_URL . "/ticket.php");
+        exit;
+    }
+}
+
 $uid = trim($_GET['uid'] ?? '');
 $searchQuery = trim($_GET['search'] ?? '');
 $booking = null;
@@ -193,19 +274,69 @@ include __DIR__ . '/includes/header.php';
     </div>
 
     <?php if ($hasSearched && !$booking): ?>
-        <!-- SEARCH NOT FOUND ALERT -->
-        <div class="festive-card" style="text-align: center; border: 2px dashed #f87171; padding: 35px 25px; margin-bottom: 30px;">
-            <div style="font-size: 3rem; color: #f87171; margin-bottom: 10px;">&#128680;</div>
-            <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 8px;">No Booking Found</h3>
-            <p style="color: #cbd5e1; font-size: 0.95rem; max-width: 540px; margin: 0 auto 20px; line-height: 1.6;">
-                We could not find any booking registered under <strong>"<?= e($searchQuery ?: $uid) ?>"</strong>.<br>
-                Please ensure you entered the exact 10-digit mobile number used while booking, or your Booking Reference ID.
-            </p>
-            <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
-                <a href="<?= BASE_URL ?>/ticket.php" class="btn btn-secondary">Try Another Search</a>
-                <a href="<?= BASE_URL ?>/booking.php?event_id=1" class="btn btn-primary">&#127915; Book Passes Now (From ₹199)</a>
+        <?php 
+        $cleanSearchDigits = preg_replace('/[^\d]/', '', $searchQuery);
+        $isUtrCandidate = (strlen($cleanSearchDigits) >= 6 && strlen($cleanSearchDigits) <= 25 && !preg_match('/^[6-9]\d{9}$/', trim($searchQuery)));
+        ?>
+        <?php if ($isUtrCandidate): ?>
+            <!-- DIRECT UPI UTR INSTANT PASS ACTIVATION CARD -->
+            <div class="festive-card" style="border: 2px solid var(--gold-accent); padding: 32px 24px; max-width: 660px; margin: 20px auto 35px; box-shadow: 0 10px 35px rgba(0,0,0,0.6);">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <span style="background: rgba(16,185,129,0.18); color: #10b981; font-weight: 800; font-size: 0.78rem; padding: 4px 14px; border-radius: 20px; text-transform: uppercase;">
+                        &#9889; Direct UPI Payment Activation
+                    </span>
+                    <h3 style="color: #fff; font-size: 1.5rem; font-weight: 900; margin: 12px 0 6px;">
+                        Generate Pass for Ref / UTR: <span style="font-family: monospace; color: var(--gold-accent);"><?= e($searchQuery) ?></span>
+                    </h3>
+                    <p style="color: #cbd5e1; font-size: 0.92rem; max-width: 520px; margin: 0 auto; line-height: 1.6;">
+                        Paid directly to UPI ID <code style="color:var(--gold-accent);">chandni0984@oksbi</code>? Complete your name &amp; phone below to generate your official Gate Pass &amp; Tax Receipt immediately:
+                    </p>
+                </div>
+
+                <form action="<?= BASE_URL ?>/ticket.php" method="POST" style="max-width: 460px; margin: 0 auto; text-align: left;">
+                    <input type="hidden" name="action" value="claim_utr_ticket">
+                    <input type="hidden" name="transaction_ref" value="<?= e($searchQuery) ?>">
+
+                    <div style="margin-bottom: 14px;">
+                        <label style="font-size: 0.85rem; color: #fff; font-weight: 700; display: block; margin-bottom: 6px;">Attendee Full Name *</label>
+                        <input type="text" name="customer_name" placeholder="e.g. Rahul Kumar" required style="width: 100%; padding: 12px 14px; font-size: 1rem; border-radius: 8px; background: #0a0106; border: 1.5px solid var(--gold-accent); color: #fff; box-sizing: border-box;">
+                    </div>
+
+                    <div style="margin-bottom: 14px;">
+                        <label style="font-size: 0.85rem; color: #fff; font-weight: 700; display: block; margin-bottom: 6px;">10-Digit Mobile Number *</label>
+                        <input type="tel" name="customer_phone" placeholder="e.g. 9876543210" maxlength="10" required style="width: 100%; padding: 12px 14px; font-size: 1rem; border-radius: 8px; background: #0a0106; border: 1.5px solid var(--gold-accent); color: #fff; box-sizing: border-box;">
+                    </div>
+
+                    <div style="margin-bottom: 18px;">
+                        <label style="font-size: 0.85rem; color: #fff; font-weight: 700; display: block; margin-bottom: 6px;">Select Pass Category *</label>
+                        <select name="category_id" style="width: 100%; padding: 12px 14px; font-size: 1rem; border-radius: 8px; background: #0a0106; border: 1.5px solid var(--gold-accent); color: #fff; box-sizing: border-box;">
+                            <option value="1">Single Pass (No Food) - ₹199</option>
+                            <option value="2">Couple Pass (No Food) - ₹299</option>
+                            <option value="3">Single Pass (With Food) - ₹399</option>
+                            <option value="4">Couple Pass (With Food) - ₹699</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block" style="width: 100%; padding: 14px; font-weight: 800; font-size: 1.05rem; border-radius: 8px; cursor: pointer;">
+                        &#10004; Generate My Pass &amp; Tax Receipt &rarr;
+                    </button>
+                </form>
             </div>
-        </div>
+        <?php else: ?>
+            <!-- SEARCH NOT FOUND ALERT -->
+            <div class="festive-card" style="text-align: center; border: 2px dashed #f87171; padding: 35px 25px; margin-bottom: 30px;">
+                <div style="font-size: 3rem; color: #f87171; margin-bottom: 10px;">&#128680;</div>
+                <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 8px;">No Booking Found</h3>
+                <p style="color: #cbd5e1; font-size: 0.95rem; max-width: 540px; margin: 0 auto 20px; line-height: 1.6;">
+                    We could not find any booking registered under <strong>"<?= e($searchQuery ?: $uid) ?>"</strong>.<br>
+                    Please ensure you entered the exact 10-digit mobile number used while booking, or your Booking Reference ID.
+                </p>
+                <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+                    <a href="<?= BASE_URL ?>/ticket.php" class="btn btn-secondary">Try Another Search</a>
+                    <a href="<?= BASE_URL ?>/booking.php?event_id=1" class="btn btn-primary">&#127915; Book Passes Now (From ₹199)</a>
+                </div>
+            </div>
+        <?php endif; ?>
 
     <?php elseif (!$hasSearched && !$booking): ?>
         <!-- FIRST VISIT DEFAULT VIEW: INSTANT PASS & RECEIPT DOWNLOAD GUIDE -->
@@ -454,7 +585,7 @@ include __DIR__ . '/includes/header.php';
                     <div>
                         <div class="ticket-info-label">Date &amp; Timing</div>
                         <div class="ticket-info-value" style="font-size: 0.95rem;">
-                            <?= date('d Oct 2026', strtotime($booking['event_date'])) ?> &bull; <?= date('h:i A', strtotime($booking['start_time'])) ?> &ndash; <?= date('h:i A', strtotime($booking['end_time'])) ?>
+                            <?= date('d M Y', strtotime($booking['event_date'])) ?> &bull; <?= date('h:i A', strtotime($booking['start_time'])) ?> &ndash; <?= date('h:i A', strtotime($booking['end_time'])) ?>
                         </div>
                     </div>
                 </div>
