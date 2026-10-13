@@ -60,7 +60,7 @@ try {
         $stmt = $db->prepare("
             SELECT b.*, e.title AS event_title, e.date AS event_date, e.venue AS event_venue, e.start_time, e.end_time
             FROM bookings b
-            JOIN events e ON b.event_id = e.id
+            LEFT JOIN events e ON b.event_id = e.id
             WHERE b.booking_uid = :uid
             ORDER BY b.id DESC LIMIT 1
         ");
@@ -74,16 +74,21 @@ try {
         $sql = "
             SELECT b.*, e.title AS event_title, e.date AS event_date, e.venue AS event_venue, e.start_time, e.end_time
             FROM bookings b
-            JOIN events e ON b.event_id = e.id
-            WHERE b.booking_uid = :q 
-               OR b.customer_phone = :q_raw
-               OR b.transaction_ref = :q_raw
+            LEFT JOIN events e ON b.event_id = e.id
+            WHERE b.booking_uid = :q_uid 
+               OR b.customer_phone = :q_phone
+               OR b.transaction_ref = :q_utr
         ";
-        $params = [':q' => $cleanSearch, ':q_raw' => $cleanSearch];
+        $params = [
+            ':q_uid'   => $cleanSearch,
+            ':q_phone' => $cleanSearch,
+            ':q_utr'   => $cleanSearch
+        ];
 
         if (!empty($last10)) {
-            $sql .= " OR b.customer_phone LIKE :q_10";
-            $params[':q_10'] = "%$last10%";
+            $sql .= " OR b.customer_phone LIKE :q_10 OR REPLACE(REPLACE(b.customer_phone, ' ', ''), '+91', '') LIKE :q_10b";
+            $params[':q_10']  = "%$last10%";
+            $params[':q_10b'] = "%$last10%";
         }
 
         $sql .= " ORDER BY b.id DESC LIMIT 1";
