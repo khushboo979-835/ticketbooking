@@ -301,12 +301,12 @@ include __DIR__ . '/includes/header.php';
             <!-- Clear 3-Step Instructions Box -->
             <div style="background: rgba(20, 2, 11, 0.75); border: 1.5px solid rgba(245, 183, 34, 0.35); border-radius: 12px; padding: 18px 22px; margin: 25px 0;">
                 <h4 style="color: var(--gold-accent); font-size: 1.05rem; margin: 0 0 10px; font-weight: 800;">
-                    &#128221; How to Pay &amp; Get Your Ticket (3 Easy Steps):
+                    &#128221; How to Pay &amp; Receive Your Ticket (3 Easy Steps):
                 </h4>
                 <ol style="margin: 0; padding-left: 20px; font-size: 0.92rem; line-height: 1.8; color: #e2e8f0;">
-                    <li>Apne UPI App (PhonePe / GPay / Paytm) me UPI ID <strong style="color: var(--gold-accent);"><?= e($cleanUpiId) ?></strong> par exact <strong style="color: var(--gold-accent);"><?= format_inr($cart['total_amount']) ?></strong> transfer karein.</li>
-                    <li>Payment success hone par receipt se <strong>12-digit UTR / UPI Ref No</strong> dekhein.</li>
-                    <li>Niche box me apna UTR number likhein aur <strong>"Confirm &amp; Get My Ticket"</strong> dabayein. Aapka QR Ticket turant generate ho jayega!</li>
+                    <li>Open your preferred UPI app (PhonePe, Google Pay, Paytm, or BHIM) and transfer exact <strong style="color: var(--gold-accent);"><?= format_inr($cart['total_amount']) ?></strong> to UPI ID: <strong style="color: var(--gold-accent);"><?= e($cleanUpiId) ?></strong>.</li>
+                    <li>Upon completing the payment, locate the <strong>12-digit UTR / UPI Reference Number</strong> on your transaction receipt.</li>
+                    <li>Enter your 12-digit UTR in the field below and click <strong>"Confirm Payment &amp; Get Ticket"</strong> to submit your pass for instant approval.</li>
                 </ol>
             </div>
 

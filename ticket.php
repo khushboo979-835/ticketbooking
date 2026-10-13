@@ -147,16 +147,16 @@ include __DIR__ . '/includes/header.php';
             
             <div style="background: rgba(20, 2, 11, 0.85); border: 1.5px dashed var(--gold-accent); border-radius: 12px; padding: 20px; margin: 20px 0; text-align: left; font-size: 0.92rem; line-height: 1.8; color: #e2e8f0;">
                 <strong style="color: var(--gold-accent); display: block; font-size: 1.05rem; margin-bottom: 8px;">
-                    &#9888; केवल भुगतान (Payment) की पुष्टि होने के बाद ही मान्य QR टिकट जारी होता है:
+                    &#9888; Official Notice: Digital QR Passes are issued strictly upon confirmed payment:
                 </strong>
                 <p style="margin: 0 0 10px;">
-                    1. <strong>Strict Payment Policy:</strong> Millennium India Group ke official niyam ke anusaar, Digital QR Gate Entry Pass keval unhi customers ko issue kiya jata hai jinka payment verify ho chuka hai.
+                    1. <strong>Strict Payment Policy:</strong> According to the official regulations of Millennium India Group, Digital QR Gate Entry Passes are issued exclusively to attendees whose payment has been verified.
                 </p>
                 <p style="margin: 0 0 10px;">
-                    2. <strong>Instant Booking Receipt:</strong> Jab aap booking form bhar kar UPI ID (<code>chandni0984@oksbi</code>) par exact payment karte hain aur apna 12-digit UTR submit karte hain, tabhi aapka booking reference generate hota hai.
+                    2. <strong>Instant Booking Reference:</strong> When you complete your reservation and submit your 12-digit UPI Transaction Reference (UTR) for UPI ID (<code>chandni0984@oksbi</code>), your booking reference is immediately recorded in our system.
                 </p>
                 <p style="margin: 0;">
-                    3. Bina payment confirmation ya bina valid UTR ke koi bhi pass gate entry ke liye aamany (invalid) mana jayega.
+                    3. <strong>Authorized Entry Only:</strong> Any pass without payment confirmation or without a valid verified UTR will be treated as invalid for admission at the event gate.
                 </p>
             </div>
 
@@ -218,7 +218,7 @@ include __DIR__ . '/includes/header.php';
             <!-- Verification Notice Box -->
             <div style="background: rgba(245,183,34,0.12); border: 1.5px dashed var(--gold-accent); border-radius: 10px; padding: 18px 20px; margin-bottom: 25px; text-align: left; font-size: 0.92rem; color: #ddd; line-height: 1.7;">
                 <strong style="color: #ffd966; display: block; margin-bottom: 6px; font-size: 1rem;">&#9888; Important Security Policy:</strong>
-                Aapka booking reference generate ho gaya hai. Gate entry pass ka <strong>Digital QR Code</strong> tabhi unlock hoga jab hamari accounts team aapke payment UTR ko verify karegi. <strong>Keval verified payment par hi entry valid mani jayegi.</strong>
+                Your booking reference has been successfully registered. The gate entry <strong>Digital QR Code</strong> will be unlocked once our accounts team verifies your submitted payment UTR against our bank records. <strong>Only confirmed and verified passes are valid for gate admission.</strong>
             </div>
 
             <!-- Action Buttons -->
