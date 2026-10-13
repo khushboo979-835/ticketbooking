@@ -154,6 +154,12 @@ include __DIR__ . '/includes/header.php';
                     <span><?= format_inr($booking['total_amount']) ?></span>
                 </div>
             </div>
+
+            <div style="text-align: center; margin-top: 20px; border-top: 1px dashed rgba(245,183,34,0.3); padding-top: 16px;">
+                <button type="button" onclick="window.print()" class="btn btn-secondary" style="font-weight: 700; padding: 10px 24px;">
+                    &#128424; Print / Save Official Receipt Slip
+                </button>
+            </div>
         </div>
 
     </div>

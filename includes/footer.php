@@ -24,6 +24,7 @@
                         <li><a href="<?= BASE_URL ?>/events.php">All Events</a></li>
                         <li><a href="<?= BASE_URL ?>/event-detail.php?slug=jashn-e-garba-2026">Jashn-E-Garba 2026</a></li>
                         <li><a href="<?= BASE_URL ?>/booking.php?event_id=1">Book Entry Passes</a></li>
+                        <li><a href="<?= BASE_URL ?>/ticket.php">&#128269; Search Ticket / Receipt</a></li>
                         <li><a href="<?= BASE_URL ?>/contact.php">Contact & Venue Location</a></li>
                     </ul>
                 </div>

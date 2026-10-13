@@ -337,6 +337,15 @@ include __DIR__ . '/includes/header.php';
                         &#10004; Confirm Payment &amp; Get Ticket &rarr;
                     </button>
                 </div>
+
+                <div style="margin-top: 14px; text-align: center;">
+                    <a href="https://wa.me/917004665804?text=<?= urlencode("Hello Millennium India Group, I am making payment for Booking ID: " . $bookingUid . " (Amount: " . format_inr($cart['total_amount']) . ", Name: " . $customer['customer_name'] . "). Please guide me / verify.") ?>" 
+                       target="_blank" 
+                       class="btn" 
+                       style="background: #25d366; color: #fff; font-weight: 800; font-size: 0.95rem; padding: 12px 20px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; box-sizing: border-box;">
+                        <span>&#128172;</span> <span>Pay / Send Screenshot on WhatsApp (+91 7004665804)</span>
+                    </a>
+                </div>
             </form>
 
             <div style="text-align: center; margin-top: 25px; color: var(--text-muted); font-size: 0.88rem;">

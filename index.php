@@ -46,7 +46,10 @@ include __DIR__ . '/includes/header.php';
             <a href="<?= BASE_URL ?>/booking.php?event_id=<?= $event['id'] ?? 1 ?>" class="btn btn-primary" style="font-size: 1.12rem; padding: 14px 34px; box-shadow: 0 6px 20px rgba(245,183,34,0.4); font-weight: 800;">
                 &#127915; Book Passes Now (From ₹199)
             </a>
-            <a href="tel:7004665804" class="btn btn-secondary" style="font-size: 1rem; padding: 14px 24px; font-weight: 700;">
+            <a href="<?= BASE_URL ?>/ticket.php" class="btn btn-secondary" style="font-size: 1rem; padding: 14px 22px; font-weight: 700;">
+                &#128269; Search My Ticket / Receipt
+            </a>
+            <a href="tel:7004665804" class="btn btn-secondary" style="font-size: 1rem; padding: 14px 22px; font-weight: 700;">
                 &#128222; Helpline: +91 7004665804
             </a>
         </div>
@@ -279,14 +282,67 @@ function playWithSound(playerId) {
     }
 }
 
-// Ensure Video 0 runs continuously on page load
+// 1. Continuous automatic play on page load
+// 2. Unmute on first user touch/scroll/click anywhere
+// 3. Reels-like auto pause when scrolled away, auto resume when visible
 document.addEventListener('DOMContentLoaded', function() {
     const video = document.getElementById('top-v0-player');
+    const soundBtn = document.getElementById('btn-sound-v0');
+
     if (video) {
+        // Immediate play attempt
         video.muted = true;
         video.play().catch(function(e) {
-            console.log('Autoplay notice for top-v0-player', e);
+            console.log('Autoplay muted start', e);
         });
+
+        // Auto-unmute on first touch/click/scroll interaction
+        let soundActivated = false;
+        function tryUnmute() {
+            if (soundActivated || !video) return;
+            video.muted = false;
+            video.volume = 1.0;
+            soundActivated = true;
+            if (soundBtn) {
+                soundBtn.innerHTML = '&#128264; Playing Sound';
+                soundBtn.style.background = 'var(--gold-accent)';
+                soundBtn.style.color = '#1f0411';
+            }
+            window.removeEventListener('click', tryUnmute);
+            window.removeEventListener('touchstart', tryUnmute);
+            window.removeEventListener('scroll', tryUnmute);
+        }
+
+        window.addEventListener('click', tryUnmute, { once: true, passive: true });
+        window.addEventListener('touchstart', tryUnmute, { once: true, passive: true });
+        window.addEventListener('scroll', tryUnmute, { once: true, passive: true });
+
+        // Reels-Style: Pause when page is scrolled down (video out of view), play when in view
+        if ('IntersectionObserver' in window) {
+            const reelsObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && entry.intersectionRatio >= 0.25) {
+                        video.play().catch(function() {});
+                    } else {
+                        video.pause();
+                    }
+                });
+            }, {
+                threshold: [0, 0.25, 0.5]
+            });
+            reelsObserver.observe(video);
+        } else {
+            // Fallback for older browsers
+            window.addEventListener('scroll', function() {
+                const rect = video.getBoundingClientRect();
+                const inView = (rect.bottom > 60 && rect.top < window.innerHeight - 60);
+                if (inView && video.paused) {
+                    video.play().catch(function() {});
+                } else if (!inView && !video.paused) {
+                    video.pause();
+                }
+            }, { passive: true });
+        }
     }
 });
 

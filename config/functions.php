@@ -315,10 +315,11 @@ function get_event_categories(int $eventId, bool $activeOnly = true): array {
         if (!$syncedPricing) {
             $syncedPricing = true;
             try {
-                $db->exec("UPDATE ticket_categories SET name = 'Single Pass (No Food)', price = 199.00, people_allowed = 1 WHERE id = 1");
-                $db->exec("UPDATE ticket_categories SET name = 'Couple Pass (No Food)', price = 299.00, people_allowed = 2 WHERE id = 2");
-                $db->exec("UPDATE ticket_categories SET name = 'Single Pass (With Food)', price = 399.00, people_allowed = 1 WHERE id = 3");
-                $db->exec("UPDATE ticket_categories SET name = 'Couple Pass (With Food)', price = 699.00, people_allowed = 2 WHERE id = 4");
+                $db->exec("UPDATE ticket_categories SET name = 'Single Pass (No Food)', price = 199.00, people_allowed = 1, status = 'active' WHERE id = 1");
+                $db->exec("UPDATE ticket_categories SET name = 'Couple Pass (No Food)', price = 299.00, people_allowed = 2, status = 'active' WHERE id = 2");
+                $db->exec("UPDATE ticket_categories SET name = 'Single Pass (With Food)', price = 399.00, people_allowed = 1, status = 'active' WHERE id = 3");
+                $db->exec("UPDATE ticket_categories SET name = 'Couple Pass (With Food)', price = 699.00, people_allowed = 2, status = 'active' WHERE id = 4");
+                $db->exec("UPDATE ticket_categories SET status = 'inactive' WHERE id NOT IN (1, 2, 3, 4) AND event_id = 1");
                 $db->exec("UPDATE events SET description = 'Millennium India Group presents Jashn-E-Garba 2026! Dance, Celebrate, Feel the Vibes! Authentic Gujarati Dandiya beats, live folk orchestra, high-energy lights, contest awards, delicious food options and royal festive celebration.' WHERE id = 1 AND description LIKE '%Saurabh%'");
             } catch (Throwable $e) {}
         }
