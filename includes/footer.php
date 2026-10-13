@@ -41,13 +41,19 @@
 
                 <div class="footer-col">
                     <h4>Event Venue & Timing</h4>
+                    <?php 
+                        $fEvent = function_exists('get_event') ? get_event(1) : null;
+                        $fVenue = $fEvent['venue'] ?? 'Unique Garden, Patna';
+                        $fDate = !empty($fEvent['date']) ? date('l, d F Y', strtotime($fEvent['date'])) : 'Friday, 16 October 2026';
+                        $fTime = (!empty($fEvent['start_time']) && !empty($fEvent['end_time'])) ? (date('h:i A', strtotime($fEvent['start_time'])) . ' – ' . date('h:i A', strtotime($fEvent['end_time']))) : '05:00 PM – 09:00 PM';
+                    ?>
                     <p style="font-size: 0.95rem; margin-bottom: 10px;">
-                        <strong>Unique Garden, Patna</strong><br>
+                        <strong><?= e($fVenue) ?></strong><br>
                         Near Saguna More / Bailey Road, Patna, Bihar
                     </p>
                     <p style="font-size: 0.9rem; color: var(--gold-light);">
-                        &#128197; Friday, 16 October 2026<br>
-                        &#9200; 05:00 PM – 09:00 PM IST
+                        &#128197; <?= $fDate ?><br>
+                        &#9200; <?= $fTime ?> IST
                     </p>
                     <div style="margin-top: 15px; font-size: 0.85rem; color: #aaa;">
                         Accepted Payment Methods: UPI (GPay, PhonePe, Paytm, BHIM), NetBanking, Credit & Debit Cards.

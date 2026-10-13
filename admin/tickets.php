@@ -49,7 +49,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ':id'    => $catId,
                     ':e_id'  => $eventId
                 ]);
-                set_flash('success', "Ticket pass '{$name}' updated successfully.");
+
+                // Sync corresponding seats in event_seats matrix
+                try {
+                    $syncSeat = $db->prepare("UPDATE event_seats SET category_name = :name, tier_price = :price WHERE category_id = :cid");
+                    $syncSeat->execute([':name' => $name, ':price' => $price, ':cid' => $catId]);
+                } catch (Throwable $ex) {}
+
+                set_flash('success', "Ticket pass '{$name}' updated successfully! Public website and seat map updated.");
             } else {
                 $stmt = $db->prepare("
                     INSERT INTO ticket_categories (event_id, name, price, people_allowed, total_quantity, available_quantity, status)

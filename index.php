@@ -207,7 +207,7 @@ include __DIR__ . '/includes/header.php';
                 <span style="font-size: 1.7rem;">&#128197;</span>
                 <div>
                     <strong>Date &amp; Timing:</strong>
-                    <div style="color: #fff; font-weight: 700;">Friday, 16 October 2026 &bull; 05:00 PM Onwards</div>
+                    <div style="color: #fff; font-weight: 700;"><?= !empty($event['date']) ? date('l, d F Y', strtotime($event['date'])) : 'Friday, 16 October 2026' ?> &bull; <?= !empty($event['start_time']) ? date('h:i A', strtotime($event['start_time'])) : '05:00 PM' ?> Onwards</div>
                 </div>
             </div>
 
@@ -215,7 +215,7 @@ include __DIR__ . '/includes/header.php';
                 <span style="font-size: 1.7rem;">&#128205;</span>
                 <div>
                     <strong>Venue:</strong>
-                    <div style="color: #fff; font-weight: 700;">Unique Garden, Pillar No. 1, Bailey Road, Patna</div>
+                    <div style="color: #fff; font-weight: 700;"><?= e($event['venue'] ?? 'Unique Garden, Pillar No. 1, Bailey Road, Patna') ?></div>
                 </div>
             </div>
 
@@ -388,19 +388,43 @@ include __DIR__ . '/includes/header.php';
          ======================================================== -->
     <div class="bms-arena-wrapper" id="bms-seat-map">
         <!-- Event Header Bar -->
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
             <div>
                 <h3 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">
                     <?= e($event['title'] ?? 'Jashn-E-Garba 2026') ?>
                 </h3>
                 <div style="font-size: 0.85rem; color: #64748b; margin-top: 2px;">
-                    &#128197; Friday, 16 October 2026 &bull; &#9200; 05:00 PM – 09:00 PM &bull; Unique Garden, Patna
+                    &#128197; <?= date('l, d F Y', strtotime($event['date'] ?? '2026-10-16')) ?> &bull; &#9200; <?= date('h:i A', strtotime($event['start_time'] ?? '17:00:00')) ?> – <?= date('h:i A', strtotime($event['end_time'] ?? '21:00:00')) ?> &bull; <?= e($event['venue'] ?? 'Unique Garden, Patna') ?>
                 </div>
             </div>
             <div style="display: flex; gap: 8px;">
                 <span style="background: rgba(245,183,34,0.15); color: #d97706; padding: 4px 14px; border-radius: 20px; font-weight: 800; font-size: 0.82rem;">
                     &#9889; <span id="target-count-display">2</span> Seats Required
                 </span>
+            </div>
+        </div>
+
+        <!-- Live Arena Seat Availability Strip (Total Seats, Booked Seats, Khali Seats) -->
+        <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 18px; margin-bottom: 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="background: #0f172a; color: #fff; font-size: 0.74rem; font-weight: 800; padding: 3px 10px; border-radius: 14px; text-transform: uppercase;">
+                    &#128186; Live Arena Status
+                </span>
+                <span style="font-size: 0.92rem; color: #334155; font-weight: 700;">
+                    Total Seats: <strong style="color: #0f172a; font-size: 1.05rem;"><?= $seatSummary['total'] ?></strong>
+                </span>
+            </div>
+
+            <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                <div style="font-size: 0.92rem; color: #334155; font-weight: 700;">
+                    <span style="color: #d97706;">&#9203; Booked:</span> <strong style="color: #d97706; font-size: 1.05rem;"><?= $seatSummary['sold'] ?></strong>
+                </div>
+                <div style="font-size: 0.92rem; color: #334155; font-weight: 700;">
+                    <span style="color: #059669;">&#9989; Khali (Available):</span> <strong style="color: #059669; font-size: 1.1rem;"><?= $seatSummary['available'] ?></strong>
+                </div>
+                <div style="font-size: 0.78rem; font-weight: 800; background: #e2e8f0; color: #475569; padding: 3px 10px; border-radius: 6px;">
+                    <?= $seatSummary['occupancy_pct'] ?>% Occupied
+                </div>
             </div>
         </div>
 

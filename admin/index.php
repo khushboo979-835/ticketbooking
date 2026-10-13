@@ -127,6 +127,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $freeSeat->execute([':c' => $sc]);
                     }
                 }
+                // Extra safeguard: Free any seat tagged with this booking_uid
+                $db->prepare("UPDATE event_seats SET status = 'available', booking_uid = NULL WHERE booking_uid = :uid")
+                   ->execute([':uid' => $bRow['booking_uid']]);
 
                 $db->prepare("DELETE FROM booking_items WHERE booking_id = :id")->execute([':id' => $bookingId]);
                 $db->prepare("DELETE FROM bookings WHERE id = :id")->execute([':id' => $bookingId]);

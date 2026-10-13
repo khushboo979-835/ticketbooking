@@ -263,28 +263,17 @@ include __DIR__ . '/includes/header.php';
             <?php endfor; ?>
         </div>
 
-        <!-- Tier Preview Tags (Matches Screenshot) -->
+        <!-- Tier Preview Tags (Matches BookMyShow Categories Dynamically) -->
         <div class="bms-tier-preview-grid">
-            <div class="bms-tier-preview-item">
-                <div class="bms-tier-preview-title">VIP Recliner</div>
-                <div class="bms-tier-preview-price">₹699</div>
-                <div class="bms-tier-preview-status" style="color: #f84464;">ALMOST FULL</div>
-            </div>
-            <div class="bms-tier-preview-item">
-                <div class="bms-tier-preview-title">Prime Sofa</div>
-                <div class="bms-tier-preview-price">₹399</div>
-                <div class="bms-tier-preview-status" style="color: #f59e0b;">FILLING FAST</div>
-            </div>
-            <div class="bms-tier-preview-item">
-                <div class="bms-tier-preview-title">Picture Perfect</div>
-                <div class="bms-tier-preview-price">₹299</div>
-                <div class="bms-tier-preview-status" style="color: #f84464;">ALMOST FULL</div>
-            </div>
-            <div class="bms-tier-preview-item">
-                <div class="bms-tier-preview-title">Prime Rows</div>
-                <div class="bms-tier-preview-price">₹199</div>
-                <div class="bms-tier-preview-status" style="color: #10b981;">AVAILABLE</div>
-            </div>
+            <?php foreach ($categories as $cat): ?>
+                <div class="bms-tier-preview-item" onclick="selectTierAndScroll('<?= e($cat['name']) ?>')" style="cursor: pointer;">
+                    <div class="bms-tier-preview-title"><?= e($cat['name']) ?></div>
+                    <div class="bms-tier-preview-price"><?= format_inr($cat['price']) ?></div>
+                    <div class="bms-tier-preview-status" style="color: <?= ((int)$cat['available_seats'] < 10) ? '#f84464' : '#10b981' ?>;">
+                        <?= ((int)$cat['available_seats'] < 5) ? 'ALMOST FULL' : (((int)$cat['available_seats'] < 15) ? 'FILLING FAST' : 'AVAILABLE') ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
         </div>
 
         <button type="button" class="btn-bms-red" style="width: 100%; justify-content: center;" onclick="scrollToSeatMap()">
@@ -298,19 +287,33 @@ include __DIR__ . '/includes/header.php';
          ======================================================== -->
     <div class="bms-arena-wrapper" id="bms-seat-map">
         <!-- Event Header Bar -->
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
             <div>
                 <h3 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">
                     <?= e($event['title']) ?>
                 </h3>
                 <div style="font-size: 0.85rem; color: #64748b; margin-top: 2px;">
-                    &#128197; <?= date('D, d M Y', strtotime($event['date'])) ?> &bull; &#9200; 05:00 PM – 09:00 PM &bull; Patna
+                    &#128197; <?= date('D, d M Y', strtotime($event['date'])) ?> &bull; &#9200; <?= !empty($event['start_time']) ? date('h:i A', strtotime($event['start_time'])) : '05:00 PM' ?> Onwards &bull; <?= e($event['venue']) ?>
                 </div>
             </div>
             <div style="display: flex; gap: 8px;">
                 <span style="background: rgba(245,183,34,0.15); color: #d97706; padding: 4px 12px; border-radius: 20px; font-weight: 800; font-size: 0.82rem;">
-                    &#9889; <span id="target-count-display">2</span> Seats Selected
+                    &#9889; <span id="target-count-display">2</span> Seats Target
                 </span>
+            </div>
+        </div>
+
+        <!-- Live Real-Time Arena Capacity Strip (Booked, Khali, Total) -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,0.2);"></span>
+                <span style="font-size: 0.88rem; font-weight: 700; color: #0f172a;">Live Arena Seating Status:</span>
+            </div>
+            <div style="display: flex; gap: 14px; font-size: 0.84rem; font-weight: 700; flex-wrap: wrap;">
+                <span style="color: #475569;">Total Seats: <strong style="color: #0f172a;"><?= (int)$seatSummary['total'] ?></strong></span>
+                <span style="color: #dc2626;">Booked: <strong style="color: #dc2626;"><?= (int)$seatSummary['sold'] ?></strong></span>
+                <span style="color: #16a34a;">Khali (Available): <strong style="color: #16a34a;"><?= (int)$seatSummary['available'] ?></strong></span>
+                <span style="background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 12px;"><?= $seatSummary['occupancy_pct'] ?>% Occupied</span>
             </div>
         </div>
 
@@ -450,6 +453,10 @@ function scrollToSeatMap() {
     if (el) {
         el.scrollIntoView({ behavior: 'smooth' });
     }
+}
+
+function selectTierAndScroll(tierName) {
+    scrollToSeatMap();
 }
 
 function handleSeatClick(code, price) {
