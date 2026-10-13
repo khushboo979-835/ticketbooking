@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && in_array
                         $name = 'Guest Attendee';
                     }
                     if (empty($phone) || strlen($phone) < 10) {
-                        $phone = '8603268304';
+                        $phone = '7004665804';
                     }
                     if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                         $email = 'guest@millenniumindiagroup.com';

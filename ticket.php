@@ -110,8 +110,8 @@ include __DIR__ . '/includes/header.php';
                 <a href="<?= BASE_URL ?>/booking.php?event_id=1" class="btn btn-primary" style="padding: 14px 28px; font-weight: 800; font-size: 1rem;">
                     &#127915; Book Passes (From ₹199)
                 </a>
-                <a href="https://wa.me/918603268304" target="_blank" class="btn btn-secondary" style="padding: 14px 22px; font-weight: 700; font-size: 0.95rem;">
-                    &#128222; Helpline: +91 8603268304
+                <a href="https://wa.me/917004665804" target="_blank" class="btn btn-secondary" style="padding: 14px 22px; font-weight: 700; font-size: 0.95rem;">
+                    &#128222; Helpline: +91 7004665804
                 </a>
             </div>
         </div>
@@ -136,7 +136,7 @@ include __DIR__ . '/includes/header.php';
                 <button onclick="window.location.reload();" class="btn btn-secondary">
                     &#128472; Check Status Again
                 </button>
-                <a href="https://wa.me/918603268304?text=<?= urlencode("Hello Millennium India Group, please verify payment for Booking ID " . $booking['booking_uid'] . " (UTR: " . $booking['transaction_ref'] . ")") ?>" target="_blank" class="btn btn-primary" style="background:#25d366; color:#fff; border-color:#25d366;">
+                <a href="https://wa.me/917004665804?text=<?= urlencode("Hello Millennium India Group, please verify payment for Booking ID " . $booking['booking_uid'] . " (UTR: " . $booking['transaction_ref'] . ")") ?>" target="_blank" class="btn btn-primary" style="background:#25d366; color:#fff; border-color:#25d366;">
                     &#128172; Request WhatsApp Verification
                 </a>
             </div>

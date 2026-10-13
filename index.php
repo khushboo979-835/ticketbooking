@@ -46,8 +46,8 @@ include __DIR__ . '/includes/header.php';
             <a href="<?= BASE_URL ?>/booking.php?event_id=<?= $event['id'] ?? 1 ?>" class="btn btn-primary" style="font-size: 1.12rem; padding: 14px 34px; box-shadow: 0 6px 20px rgba(245,183,34,0.4); font-weight: 800;">
                 &#127915; Book Passes Now (From ₹199)
             </a>
-            <a href="tel:8603268304" class="btn btn-secondary" style="font-size: 1rem; padding: 14px 24px; font-weight: 700;">
-                &#128222; Helpline: +91 8603268304
+            <a href="tel:7004665804" class="btn btn-secondary" style="font-size: 1rem; padding: 14px 24px; font-weight: 700;">
+                &#128222; Helpline: +91 7004665804
             </a>
         </div>
 

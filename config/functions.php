@@ -168,10 +168,10 @@ function get_setting(string $key, string $default = ''): string {
             while ($row = $stmt->fetch()) {
                 $settingsCache[$row['setting_key']] = $row['setting_value'];
             }
-            if (!isset($settingsCache['contact_phone']) || $settingsCache['contact_phone'] !== '8603268304') {
-                $settingsCache['contact_phone'] = '8603268304';
+            if (!isset($settingsCache['contact_phone']) || $settingsCache['contact_phone'] !== '7004665804') {
+                $settingsCache['contact_phone'] = '7004665804';
                 try {
-                    $db->prepare("UPDATE site_settings SET setting_value = '8603268304' WHERE setting_key = 'contact_phone'")->execute();
+                    $db->prepare("UPDATE site_settings SET setting_value = '7004665804' WHERE setting_key = 'contact_phone'")->execute();
                 } catch (PDOException $ex) {}
             }
             if (!isset($settingsCache['upi_id']) || $settingsCache['upi_id'] !== 'chandni0984@oksbi') {

@@ -340,7 +340,7 @@ include __DIR__ . '/includes/header.php';
             </form>
 
             <div style="text-align: center; margin-top: 25px; color: var(--text-muted); font-size: 0.88rem;">
-                Need help with payment? Helpline: <a href="tel:8603268304" style="color: var(--gold-accent); font-weight: 700; text-decoration: none;">+91 8603268304</a> &bull; WhatsApp: <a href="https://wa.me/918603268304" target="_blank" style="color:#25d366; font-weight:700; text-decoration:none;">8603268304</a>
+                Need help with payment? Helpline: <a href="tel:7004665804" style="color: var(--gold-accent); font-weight: 700; text-decoration: none;">+91 7004665804</a> &bull; WhatsApp: <a href="https://wa.me/917004665804" target="_blank" style="color:#25d366; font-weight:700; text-decoration:none;">7004665804</a>
             </div>
 
         </div>
