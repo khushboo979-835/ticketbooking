@@ -173,49 +173,29 @@ try {
         $booking = $stmt->fetch();
     } elseif (!empty($searchQuery)) {
         $rawSearch = trim($searchQuery);
-        $extractedDigits = preg_replace('/[^\d]/', '', $rawSearch);
-        $extractedUid = '';
-        if (preg_match('/(MIG\d{8}[A-Za-z0-9]+)/i', $rawSearch, $mUid)) {
-            $extractedUid = strtoupper($mUid[1]);
-        }
+        $cleanDigits = preg_replace('/[^\d]/', '', $rawSearch);
+        $phone10 = (strlen($cleanDigits) >= 10) ? substr($cleanDigits, -10) : '';
 
-        $sql = "
+        $stmt = $db->prepare("
             SELECT b.*, e.title AS event_title, e.date AS event_date, e.venue AS event_venue, e.start_time, e.end_time
             FROM bookings b
             LEFT JOIN events e ON b.event_id = e.id
-            WHERE b.booking_uid = :q_raw
-               OR b.booking_uid LIKE :q_like
-               OR b.transaction_ref = :q_raw
-               OR b.transaction_ref LIKE :q_like
-               OR b.customer_phone = :q_raw
-        ";
-        $params = [
-            ':q_raw'  => $rawSearch,
-            ':q_like' => "%$rawSearch%"
-        ];
-
-        if (!empty($extractedUid)) {
-            $sql .= " OR b.booking_uid = :q_uid";
-            $params[':q_uid'] = $extractedUid;
-        }
-
-        if (!empty($extractedDigits) && strlen($extractedDigits) >= 6) {
-            $sql .= " OR b.transaction_ref LIKE :q_dig OR REPLACE(b.transaction_ref, 'UTR-', '') LIKE :q_dig2";
-            $params[':q_dig']  = "%$extractedDigits%";
-            $params[':q_dig2'] = "%$extractedDigits%";
-        }
-
-        if (!empty($extractedDigits) && strlen($extractedDigits) >= 10) {
-            $last10 = substr($extractedDigits, -10);
-            $sql .= " OR b.customer_phone LIKE :q_p10 OR REPLACE(REPLACE(b.customer_phone, ' ', ''), '+91', '') LIKE :q_p10b";
-            $params[':q_p10']  = "%$last10%";
-            $params[':q_p10b'] = "%$last10%";
-        }
-
-        $sql .= " ORDER BY b.id DESC LIMIT 1";
-
-        $stmt = $db->prepare($sql);
-        $stmt->execute($params);
+            WHERE b.booking_uid = :q_uid
+               OR b.transaction_ref = :q_ref
+               OR b.customer_phone = :q_phone
+               OR (:phone10 != '' AND b.customer_phone LIKE :q_p10)
+               OR (:dig6 != '' AND b.transaction_ref LIKE :q_utr)
+            ORDER BY b.id DESC LIMIT 1
+        ");
+        $stmt->execute([
+            ':q_uid'   => $rawSearch,
+            ':q_ref'   => $rawSearch,
+            ':q_phone' => $rawSearch,
+            ':phone10' => $phone10,
+            ':q_p10'   => "%$phone10",
+            ':dig6'    => (strlen($cleanDigits) >= 6 ? $cleanDigits : ''),
+            ':q_utr'   => "%$cleanDigits%"
+        ]);
         $booking = $stmt->fetch();
     }
 

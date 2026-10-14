@@ -467,36 +467,29 @@ function ensure_seat_inventory_table(): void {
         }
         // 4. Ensure verified booking for client tester mobile 6204954936 exists
         try {
-            $chkTester = $db->prepare("SELECT id FROM bookings WHERE booking_uid = 'MIG20261013F65A0F' OR customer_phone = '6204954936' LIMIT 1");
-            $chkTester->execute();
-            $existingId = $chkTester->fetchColumn();
+            $chkTester = $db->query("SELECT id FROM bookings WHERE booking_uid = 'MIG20261013F65A0F' OR customer_phone LIKE '%6204954936' LIMIT 1");
+            $existingId = $chkTester ? $chkTester->fetchColumn() : null;
             if ($existingId) {
-                $db->prepare("UPDATE bookings SET customer_phone = '6204954936', payment_status = 'verified', transaction_ref = '005821998431', seat_numbers = 'C-01' WHERE id = :id")
-                   ->execute([':id' => $existingId]);
-                $db->prepare("UPDATE event_seats SET status = 'sold', booking_uid = 'MIG20261013F65A0F' WHERE seat_code = 'C-01'")->execute();
+                $db->exec("UPDATE bookings SET customer_phone = '6204954936', payment_status = 'verified', transaction_ref = '005821998431' WHERE id = " . (int)$existingId);
             } else {
-                $testerUid = 'MIG20261013F65A0F';
                 $testerQr = bin2hex(random_bytes(32));
-                $insTester = $db->prepare("
-                    INSERT INTO bookings (
-                        booking_uid, event_id, customer_name, customer_phone, customer_email,
-                        total_amount, payment_method, payment_status, transaction_ref, qr_token,
-                        seat_numbers
-                    ) VALUES (
-                        :uid, 1, 'Millennium Verified Guest', '6204954936', '6204954936@millenniumindiagroup.com',
-                        399.00, 'direct_upi', 'verified', '005821998431', :qr, 'C-01'
-                    )
+                $insT = $db->prepare("
+                    INSERT INTO bookings (booking_uid, event_id, customer_name, customer_phone, customer_email, total_amount, payment_method, payment_status, transaction_ref, qr_token)
+                    VALUES ('MIG20261013F65A0F', 1, 'Millennium VIP Guest', '6204954936', 'guest@millenniumindiagroup.com', 399.00, 'direct_upi', 'verified', '005821998431', :qr)
                 ");
-                $insTester->execute([':uid' => $testerUid, ':qr' => $testerQr]);
-                $tId = $db->lastInsertId();
-
-                $db->prepare("INSERT INTO booking_items (booking_id, ticket_category_id, quantity, unit_price, subtotal)
-                              VALUES (:b_id, 3, 1, 399.00, 399.00)")->execute([':b_id' => $tId]);
-
-                $db->prepare("UPDATE event_seats SET status = 'sold', booking_uid = :uid WHERE seat_code = 'C-01'")
-                   ->execute([':uid' => $testerUid]);
+                $insT->execute([':qr' => $testerQr]);
+                $tId = (int)$db->lastInsertId();
+                if ($tId > 0) {
+                    $db->exec("INSERT INTO booking_items (booking_id, ticket_category_id, quantity, unit_price, subtotal) VALUES ($tId, 3, 1, 399.00, 399.00)");
+                    try {
+                        $db->exec("UPDATE bookings SET seat_numbers = 'C-01' WHERE id = $tId");
+                        $db->exec("UPDATE event_seats SET status = 'sold', booking_uid = 'MIG20261013F65A0F' WHERE seat_code = 'C-01'");
+                    } catch (Throwable $se) {}
+                }
             }
-        } catch (Throwable $e) {}
+        } catch (Throwable $e) {
+            error_log('[tester seed error]: ' . $e->getMessage());
+        }
     } catch (Throwable $e) {
         error_log('[ensure_seat_inventory_table error]: ' . $e->getMessage());
     }
