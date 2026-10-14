@@ -239,10 +239,14 @@ include __DIR__ . '/includes/header.php';
                         Copy ID
                     </button>
                 </div>
+                <div style="font-size: 0.85rem; color: #e2e8f0; margin-top: 5px;">
+                    &#128186; Selected Seats: <strong style="color: var(--gold-accent); font-size: 0.95rem;"><?= e($cart['seat_numbers'] ?: 'Pass Reserved') ?></strong> (<?= (int)$cart['total_tickets'] ?> Ticket<?= $cart['total_tickets'] > 1 ? 's' : '' ?>)
+                </div>
             </div>
             <div style="text-align: right;">
-                <span style="font-size: 0.8rem; color: #aaa; text-transform: uppercase;">Total Payable Amount</span>
-                <div style="font-size: 2rem; font-weight: 900; color: var(--gold-accent);"><?= format_inr($cart['total_amount']) ?></div>
+                <span style="font-size: 0.8rem; color: #cbd5e1; text-transform: uppercase; font-weight: 700;">Dynamic Total Payable</span>
+                <div style="font-size: 2.1rem; font-weight: 900; color: var(--gold-accent); line-height: 1.1; margin-top: 3px;"><?= format_inr($cart['total_amount']) ?></div>
+                <small style="color: #34d399; font-size: 0.76rem; font-weight: 700;">Zero Convenience Fee &bull; Exact Seat Price</small>
             </div>
         </div>
 
@@ -255,7 +259,7 @@ include __DIR__ . '/includes/header.php';
                 </span>
                 <h2 style="color: #fff; font-size: 1.7rem; font-weight: 900; margin: 0 0 6px;">Pay Directly via UPI ID</h2>
                 <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">
-                    Zero convenience fee &bull; Fast, direct &amp; 100% secure payment
+                    Zero convenience fee &bull; Fast, direct &amp; 100% secure payment for <?= e($cart['seat_numbers'] ?: 'selected seats') ?>
                 </p>
             </div>
 
@@ -268,9 +272,25 @@ include __DIR__ . '/includes/header.php';
 
                 <!-- Payable Amount Big Display -->
                 <div style="margin: 14px 0 16px;">
-                    <span style="font-size: 0.8rem; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Amount to Transfer</span>
+                    <span style="font-size: 0.8rem; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Exact Dynamic Amount to Transfer</span>
                     <div style="font-size: 2.3rem; font-weight: 900; color: #7a1244; line-height: 1.1; margin-top: 4px;">
                         <?= format_inr($cart['total_amount']) ?>
+                    </div>
+                    <div style="font-size: 0.82rem; color: #059669; font-weight: 700; margin-top: 2px;">
+                        &#10004; Calculated dynamically for <?= e($cart['seat_numbers']) ?> (<?= (int)$cart['total_tickets'] ?> Pass<?= $cart['total_tickets'] > 1 ? 'es' : '' ?>)
+                    </div>
+                </div>
+
+                <!-- Live Dynamic Scannable UPI QR Code -->
+                <div style="margin: 14px auto 18px; padding: 12px; background: #fafafa; border: 2px dashed #cbd5e1; border-radius: 14px; max-width: 250px;">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&amp;data=<?= urlencode($genericUpiPayload) ?>" 
+                         alt="Dynamic UPI QR Code" 
+                         style="width: 200px; height: 200px; display: block; margin: 0 auto; border-radius: 8px;">
+                    <div style="font-size: 0.82rem; font-weight: 800; color: #0f172a; margin-top: 8px;">
+                        &#128241; Scan to Pay with Any UPI App
+                    </div>
+                    <div style="font-size: 0.76rem; color: #64748b; margin-top: 2px;">
+                        Preloaded with exact: <strong style="color: #7a1244; font-size: 0.9rem;"><?= format_inr($cart['total_amount']) ?></strong>
                     </div>
                 </div>
 
@@ -286,13 +306,13 @@ include __DIR__ . '/includes/header.php';
 
                 <!-- Notification Alert Banner upon copying -->
                 <div id="copy-toast" style="display: none; background: #dcfce7; border: 1.5px solid #22c55e; color: #15803d; padding: 10px 14px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; margin-bottom: 18px; text-align: center;">
-                    &#10004; UPI ID copied! Open GPay, PhonePe or Paytm to transfer <?= format_inr($cart['total_amount']) ?>
+                    &#10004; UPI ID copied! Open GPay, PhonePe or Paytm to transfer exact <?= format_inr($cart['total_amount']) ?>
                 </div>
 
                 <!-- 1-Click Direct UPI App Buttons for Mobile -->
                 <div style="margin-bottom: 16px;">
                     <div style="font-size: 0.82rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px;">
-                        Tap to Pay Directly with Your App:
+                        Tap to Pay Directly with Your App (<?= format_inr($cart['total_amount']) ?>):
                     </div>
 
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
@@ -302,7 +322,7 @@ include __DIR__ . '/includes/header.php';
                         </a>
 
                         <!-- Google Pay -->
-                        <a href="<?= e($genericUpiPayload) ?>" class="btn" style="background: #1a73e8; color: #fff; font-weight: 800; font-size: 0.88rem; padding: 11px 12px; border-radius: 10px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(26,115,232,0.3);">
+                        <a href="<?= e($gpayPayload) ?>" class="btn" style="background: #1a73e8; color: #fff; font-weight: 800; font-size: 0.88rem; padding: 11px 12px; border-radius: 10px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 12px rgba(26,115,232,0.3);">
                             <span>&#128241;</span> <span>GPay</span>
                         </a>
 

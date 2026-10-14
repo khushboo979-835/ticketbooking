@@ -26,91 +26,109 @@ foreach ($allSeats as $s) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'seat_checkout') {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
         set_flash('error', 'Security session token expired. Please refresh and try again.');
+        header("Location: " . BASE_URL . "/index.php#bms-seat-arena");
+        exit;
     } else {
         $selectedSeatsStr = trim($_POST['selected_seats'] ?? '');
-        $seatCodes = array_filter(array_map('trim', explode(',', $selectedSeatsStr)));
+        $seatCodes = array_values(array_filter(array_map('trim', explode(',', $selectedSeatsStr))));
         $db = getDB();
 
-        if (!empty($seatCodes)) {
-            $inClause = implode(',', array_fill(0, count($seatCodes), '?'));
-            $chkStmt = $db->prepare("SELECT * FROM event_seats WHERE event_id = 1 AND seat_code IN ($inClause)");
-            $chkStmt->execute($seatCodes);
-            $foundSeats = $chkStmt->fetchAll() ?: [];
-
-            $totalAmount = 0.0;
-            $totalTickets = count($foundSeats);
-            $selectedItems = [];
-            $totalPeople = 0;
-            $seatErr = '';
-
-            foreach ($foundSeats as $sRow) {
-                if ($sRow['status'] !== 'available') {
-                    $seatErr = "Seat {$sRow['seat_code']} is already booked. Please choose an available seat.";
-                    break;
-                }
-                $cId = (int)$sRow['category_id'];
-                $sPrice = (float)$sRow['tier_price'];
-                $totalAmount += $sPrice;
-
-                $catInfo = null;
-                foreach ($categories as $cat) {
-                    if ((int)$cat['id'] === $cId) { $catInfo = $cat; break; }
-                }
-                $ppl = $catInfo ? (int)$catInfo['people_allowed'] : 1;
-                $totalPeople += $ppl;
-
-                if (!isset($selectedItems[$cId])) {
-                    $selectedItems[$cId] = [
-                        'id'             => $cId,
-                        'name'           => $sRow['category_name'],
-                        'price'          => $sPrice,
-                        'people_allowed' => $ppl,
-                        'quantity'       => 1,
-                        'subtotal'       => $sPrice,
-                        'seats'          => [$sRow['seat_code']]
-                    ];
-                } else {
-                    $selectedItems[$cId]['quantity']++;
-                    $selectedItems[$cId]['subtotal'] += $sPrice;
-                    $selectedItems[$cId]['seats'][] = $sRow['seat_code'];
-                }
-            }
-
-            if (!empty($seatErr)) {
-                set_flash('error', $seatErr);
-                header("Location: " . BASE_URL . "/index.php#bms-seat-arena");
-                exit;
-            }
-
-            $name = trim($_POST['customer_name'] ?? 'Garba Attendee');
-            $phone = preg_replace('/[^\d]/', '', trim($_POST['customer_phone'] ?? '7004665804'));
-            $email = $phone . '@millenniumindiagroup.com';
-
-            $_SESSION['booking_cart'] = [
-                'event_id'      => $event['id'] ?? 1,
-                'event_title'   => $event['title'] ?? 'Jashn-E-Garba 2026',
-                'event_date'    => $event['date'] ?? '2026-10-16',
-                'event_venue'   => $event['venue'] ?? 'Unique Garden, Patna',
-                'start_time'    => $event['start_time'] ?? '17:00:00',
-                'end_time'      => $event['end_time'] ?? '21:00:00',
-                'items'         => $selectedItems,
-                'seat_numbers'  => implode(', ', $seatCodes),
-                'total_amount'  => $totalAmount,
-                'total_tickets' => $totalTickets,
-                'total_people'  => $totalPeople,
-                'timestamp'     => time()
-            ];
-
-            $_SESSION['booking_customer'] = [
-                'customer_name'  => $name,
-                'customer_phone' => $phone,
-                'customer_email' => $email
-            ];
-
-            unset($_SESSION['current_booking_uid'], $_SESSION['current_booking_id'], $_SESSION['current_qr_token']);
-            header("Location: " . BASE_URL . "/payment.php");
+        if (empty($seatCodes)) {
+            set_flash('error', 'Please tap on at least one available green seat on the seating layout to book.');
+            header("Location: " . BASE_URL . "/index.php#bms-seat-arena");
             exit;
         }
+
+        $inClause = implode(',', array_fill(0, count($seatCodes), '?'));
+        $chkStmt = $db->prepare("SELECT * FROM event_seats WHERE event_id = 1 AND seat_code IN ($inClause)");
+        $chkStmt->execute(array_values($seatCodes));
+        $foundSeats = $chkStmt->fetchAll() ?: [];
+
+        if (empty($foundSeats)) {
+            set_flash('error', 'Selected seats could not be found. Please choose available seats on the map.');
+            header("Location: " . BASE_URL . "/index.php#bms-seat-arena");
+            exit;
+        }
+
+        $totalAmount = 0.0;
+        $totalTickets = count($foundSeats);
+        $selectedItems = [];
+        $totalPeople = 0;
+        $seatErr = '';
+
+        foreach ($foundSeats as $sRow) {
+            if ($sRow['status'] !== 'available') {
+                $seatErr = "Seat {$sRow['seat_code']} is already booked. Please choose an available seat.";
+                break;
+            }
+            $cId = (int)$sRow['category_id'];
+            $sPrice = (float)$sRow['tier_price'];
+            $totalAmount += $sPrice;
+
+            $catInfo = null;
+            foreach ($categories as $cat) {
+                if ((int)$cat['id'] === $cId) { $catInfo = $cat; break; }
+            }
+            $ppl = $catInfo ? (int)$catInfo['people_allowed'] : 1;
+            $totalPeople += $ppl;
+
+            if (!isset($selectedItems[$cId])) {
+                $selectedItems[$cId] = [
+                    'id'             => $cId,
+                    'name'           => $sRow['category_name'],
+                    'price'          => $sPrice,
+                    'people_allowed' => $ppl,
+                    'quantity'       => 1,
+                    'subtotal'       => $sPrice,
+                    'seats'          => [$sRow['seat_code']]
+                ];
+            } else {
+                $selectedItems[$cId]['quantity']++;
+                $selectedItems[$cId]['subtotal'] += $sPrice;
+                $selectedItems[$cId]['seats'][] = $sRow['seat_code'];
+            }
+        }
+
+        if (!empty($seatErr)) {
+            set_flash('error', $seatErr);
+            header("Location: " . BASE_URL . "/index.php#bms-seat-arena");
+            exit;
+        }
+
+        $rawName = trim($_POST['customer_name'] ?? '');
+        $name = !empty($rawName) ? $rawName : 'Garba Attendee';
+
+        $rawPhone = preg_replace('/[^\d]/', '', trim($_POST['customer_phone'] ?? ''));
+        if (strlen($rawPhone) > 10 && str_starts_with($rawPhone, '91')) {
+            $rawPhone = substr($rawPhone, 2);
+        }
+        $phone = (strlen($rawPhone) >= 10) ? substr($rawPhone, -10) : '7004665804';
+        $email = $phone . '@millenniumindiagroup.com';
+
+        $_SESSION['booking_cart'] = [
+            'event_id'      => $event['id'] ?? 1,
+            'event_title'   => $event['title'] ?? 'Jashn-E-Garba 2026',
+            'event_date'    => $event['date'] ?? '2026-10-16',
+            'event_venue'   => $event['venue'] ?? 'Unique Garden, Patna',
+            'start_time'    => $event['start_time'] ?? '17:00:00',
+            'end_time'      => $event['end_time'] ?? '21:00:00',
+            'items'         => $selectedItems,
+            'seat_numbers'  => implode(', ', $seatCodes),
+            'total_amount'  => (float)$totalAmount,
+            'total_tickets' => $totalTickets,
+            'total_people'  => $totalPeople,
+            'timestamp'     => time()
+        ];
+
+        $_SESSION['booking_customer'] = [
+            'customer_name'  => $name,
+            'customer_phone' => $phone,
+            'customer_email' => $email
+        ];
+
+        unset($_SESSION['current_booking_uid'], $_SESSION['current_booking_id'], $_SESSION['current_qr_token']);
+        header("Location: " . BASE_URL . "/payment.php");
+        exit;
     }
 }
 
@@ -254,15 +272,15 @@ include __DIR__ . '/includes/header.php';
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-            <p style="font-size: 0.9rem; color: #e2e8f0; margin: 0; line-height: 1.5; flex: 1; min-width: 260px;">
-                Pay exact amount using any app (<strong>GPay, PhonePe, Paytm or BHIM</strong>) to UPI ID <code style="color: var(--gold-accent);">chandni0984@oksbi</code>. Enter your 12-digit UTR in booking form for instant QR entry ticket!
+            <p style="font-size: 0.92rem; color: #e2e8f0; margin: 0; line-height: 1.5; flex: 1; min-width: 260px;">
+                Select your seats in the arena layout below. Your UPI payment amount will be <strong>calculated dynamically based on your chosen seats and tiers</strong> (Passes from ₹199 to ₹699) to UPI ID <code style="color: var(--gold-accent); font-weight:800;">chandni0984@oksbi</code>.
             </p>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <a href="upi://pay?pa=chandni0984@oksbi&pn=Chandni&cu=INR&tn=GarbaPass" class="btn btn-secondary" style="padding: 10px 18px; font-size: 0.88rem; border-radius: 8px; background: #222634; font-weight: 700;">
-                    &#128241; Open UPI App
+                <a href="#bms-seat-arena" class="btn btn-primary" style="padding: 11px 24px; font-weight: 800; font-size: 0.95rem; border-radius: 8px; text-decoration: none;">
+                    &#127915; Select Seats &amp; Book Now &darr;
                 </a>
-                <a href="<?= BASE_URL ?>/booking.php?event_id=1" class="btn btn-primary" style="padding: 10px 22px; font-weight: 800; font-size: 0.92rem; border-radius: 8px;">
-                    &#127915; Book Passes (From ₹199)
+                <a href="<?= BASE_URL ?>/ticket.php" class="btn btn-secondary" style="padding: 11px 18px; font-size: 0.88rem; border-radius: 8px; background: #222634; font-weight: 700;">
+                    &#128269; Already Paid? Search Pass
                 </a>
             </div>
         </div>
@@ -449,33 +467,33 @@ include __DIR__ . '/includes/header.php';
             </div>
 
             <!-- Attendee Details & Dynamic Checkout Box -->
-            <div style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 22px; border-radius: 12px; margin-top: 24px;">
+            <div style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 22px; border-radius: 12px; margin-top: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 16px;">
                     <div>
-                        <label style="display:block; font-size: 0.82rem; font-weight:700; color: #475569; margin-bottom: 4px;">Attendee Full Name *</label>
-                        <input type="text" name="customer_name" required placeholder="Full Name" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:0.95rem; box-sizing:border-box;">
+                        <label style="display:block; font-size: 0.82rem; font-weight:700; color: #475569; margin-bottom: 4px;">Attendee Full Name (Optional / Default)</label>
+                        <input type="text" name="customer_name" id="input-customer-name" placeholder="Full Name (e.g. Garba Attendee)" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:0.95rem; box-sizing:border-box;">
                     </div>
                     <div>
-                        <label style="display:block; font-size: 0.82rem; font-weight:700; color: #475569; margin-bottom: 4px;">10-Digit Mobile Number *</label>
-                        <input type="tel" name="customer_phone" required pattern="[0-9]{10}" placeholder="10 Digits" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:0.95rem; box-sizing:border-box;">
+                        <label style="display:block; font-size: 0.82rem; font-weight:700; color: #475569; margin-bottom: 4px;">10-Digit Mobile Number (Ticket Delivery)</label>
+                        <input type="tel" name="customer_phone" id="input-customer-phone" maxlength="15" placeholder="10 Digits (e.g. 7004665804)" style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:8px; font-size:0.95rem; box-sizing:border-box;">
                     </div>
                 </div>
 
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
                     <div>
-                        <div style="font-size: 0.84rem; color: #64748b;">Selected Seats:</div>
-                        <div id="selected-seats-label" style="font-weight: 800; font-size: 1.05rem; color: #0f172a;">None selected (Tap seats above)</div>
+                        <div style="font-size: 0.84rem; color: #64748b; font-weight: 600;">Selected Seats:</div>
+                        <div id="selected-seats-label" style="font-weight: 800; font-size: 1.12rem; color: #0f172a;">None selected (Tap any green seat above)</div>
                         <div id="food-privilege-indicator" style="font-size: 0.84rem; font-weight: 800; margin-top: 4px;"></div>
                     </div>
 
                     <div style="text-align: right;">
-                        <div style="font-size: 0.84rem; color: #64748b;">Total Amount:</div>
-                        <div id="selected-total-label" style="font-size: 1.45rem; font-weight: 900; color: #f84464;">₹0.00</div>
+                        <div style="font-size: 0.84rem; color: #64748b; font-weight: 600;">Dynamic Total Amount:</div>
+                        <div id="selected-total-label" style="font-size: 1.6rem; font-weight: 900; color: #f84464;">₹0.00</div>
                     </div>
 
                     <div>
-                        <button type="submit" id="btn-submit-seat-pay" class="btn-bms-red" disabled style="opacity: 0.5; padding: 12px 28px; font-size: 1rem; border-radius: 10px; cursor: pointer;">
-                            <span>Proceed to Pay (Direct UPI) &rarr;</span>
+                        <button type="submit" id="btn-submit-seat-pay" class="btn-bms-red" style="padding: 14px 28px; font-size: 1.05rem; font-weight: 900; border-radius: 10px; cursor: pointer; transition: all 0.2s ease;">
+                            <span>🎟 Book Now (Tap Seats to Select) &rarr;</span>
                         </button>
                     </div>
                 </div>
@@ -731,7 +749,8 @@ function updateCheckoutSummary() {
         labelTotal.innerText = '₹' + total.toFixed(2);
         btnPay.disabled = false;
         btnPay.style.opacity = '1';
-        btnPay.innerHTML = '<span>Pay ₹' + total.toFixed(2) + ' (Direct UPI) &rarr;</span>';
+        btnPay.style.background = '#f84464';
+        btnPay.innerHTML = '<span>🎟 Book Now &bull; Pay ₹' + total.toFixed(2) + ' via UPI &rarr;</span>';
 
         if (badge) {
             badge.innerHTML = '&#10004; ' + count + ' Seat' + (count > 1 ? 's' : '') + ' Selected';
@@ -748,11 +767,12 @@ function updateCheckoutSummary() {
             }
         }
     } else {
-        labelSeats.innerText = 'None selected (Tap seats above)';
+        labelSeats.innerText = 'None selected (Tap any green seat above)';
         labelTotal.innerText = '₹0.00';
-        btnPay.disabled = true;
-        btnPay.style.opacity = '0.5';
-        btnPay.innerHTML = '<span>Proceed to Pay (Direct UPI) &rarr;</span>';
+        btnPay.disabled = false; // Always keep clickable to guide attendee!
+        btnPay.style.opacity = '0.85';
+        btnPay.style.background = '#e11d48';
+        btnPay.innerHTML = '<span>🎟 Book Now (Tap Seats to Select) &rarr;</span>';
 
         if (badge) {
             badge.innerHTML = '&#9889; Tap Any Green Seat to Select';
@@ -766,6 +786,39 @@ function updateCheckoutSummary() {
         }
     }
 }
+
+// Intercept form submission to guarantee smooth booking with zero friction
+document.getElementById('seat-checkout-form')?.addEventListener('submit', function(e) {
+    if (!selectedSeats || selectedSeats.length === 0) {
+        e.preventDefault();
+        alert('Please tap on at least one available green seat on the arena map above before clicking Book Now.');
+        scrollToSeatMap();
+        return false;
+    }
+
+    const nameInp = document.getElementById('input-customer-name');
+    const phoneInp = document.getElementById('input-customer-phone');
+    if (nameInp && !nameInp.value.trim()) {
+        nameInp.value = 'Garba Attendee';
+    }
+    if (phoneInp) {
+        let cleanDigits = phoneInp.value.replace(/\D/g, '');
+        if (cleanDigits.length > 10 && cleanDigits.startsWith('91')) {
+            cleanDigits = cleanDigits.slice(2);
+        }
+        if (cleanDigits.length >= 10) {
+            phoneInp.value = cleanDigits.slice(-10);
+        } else {
+            phoneInp.value = '7004665804';
+        }
+    }
+
+    const btn = document.getElementById('btn-submit-seat-pay');
+    if (btn) {
+        btn.innerHTML = '<span>⏳ Booking ' + selectedSeats.length + ' Seat(s)... Opening Direct UPI Payment</span>';
+    }
+});
+
 // Clean start with 0 seats selected so attendee has complete control
 updateCheckoutSummary();
 </script>

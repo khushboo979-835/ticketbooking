@@ -30,15 +30,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && in_array
         $errors[] = 'Security session expired. Please refresh and try again.';
     } else {
         $selectedSeatsStr = trim($_POST['selected_seats'] ?? '');
-        $seatCodes = array_filter(array_map('trim', explode(',', $selectedSeatsStr)));
+        $seatCodes = array_values(array_filter(array_map('trim', explode(',', $selectedSeatsStr))));
 
         $db = getDB();
 
-        if (!empty($seatCodes)) {
+        if (empty($seatCodes)) {
+            $errors[] = 'Please tap on at least one available green seat on the arena map below to select your seats.';
+        } else {
             // Validate all selected seats are actually available
             $inClause = implode(',', array_fill(0, count($seatCodes), '?'));
             $chkStmt = $db->prepare("SELECT * FROM event_seats WHERE event_id = ? AND seat_code IN ($inClause)");
-            $chkParams = array_merge([$event['id']], $seatCodes);
+            $chkParams = array_merge([$event['id']], array_values($seatCodes));
             $chkStmt->execute($chkParams);
             $foundSeats = $chkStmt->fetchAll() ?: [];
 
@@ -83,13 +85,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && in_array
             }
 
             if (empty($errors)) {
-                $name = trim($_POST['customer_name'] ?? '');
-                $phone = preg_replace('/[^\d]/', '', trim($_POST['customer_phone'] ?? ''));
-                $email = strtolower(trim($_POST['customer_email'] ?? ''));
+                $rawName = trim($_POST['customer_name'] ?? '');
+                $name = !empty($rawName) ? $rawName : 'Garba Attendee';
 
-                if (empty($name)) $name = 'Garba Attendee';
-                if (empty($phone) || strlen($phone) < 10) $phone = '7004665804';
-                if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) $email = $phone . '@millenniumindiagroup.com';
+                $rawPhone = preg_replace('/[^\d]/', '', trim($_POST['customer_phone'] ?? ''));
+                if (strlen($rawPhone) > 10 && str_starts_with($rawPhone, '91')) {
+                    $rawPhone = substr($rawPhone, 2);
+                }
+                $phone = (strlen($rawPhone) >= 10) ? substr($rawPhone, -10) : '7004665804';
+                $email = $phone . '@millenniumindiagroup.com';
 
                 $_SESSION['booking_cart'] = [
                     'event_id'      => $event['id'],
@@ -100,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && in_array
                     'end_time'      => $event['end_time'],
                     'items'         => $selectedItems,
                     'seat_numbers'  => implode(', ', $seatCodes),
-                    'total_amount'  => $totalAmount,
+                    'total_amount'  => (float)$totalAmount,
                     'total_tickets' => $totalTickets,
                     'total_people'  => $totalPeople,
                     'timestamp'     => time()
@@ -117,83 +121,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && in_array
                 header("Location: " . BASE_URL . "/payment.php");
                 exit;
             }
-        } else {
-            // Fallback: If user submitted without choosing specific seat squares, auto-pick from quantities
-            $quantities = $_POST['quantities'] ?? [];
-            $hasAny = false;
-            foreach ($quantities as $q) { if ((int)$q > 0) { $hasAny = true; break; } }
-            if (!$hasAny && !empty($categories)) {
-                $quantities[$categories[0]['id']] = 2; // Default 2 seats like BookMyShow
-            }
-
-            $totalAmount = 0.0;
-            $totalTickets = 0;
-            $totalPeople = 0;
-            $selectedItems = [];
-            $assignedSeatCodes = [];
-
-            foreach ($quantities as $catId => $qty) {
-                $qty = (int)$qty;
-                if ($qty <= 0) continue;
-
-                $catStmt = $db->prepare("SELECT * FROM ticket_categories WHERE id = :id AND status = 'active' LIMIT 1");
-                $catStmt->execute([':id' => (int)$catId]);
-                $cRow = $catStmt->fetch();
-                if ($cRow) {
-                    $sub = $qty * (float)$cRow['price'];
-                    $totalAmount += $sub;
-                    $totalTickets += $qty;
-                    $totalPeople += ($qty * (int)$cRow['people_allowed']);
-
-                    // Auto-assign available seats in this category
-                    $sStmt = $db->prepare("SELECT seat_code FROM event_seats WHERE category_id = :cid AND status = 'available' LIMIT :lim");
-                    $sStmt->bindValue(':cid', (int)$catId, PDO::PARAM_INT);
-                    $sStmt->bindValue(':lim', $qty, PDO::PARAM_INT);
-                    $sStmt->execute();
-                    $picked = $sStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
-                    $assignedSeatCodes = array_merge($assignedSeatCodes, $picked);
-
-                    $selectedItems[$cRow['id']] = [
-                        'id'             => $cRow['id'],
-                        'name'           => $cRow['name'],
-                        'price'          => (float)$cRow['price'],
-                        'people_allowed' => (int)$cRow['people_allowed'],
-                        'quantity'       => $qty,
-                        'subtotal'       => $sub,
-                        'seats'          => $picked
-                    ];
-                }
-            }
-
-            $name = trim($_POST['customer_name'] ?? 'Garba Attendee');
-            $phone = preg_replace('/[^\d]/', '', trim($_POST['customer_phone'] ?? '7004665804'));
-            $email = $phone . '@millenniumindiagroup.com';
-
-            $_SESSION['booking_cart'] = [
-                'event_id'      => $event['id'],
-                'event_title'   => $event['title'],
-                'event_date'    => $event['date'],
-                'event_venue'   => $event['venue'],
-                'start_time'    => $event['start_time'],
-                'end_time'      => $event['end_time'],
-                'items'         => $selectedItems,
-                'seat_numbers'  => implode(', ', $assignedSeatCodes),
-                'total_amount'  => $totalAmount,
-                'total_tickets' => $totalTickets,
-                'total_people'  => $totalPeople,
-                'timestamp'     => time()
-            ];
-
-            $_SESSION['booking_customer'] = [
-                'customer_name'  => $name,
-                'customer_phone' => $phone,
-                'customer_email' => $email
-            ];
-
-            unset($_SESSION['current_booking_uid'], $_SESSION['current_booking_id'], $_SESSION['current_qr_token']);
-
-            header("Location: " . BASE_URL . "/payment.php");
-            exit;
         }
     }
 }
@@ -364,7 +291,7 @@ include __DIR__ . '/includes/header.php';
 
                 <div>
                     <div style="font-size: 0.82rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">
-                        Total Payable
+                        Dynamic Total Payable
                     </div>
                     <div id="selected-total-label" style="font-size: 1.6rem; font-weight: 900; color: #34d399;">
                         ₹0.00
@@ -372,13 +299,13 @@ include __DIR__ . '/includes/header.php';
                 </div>
 
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; width: 100%; max-width: 480px;">
-                    <input type="text" name="customer_name" required placeholder="Attendee Full Name *" class="form-control" style="background: #12141d; border: 1px solid #2e344a; color: #fff; flex: 1; padding: 10px 14px; border-radius: 8px;">
-                    <input type="tel" name="customer_phone" required pattern="[0-9]{10}" placeholder="Mobile (10 Digits) *" class="form-control" style="background: #12141d; border: 1px solid #2e344a; color: #fff; flex: 1; padding: 10px 14px; border-radius: 8px;">
+                    <input type="text" name="customer_name" id="input-customer-name" placeholder="Attendee Name (Optional)" class="form-control" style="background: #12141d; border: 1px solid #2e344a; color: #fff; flex: 1; padding: 10px 14px; border-radius: 8px;">
+                    <input type="tel" name="customer_phone" id="input-customer-phone" maxlength="15" placeholder="Mobile (e.g. 7004665804)" class="form-control" style="background: #12141d; border: 1px solid #2e344a; color: #fff; flex: 1; padding: 10px 14px; border-radius: 8px;">
                 </div>
 
                 <div>
-                    <button type="submit" id="btn-submit-seat-pay" class="btn-bms-red" disabled style="opacity: 0.5;">
-                        <span>Proceed to Pay (Direct UPI) &rarr;</span>
+                    <button type="submit" id="btn-submit-seat-pay" class="btn-bms-red" style="padding: 12px 24px; font-weight: 900; font-size: 1.05rem; border-radius: 8px; cursor: pointer;">
+                        <span>🎟 Book Now (Tap Seats to Select) &rarr;</span>
                     </button>
                 </div>
             </div>
@@ -464,7 +391,8 @@ function updateCheckoutSummary() {
         labelTotal.innerText = '₹' + total.toFixed(2);
         btnPay.disabled = false;
         btnPay.style.opacity = '1';
-        btnPay.innerHTML = '<span>Pay ₹' + total.toFixed(2) + ' (Direct UPI) &rarr;</span>';
+        btnPay.style.background = '#f84464';
+        btnPay.innerHTML = '<span>🎟 Book Now &bull; Pay ₹' + total.toFixed(2) + ' via UPI &rarr;</span>';
 
         if (badge) {
             badge.innerHTML = '&#10004; ' + count + ' Seat' + (count > 1 ? 's' : '') + ' Selected';
@@ -483,9 +411,10 @@ function updateCheckoutSummary() {
     } else {
         labelSeats.innerText = 'None selected (Please tap seats above)';
         labelTotal.innerText = '₹0.00';
-        btnPay.disabled = true;
-        btnPay.style.opacity = '0.5';
-        btnPay.innerHTML = '<span>Proceed to Pay (Direct UPI) &rarr;</span>';
+        btnPay.disabled = false; // Keep clickable to guide attendee
+        btnPay.style.opacity = '0.85';
+        btnPay.style.background = '#e11d48';
+        btnPay.innerHTML = '<span>🎟 Book Now (Tap Seats to Select) &rarr;</span>';
 
         if (badge) {
             badge.innerHTML = '&#9889; Tap Any Green Seat to Select';
@@ -499,6 +428,38 @@ function updateCheckoutSummary() {
         }
     }
 }
+
+// Intercept form submission to guarantee smooth booking
+document.getElementById('seat-checkout-form')?.addEventListener('submit', function(e) {
+    if (!selectedSeats || selectedSeats.length === 0) {
+        e.preventDefault();
+        alert('Please tap on at least one available green seat on the arena map above before clicking Book Now.');
+        scrollToSeatMap();
+        return false;
+    }
+
+    const nameInp = document.getElementById('input-customer-name');
+    const phoneInp = document.getElementById('input-customer-phone');
+    if (nameInp && !nameInp.value.trim()) {
+        nameInp.value = 'Garba Attendee';
+    }
+    if (phoneInp) {
+        let cleanDigits = phoneInp.value.replace(/\D/g, '');
+        if (cleanDigits.length > 10 && cleanDigits.startsWith('91')) {
+            cleanDigits = cleanDigits.slice(2);
+        }
+        if (cleanDigits.length >= 10) {
+            phoneInp.value = cleanDigits.slice(-10);
+        } else {
+            phoneInp.value = '7004665804';
+        }
+    }
+
+    const btn = document.getElementById('btn-submit-seat-pay');
+    if (btn) {
+        btn.innerHTML = '<span>⏳ Booking ' + selectedSeats.length + ' Seat(s)... Opening Direct UPI Payment</span>';
+    }
+});
 
 // Clean start with 0 seats selected so attendee has complete control
 updateCheckoutSummary();
