@@ -328,63 +328,8 @@ include __DIR__ . '/includes/header.php';
     </div>
 
     <!-- ========================================================
-         STEP 1: BookMyShow "How many seats?" Selector Card
-         ======================================================== -->
-    <div class="bms-seat-modal-card" id="bms-step-count" style="max-width: 620px; margin: 0 auto 30px;">
-        <h2 style="font-size: 1.45rem; font-weight: 800; color: #0f172a; margin-bottom: 4px;">
-            How many seats?
-        </h2>
-        <div style="font-size: 0.88rem; color: #64748b;">
-            Choose your group size for <strong>Jashn-E-Garba 2026</strong>
-        </div>
-
-        <!-- Festive Graphic / Scooter Illustration -->
-        <div style="margin: 14px auto; font-size: 2.8rem;">
-            &#127949;&#65039;
-        </div>
-
-        <!-- 1 to 10 Seat Number Selector (2 Selected by Default like BMS) -->
-        <div class="bms-seat-count-strip">
-            <?php for ($num = 1; $num <= 10; $num++): ?>
-                <div class="bms-seat-num-circle <?= $num === 2 ? 'active' : '' ?>" 
-                     data-count="<?= $num ?>" 
-                     onclick="setSeatTargetCount(<?= $num ?>)">
-                    <?= $num ?>
-                </div>
-            <?php endfor; ?>
-        </div>
-
-        <!-- Tier Preview Tags (Matches Official BMS Screenshot) -->
-        <div class="bms-tier-preview-grid">
-            <div class="bms-tier-preview-item">
-                <div class="bms-tier-preview-title">VIP Recliner</div>
-                <div class="bms-tier-preview-price">₹699</div>
-                <div class="bms-tier-preview-status" style="color: #f84464;">ALMOST FULL</div>
-            </div>
-            <div class="bms-tier-preview-item">
-                <div class="bms-tier-preview-title">Prime Sofa</div>
-                <div class="bms-tier-preview-price">₹399</div>
-                <div class="bms-tier-preview-status" style="color: #f59e0b;">FILLING FAST</div>
-            </div>
-            <div class="bms-tier-preview-item">
-                <div class="bms-tier-preview-title">Picture Perfect</div>
-                <div class="bms-tier-preview-price">₹299</div>
-                <div class="bms-tier-preview-status" style="color: #f84464;">ALMOST FULL</div>
-            </div>
-            <div class="bms-tier-preview-item">
-                <div class="bms-tier-preview-title">Prime Rows</div>
-                <div class="bms-tier-preview-price">₹199</div>
-                <div class="bms-tier-preview-status" style="color: #10b981;">AVAILABLE</div>
-            </div>
-        </div>
-
-        <button type="button" class="btn-bms-red" style="width: 100%; justify-content: center; font-size: 1rem; padding: 12px;" onclick="scrollToSeatMap()">
-            Select Seats on Arena Map &darr;
-        </button>
-    </div>
-
-    <!-- ========================================================
-         STEP 2: BookMyShow Cinema / Arena Seat Layout Matrix
+         BOOKMYSHOW CINEMA / ARENA SEAT LAYOUT MATRIX
+         Pure Direct Multiple Seat Selection
          ======================================================== -->
     <div class="bms-arena-wrapper" id="bms-seat-map">
         <!-- Event Header Bar -->
@@ -398,8 +343,8 @@ include __DIR__ . '/includes/header.php';
                 </div>
             </div>
             <div style="display: flex; gap: 8px;">
-                <span style="background: rgba(245,183,34,0.15); color: #d97706; padding: 4px 14px; border-radius: 20px; font-weight: 800; font-size: 0.82rem;">
-                    &#9889; <span id="target-count-display">2</span> Seats Required
+                <span id="selected-count-badge" style="background: rgba(16,185,129,0.15); color: #059669; border: 1px solid #10b981; padding: 5px 16px; border-radius: 20px; font-weight: 800; font-size: 0.84rem;">
+                    &#9889; Tap Any Green Seat to Select
                 </span>
             </div>
         </div>
@@ -519,7 +464,8 @@ include __DIR__ . '/includes/header.php';
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
                     <div>
                         <div style="font-size: 0.84rem; color: #64748b;">Selected Seats:</div>
-                        <div id="selected-seats-label" style="font-weight: 800; font-size: 1.05rem; color: #0f172a;">None selected</div>
+                        <div id="selected-seats-label" style="font-weight: 800; font-size: 1.05rem; color: #0f172a;">None selected (Tap seats above)</div>
+                        <div id="food-privilege-indicator" style="font-size: 0.84rem; font-weight: 800; margin-top: 4px;"></div>
                     </div>
 
                     <div style="text-align: right;">
@@ -528,7 +474,7 @@ include __DIR__ . '/includes/header.php';
                     </div>
 
                     <div>
-                        <button type="submit" id="btn-submit-seat-pay" class="btn-bms-red" style="padding: 12px 28px; font-size: 1rem; border-radius: 10px; cursor: pointer;">
+                        <button type="submit" id="btn-submit-seat-pay" class="btn-bms-red" disabled style="opacity: 0.5; padding: 12px 28px; font-size: 1rem; border-radius: 10px; cursor: pointer;">
                             <span>Proceed to Pay (Direct UPI) &rarr;</span>
                         </button>
                     </div>
@@ -698,22 +644,10 @@ function copyUpiId() {
 }
 
 // ==========================================
-// BookMyShow Seat Arena Interactive Script
+// BookMyShow Pure Multi-Seat Selection Script
 // ==========================================
-let targetCount = 2;
 let selectedSeats = [];
 let seatPrices = {};
-
-function setSeatTargetCount(n) {
-    targetCount = parseInt(n);
-    document.querySelectorAll('.bms-seat-num-circle').forEach(el => {
-        el.classList.toggle('active', parseInt(el.getAttribute('data-count')) === targetCount);
-    });
-    const disp = document.getElementById('target-count-display');
-    if (disp) disp.innerText = targetCount;
-
-    clearSelectedSeats();
-}
 
 function scrollToSeatMap() {
     const el = document.getElementById('bms-seat-map');
@@ -726,14 +660,9 @@ function selectTierAndScroll(rowLetter) {
     const rowEl = document.getElementById('row-container-' + rowLetter);
     if (rowEl) {
         rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Pick available seats in this row
-        const rowAvail = rowEl.querySelectorAll('.bms-seat-box.available');
-        if (rowAvail.length > 0) {
-            clearSelectedSeats();
-            for (let i = 0; i < Math.min(targetCount, rowAvail.length); i++) {
-                handleSeatClick(rowAvail[i].getAttribute('data-code'), parseFloat(rowAvail[i].getAttribute('data-price')));
-            }
-        }
+        rowEl.style.transition = 'background 0.3s ease';
+        rowEl.style.background = 'rgba(245, 183, 34, 0.15)';
+        setTimeout(() => { rowEl.style.background = 'transparent'; }, 800);
     } else {
         scrollToSeatMap();
     }
@@ -741,26 +670,19 @@ function selectTierAndScroll(rowLetter) {
 
 function handleSeatClick(code, price) {
     const box = document.getElementById('seat-box-' + code);
-    if (!box || box.classList.contains('sold')) return;
+    if (!box || box.classList.contains('sold') || box.classList.contains('blocked')) return;
 
     const idx = selectedSeats.indexOf(code);
     if (idx > -1) {
+        // Deselect seat
         selectedSeats.splice(idx, 1);
         delete seatPrices[code];
         box.classList.remove('selected');
         box.classList.add('available');
     } else {
-        if (selectedSeats.length >= targetCount) {
-            const oldest = selectedSeats.shift();
-            delete seatPrices[oldest];
-            const oldBox = document.getElementById('seat-box-' + oldest);
-            if (oldBox) {
-                oldBox.classList.remove('selected');
-                oldBox.classList.add('available');
-            }
-        }
+        // Multi-select seat freely (no limits or deselection!)
         selectedSeats.push(code);
-        seatPrices[code] = price;
+        seatPrices[code] = parseFloat(price);
         box.classList.remove('available');
         box.classList.add('selected');
     }
@@ -786,39 +708,66 @@ function updateCheckoutSummary() {
     const labelSeats = document.getElementById('selected-seats-label');
     const labelTotal = document.getElementById('selected-total-label');
     const btnPay = document.getElementById('btn-submit-seat-pay');
+    const badge = document.getElementById('selected-count-badge');
+    const foodInd = document.getElementById('food-privilege-indicator');
 
     if (!inputSeats || !labelSeats || !labelTotal || !btnPay) return;
 
     inputSeats.value = selectedSeats.join(',');
 
     let total = 0;
+    let hasFood = false;
     for (let c in seatPrices) {
         total += seatPrices[c];
+        if (seatPrices[c] >= 350) {
+            hasFood = true;
+        }
     }
 
-    if (selectedSeats.length > 0) {
-        labelSeats.innerText = selectedSeats.join(', ') + ' (' + selectedSeats.length + ' Seats)';
+    const count = selectedSeats.length;
+
+    if (count > 0) {
+        labelSeats.innerText = selectedSeats.join(', ') + ' (' + count + ' Seat' + (count > 1 ? 's' : '') + ')';
         labelTotal.innerText = '₹' + total.toFixed(2);
         btnPay.disabled = false;
         btnPay.style.opacity = '1';
-        btnPay.innerHTML = '<span>Pay ₹' + total.toFixed(2) + ' &rarr;</span>';
+        btnPay.innerHTML = '<span>Pay ₹' + total.toFixed(2) + ' (Direct UPI) &rarr;</span>';
+
+        if (badge) {
+            badge.innerHTML = '&#10004; ' + count + ' Seat' + (count > 1 ? 's' : '') + ' Selected';
+            badge.style.background = 'rgba(16, 185, 129, 0.2)';
+            badge.style.color = '#059669';
+            badge.style.borderColor = '#10b981';
+        }
+
+        if (foodInd) {
+            if (hasFood) {
+                foodInd.innerHTML = '<span style="color:#059669;">&#127869; Food Privilege: Delicious Food Included</span>';
+            } else {
+                foodInd.innerHTML = '<span style="color:#e11d48;">&#10060; Food Privilege: Entry Only (No Food Included)</span>';
+            }
+        }
     } else {
-        labelSeats.innerText = 'None selected (Please tap seats above)';
+        labelSeats.innerText = 'None selected (Tap seats above)';
         labelTotal.innerText = '₹0.00';
         btnPay.disabled = true;
         btnPay.style.opacity = '0.5';
         btnPay.innerHTML = '<span>Proceed to Pay (Direct UPI) &rarr;</span>';
+
+        if (badge) {
+            badge.innerHTML = '&#9889; Tap Any Green Seat to Select';
+            badge.style.background = 'rgba(16,185,129,0.15)';
+            badge.style.color = '#059669';
+            badge.style.borderColor = '#10b981';
+        }
+
+        if (foodInd) {
+            foodInd.innerHTML = '';
+        }
     }
 }
-
-// Auto-select 2 seats initially for seamless UX
-document.addEventListener('DOMContentLoaded', function() {
-    const availBoxes = document.querySelectorAll('#bms-seat-map .bms-seat-box.available');
-    if (availBoxes.length >= 2) {
-        handleSeatClick(availBoxes[0].getAttribute('data-code'), parseFloat(availBoxes[0].getAttribute('data-price')));
-        handleSeatClick(availBoxes[1].getAttribute('data-code'), parseFloat(availBoxes[1].getAttribute('data-price')));
-    }
-});
+// Clean start with 0 seats selected so attendee has complete control
+updateCheckoutSummary();
 </script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

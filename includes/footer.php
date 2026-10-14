@@ -77,40 +77,29 @@
     </footer>
 
     <!-- BookMyShow-Style Floating Quick Action Bar on Mobile -->
-    <?php if (empty($currentNav) || $currentNav !== 'garba' || !str_contains($_SERVER['REQUEST_URI'] ?? '', 'payment.php')): ?>
-    <div class="mobile-sticky-book-bar">
+    <!-- BookMyShow-Style Floating Quick Action Bar on Mobile -->
+    <?php 
+    $currUri = $_SERVER['REQUEST_URI'] ?? '';
+    $hideSticky = str_contains($currUri, 'payment.php') || str_contains($currUri, 'ticket.php');
+    ?>
+    <?php if (!$hideSticky): ?>
+    <div class="mobile-sticky-book-bar" id="global-mobile-sticky-bar">
         <div>
             <div style="font-size:0.75rem; color:#aaa; text-transform:uppercase;">Passes From</div>
             <div style="font-size:1.25rem; font-weight:900; color:var(--gold-accent);" id="sticky-bar-price">₹199</div>
         </div>
         <button type="button" onclick="handleMobileStickyAction()" class="btn btn-primary" id="mobile-sticky-book-btn" style="padding:10px 24px; font-weight:800; font-size:1rem; border-radius:50px; box-shadow:0 4px 15px rgba(245,183,34,0.4); cursor:pointer; border:none;">
-            &#127915; Book Now
+            &#127915; Book Seats
         </button>
     </div>
     <script>
     function handleMobileStickyAction() {
-        const bookingForm = document.getElementById('unified-booking-form') || document.getElementById('ticket-selection-form');
-        if (bookingForm) {
-            const nameInput = document.getElementById('customer_name');
-            const phoneInput = document.getElementById('customer_phone');
-            if (nameInput && !nameInput.value.trim()) {
-                nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                nameInput.focus();
-                return;
-            }
-            if (phoneInput && !phoneInput.value.trim()) {
-                phoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                phoneInput.focus();
-                return;
-            }
-            if (typeof bookingForm.requestSubmit === 'function') {
-                bookingForm.requestSubmit();
-            } else {
-                bookingForm.submit();
-            }
-        } else {
-            window.location.href = '<?= BASE_URL ?>/booking.php?event_id=1';
+        const seatMap = document.getElementById('bms-seat-map');
+        if (seatMap) {
+            seatMap.scrollIntoView({ behavior: 'smooth' });
+            return;
         }
+        window.location.href = '<?= BASE_URL ?>/booking.php?event_id=1';
     }
     </script>
     <?php endif; ?>

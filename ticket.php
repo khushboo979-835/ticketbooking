@@ -294,68 +294,70 @@ include __DIR__ . '/includes/header.php';
     <?php if ($hasSearched && !$booking): ?>
         <?php 
         $cleanSearchDigits = preg_replace('/[^\d]/', '', $searchQuery);
-        $isUtrCandidate = (strlen($cleanSearchDigits) >= 6 && strlen($cleanSearchDigits) <= 25 && !preg_match('/^[6-9]\d{9}$/', trim($searchQuery)));
+        $isMobileQuery = (strlen($cleanSearchDigits) === 10 && preg_match('/^[6-9]\d{9}$/', $cleanSearchDigits));
+        $prefilledMobile = $isMobileQuery ? $cleanSearchDigits : '';
+        $prefilledUtr = !$isMobileQuery && strlen($cleanSearchDigits) >= 6 ? $searchQuery : '';
         ?>
-        <?php if ($isUtrCandidate): ?>
-            <!-- DIRECT UPI UTR INSTANT PASS ACTIVATION CARD -->
-            <div class="festive-card" style="border: 2px solid var(--gold-accent); padding: 32px 24px; max-width: 660px; margin: 20px auto 35px; box-shadow: 0 10px 35px rgba(0,0,0,0.6);">
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <span style="background: rgba(16,185,129,0.18); color: #10b981; font-weight: 800; font-size: 0.78rem; padding: 4px 14px; border-radius: 20px; text-transform: uppercase;">
-                        &#9889; Direct UPI Payment Activation
-                    </span>
-                    <h3 style="color: #fff; font-size: 1.5rem; font-weight: 900; margin: 12px 0 6px;">
-                        Generate Pass for Ref / UTR: <span style="font-family: monospace; color: var(--gold-accent);"><?= e($searchQuery) ?></span>
-                    </h3>
-                    <p style="color: #cbd5e1; font-size: 0.92rem; max-width: 520px; margin: 0 auto; line-height: 1.6;">
-                        Paid directly to UPI ID <code style="color:var(--gold-accent);">chandni0984@oksbi</code>? Complete your name &amp; phone below to generate your official Gate Pass &amp; Tax Receipt immediately:
-                    </p>
-                </div>
 
-                <form action="<?= BASE_URL ?>/ticket.php" method="POST" style="max-width: 460px; margin: 0 auto; text-align: left;">
-                    <input type="hidden" name="action" value="claim_utr_ticket">
-                    <input type="hidden" name="transaction_ref" value="<?= e($searchQuery) ?>">
-
-                    <div style="margin-bottom: 14px;">
-                        <label style="font-size: 0.85rem; color: #fff; font-weight: 700; display: block; margin-bottom: 6px;">Attendee Full Name *</label>
-                        <input type="text" name="customer_name" placeholder="e.g. Rahul Kumar" required style="width: 100%; padding: 12px 14px; font-size: 1rem; border-radius: 8px; background: #0a0106; border: 1.5px solid var(--gold-accent); color: #fff; box-sizing: border-box;">
-                    </div>
-
-                    <div style="margin-bottom: 14px;">
-                        <label style="font-size: 0.85rem; color: #fff; font-weight: 700; display: block; margin-bottom: 6px;">10-Digit Mobile Number *</label>
-                        <input type="tel" name="customer_phone" placeholder="e.g. 9876543210" maxlength="10" required style="width: 100%; padding: 12px 14px; font-size: 1rem; border-radius: 8px; background: #0a0106; border: 1.5px solid var(--gold-accent); color: #fff; box-sizing: border-box;">
-                    </div>
-
-                    <div style="margin-bottom: 18px;">
-                        <label style="font-size: 0.85rem; color: #fff; font-weight: 700; display: block; margin-bottom: 6px;">Select Pass Category *</label>
-                        <select name="category_id" style="width: 100%; padding: 12px 14px; font-size: 1rem; border-radius: 8px; background: #0a0106; border: 1.5px solid var(--gold-accent); color: #fff; box-sizing: border-box;">
-                            <option value="1">Single Pass (No Food) - ₹199</option>
-                            <option value="2">Couple Pass (No Food) - ₹299</option>
-                            <option value="3">Single Pass (With Food) - ₹399</option>
-                            <option value="4">Couple Pass (With Food) - ₹699</option>
-                        </select>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary btn-block" style="width: 100%; padding: 14px; font-weight: 800; font-size: 1.05rem; border-radius: 8px; cursor: pointer;">
-                        &#10004; Generate My Pass &amp; Tax Receipt &rarr;
-                    </button>
-                </form>
-            </div>
-        <?php else: ?>
-            <!-- SEARCH NOT FOUND ALERT -->
-            <div class="festive-card" style="text-align: center; border: 2px dashed #f87171; padding: 35px 25px; margin-bottom: 30px;">
-                <div style="font-size: 3rem; color: #f87171; margin-bottom: 10px;">&#128680;</div>
-                <h3 style="color: #fff; font-size: 1.5rem; margin-bottom: 8px;">No Booking Found</h3>
-                <p style="color: #cbd5e1; font-size: 0.95rem; max-width: 540px; margin: 0 auto 20px; line-height: 1.6;">
-                    We could not find any booking registered under <strong>"<?= e($searchQuery ?: $uid) ?>"</strong>.<br>
-                    Please ensure you entered the exact 10-digit mobile number used while booking, or your Booking Reference ID.
+        <!-- SEARCH NOT FOUND ALERT WITH INSTANT UTR CLAIM FORM -->
+        <div class="festive-card" style="border: 2px solid var(--gold-accent); padding: 32px 24px; max-width: 680px; margin: 20px auto 35px; box-shadow: 0 10px 35px rgba(0,0,0,0.6);">
+            <div style="text-align: center; margin-bottom: 22px;">
+                <span style="background: rgba(245,183,34,0.18); color: var(--gold-accent); border: 1px solid var(--gold-accent); font-weight: 800; font-size: 0.78rem; padding: 4px 14px; border-radius: 20px; text-transform: uppercase;">
+                    &#9889; Official Instant Pass &amp; Receipt Generator
+                </span>
+                <h3 style="color: #fff; font-size: 1.55rem; font-weight: 900; margin: 12px 0 6px;">
+                    Claim Pass for: <span style="font-family: monospace; color: var(--gold-accent);"><?= e($searchQuery) ?></span>
+                </h3>
+                <p style="color: #cbd5e1; font-size: 0.92rem; max-width: 560px; margin: 0 auto; line-height: 1.6;">
+                    If you transferred funds directly to UPI ID <code style="color:var(--gold-accent); font-weight:800;">chandni0984@oksbi</code>, enter your 12-digit UPI UTR number below to immediately generate and download your official Gate Pass &amp; Tax Receipt:
                 </p>
-                <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
-                    <a href="<?= BASE_URL ?>/ticket.php" class="btn btn-secondary">Try Another Search</a>
-                    <a href="<?= BASE_URL ?>/booking.php?event_id=1" class="btn btn-primary">&#127915; Book Passes Now (From ₹199)</a>
-                </div>
             </div>
-        <?php endif; ?>
 
+            <form action="<?= BASE_URL ?>/ticket.php" method="POST" style="max-width: 500px; margin: 0 auto; text-align: left;">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="claim_utr_ticket">
+
+                <div style="margin-bottom: 14px;">
+                    <label style="font-size: 0.85rem; color: #fff; font-weight: 700; display: block; margin-bottom: 6px;">Attendee Full Name *</label>
+                    <input type="text" name="customer_name" placeholder="Full Name (e.g. Rahul Kumar)" required value="" style="width: 100%; padding: 12px 14px; font-size: 1rem; border-radius: 8px; background: #0a0106; border: 1.5px solid var(--gold-accent); color: #fff; box-sizing: border-box;">
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <label style="font-size: 0.85rem; color: #fff; font-weight: 700; display: block; margin-bottom: 6px;">10-Digit Mobile Number *</label>
+                    <input type="tel" name="customer_phone" placeholder="10 Digits" maxlength="10" required value="<?= e($prefilledMobile) ?>" style="width: 100%; padding: 12px 14px; font-size: 1rem; border-radius: 8px; background: #0a0106; border: 1.5px solid var(--gold-accent); color: #fff; box-sizing: border-box;">
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <label style="font-size: 0.85rem; color: #fff; font-weight: 700; display: block; margin-bottom: 6px;">12-Digit UPI UTR / Reference ID *</label>
+                    <input type="text" name="transaction_ref" placeholder="12-digit UTR from GPay / PhonePe / Paytm" required value="<?= e($prefilledUtr) ?>" style="width: 100%; padding: 12px 14px; font-size: 1.1rem; font-family: monospace; border-radius: 8px; background: #0a0106; border: 1.5px solid var(--gold-accent); color: #fff; box-sizing: border-box;">
+                    <small style="color:#aaa; font-size:0.78rem; margin-top:4px; display:block;">Found in payment receipt as "UPI Ref No" or "UTR".</small>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="font-size: 0.85rem; color: #fff; font-weight: 700; display: block; margin-bottom: 6px;">Select Pass Category *</label>
+                    <select name="category_id" style="width: 100%; padding: 12px 14px; font-size: 0.95rem; border-radius: 8px; background: #0a0106; border: 1.5px solid var(--gold-accent); color: #fff; box-sizing: border-box;">
+                        <option value="1">Single Pass (No Food) - ₹199 (Entry for 1 • Row H-L)</option>
+                        <option value="2">Couple Pass (No Food) - ₹299 (Entry for 2 • Row E-G)</option>
+                        <option value="3" selected>Single Pass (With Food) - ₹399 (Entry for 1 + Dinner • Row C-D)</option>
+                        <option value="4">Couple Pass (With Food) - ₹699 (Entry for 2 + Dinner • Row A-B)</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" style="width: 100%; padding: 14px; font-weight: 900; font-size: 1.05rem; border-radius: 8px; cursor: pointer; box-shadow: 0 6px 20px rgba(245,183,34,0.4);">
+                    &#9889; Verify UTR &amp; Generate My Pass &amp; Receipt &rarr;
+                </button>
+            </form>
+
+            <div style="margin-top: 22px; text-align: center; border-top: 1px dashed rgba(245,183,34,0.3); padding-top: 16px;">
+                <div style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 10px;">Need immediate manual verification from our team?</div>
+                <a href="https://wa.me/917004665804?text=<?= urlencode("Hello Millennium India Group, please verify ticket for: " . $searchQuery . ". UPI Payee: chandni 0777 (chandni0984@oksbi)") ?>" 
+                   target="_blank" 
+                   class="btn" 
+                   style="background: #25d366; color: #fff; font-weight: 800; font-size: 0.92rem; padding: 10px 20px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                    <span>&#128172;</span> <span>Instant WhatsApp Verification (+91 7004665804)</span>
+                </a>
+            </div>
+        </div>
     <?php elseif (!$hasSearched && !$booking): ?>
         <!-- FIRST VISIT DEFAULT VIEW: INSTANT PASS & RECEIPT DOWNLOAD GUIDE -->
         <div class="festive-card" style="max-width: 760px; margin: 20px auto; text-align: center; border: 2px solid var(--gold-accent); padding: 35px 25px;">
@@ -608,6 +610,29 @@ include __DIR__ . '/includes/header.php';
                         </div>
                     </div>
                     <?php endif; ?>
+                    <?php 
+                    $foodIncluded = false;
+                    foreach ($items as $it) {
+                        if ((float)$it['unit_price'] >= 350 || stripos($it['category_name'], 'With Food') !== false) {
+                            $foodIncluded = true;
+                            break;
+                        }
+                    }
+                    ?>
+                    <div>
+                        <div class="ticket-info-label">Food Privilege</div>
+                        <div class="ticket-info-value">
+                            <?php if ($foodIncluded): ?>
+                                <span style="background: #dcfce7; color: #15803d; border: 1.5px solid #22c55e; padding: 3px 10px; border-radius: 6px; font-weight: 800; font-size: 0.88rem; display: inline-block;">
+                                    &#127869; Food Included (Dinner)
+                                </span>
+                            <?php else: ?>
+                                <span style="background: #fee2e2; color: #b91c1c; border: 1.5px solid #ef4444; padding: 3px 10px; border-radius: 6px; font-weight: 800; font-size: 0.88rem; display: inline-block;">
+                                    &#10060; No Food (Entry Only)
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
 
                     <div>
                         <div class="ticket-info-label">Date &amp; Timing</div>

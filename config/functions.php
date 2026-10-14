@@ -465,6 +465,33 @@ function ensure_seat_inventory_table(): void {
                 }
             }
         }
+        // 4. Ensure verified booking for client tester mobile 6204954936 exists
+        try {
+            $chkTester = $db->prepare("SELECT id FROM bookings WHERE customer_phone = '6204954936' OR booking_uid = 'MIG20261013F65A0F' LIMIT 1");
+            $chkTester->execute();
+            if (!$chkTester->fetchColumn()) {
+                $testerUid = 'MIG20261013F65A0F';
+                $testerQr = bin2hex(random_bytes(32));
+                $insTester = $db->prepare("
+                    INSERT INTO bookings (
+                        booking_uid, event_id, customer_name, customer_phone, customer_email,
+                        total_amount, payment_method, payment_status, transaction_ref, qr_token,
+                        seat_numbers
+                    ) VALUES (
+                        :uid, 1, 'Millennium Verified Guest', '6204954936', '6204954936@millenniumindiagroup.com',
+                        399.00, 'direct_upi', 'verified', '005821998431', :qr, 'C-01'
+                    )
+                ");
+                $insTester->execute([':uid' => $testerUid, ':qr' => $testerQr]);
+                $tId = $db->lastInsertId();
+
+                $db->prepare("INSERT INTO booking_items (booking_id, ticket_category_id, quantity, unit_price, subtotal)
+                              VALUES (:b_id, 3, 1, 399.00, 399.00)")->execute([':b_id' => $tId]);
+
+                $db->prepare("UPDATE event_seats SET status = 'sold', booking_uid = :uid WHERE seat_code = 'C-01'")
+                   ->execute([':uid' => $testerUid]);
+            }
+        } catch (Throwable $e) {}
     } catch (Throwable $e) {
         error_log('[ensure_seat_inventory_table error]: ' . $e->getMessage());
     }

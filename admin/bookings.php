@@ -14,28 +14,8 @@ send_no_cache_headers();
 $adminCurrent = 'bookings';
 $db = getDB();
 
-// Auto-purge legacy dummy/test records
-try {
-    $db->exec("
-        DELETE bi FROM booking_items bi 
-        JOIN bookings b ON bi.booking_id = b.id 
-        WHERE b.customer_name LIKE '%Test%' 
-           OR b.customer_name = 'Live Test Customer'
-           OR b.customer_name = 'Live Test'
-           OR b.customer_name = 'Test User'
-           OR b.customer_phone = '9876543210' 
-           OR b.transaction_ref = '123456789012'
-    ");
-    $db->exec("
-        DELETE FROM bookings 
-        WHERE customer_name LIKE '%Test%' 
-           OR customer_name = 'Live Test Customer'
-           OR customer_name = 'Live Test'
-           OR customer_name = 'Test User'
-           OR customer_phone = '9876543210' 
-           OR transaction_ref = '123456789012'
-    ");
-} catch (Throwable $e) {}
+// Auto-purge disabled to ensure no client test bookings or user records are lost
+
 
 // Handle Actions (Verify, Delete, Clean, Toggle Check-In, Walk-In)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

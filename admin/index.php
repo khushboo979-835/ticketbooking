@@ -16,30 +16,8 @@ $db = getDB();
 
 ensure_seat_inventory_table();
 
-// -------------------------------------------------------------
-// Auto-Purge Legacy Dummy & Test Records Permanently
-// -------------------------------------------------------------
-try {
-    $db->exec("
-        DELETE bi FROM booking_items bi 
-        JOIN bookings b ON bi.booking_id = b.id 
-        WHERE b.customer_name LIKE '%Test%' 
-           OR b.customer_name = 'Live Test Customer'
-           OR b.customer_name = 'Live Test'
-           OR b.customer_name = 'Test User'
-           OR b.customer_phone = '9876543210' 
-           OR b.transaction_ref = '123456789012'
-    ");
-    $db->exec("
-        DELETE FROM bookings 
-        WHERE customer_name LIKE '%Test%' 
-           OR customer_name = 'Live Test Customer' 
-           OR customer_name = 'Live Test' 
-           OR customer_name = 'Test User' 
-           OR customer_phone = '9876543210' 
-           OR transaction_ref = '123456789012'
-    ");
-} catch (Throwable $e) {}
+// Auto-purge disabled to ensure no client test bookings or user records are lost
+
 
 // -------------------------------------------------------------
 // POST Handlers: Actions (Verify, Delete, Walk-In, Quota, Clean, UTR Issue)
