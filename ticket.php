@@ -9,6 +9,7 @@ require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/config/functions.php';
 
 send_no_cache_headers();
+ensure_seat_inventory_table();
 
 $db = getDB();
 
