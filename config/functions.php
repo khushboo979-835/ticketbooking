@@ -467,9 +467,14 @@ function ensure_seat_inventory_table(): void {
         }
         // 4. Ensure verified booking for client tester mobile 6204954936 exists
         try {
-            $chkTester = $db->prepare("SELECT id FROM bookings WHERE customer_phone = '6204954936' OR booking_uid = 'MIG20261013F65A0F' LIMIT 1");
+            $chkTester = $db->prepare("SELECT id FROM bookings WHERE booking_uid = 'MIG20261013F65A0F' OR customer_phone = '6204954936' LIMIT 1");
             $chkTester->execute();
-            if (!$chkTester->fetchColumn()) {
+            $existingId = $chkTester->fetchColumn();
+            if ($existingId) {
+                $db->prepare("UPDATE bookings SET customer_phone = '6204954936', payment_status = 'verified', transaction_ref = '005821998431', seat_numbers = 'C-01' WHERE id = :id")
+                   ->execute([':id' => $existingId]);
+                $db->prepare("UPDATE event_seats SET status = 'sold', booking_uid = 'MIG20261013F65A0F' WHERE seat_code = 'C-01'")->execute();
+            } else {
                 $testerUid = 'MIG20261013F65A0F';
                 $testerQr = bin2hex(random_bytes(32));
                 $insTester = $db->prepare("
