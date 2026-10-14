@@ -21,8 +21,8 @@ $cart = $_SESSION['booking_cart'];
 $customer = $_SESSION['booking_customer'];
 $db = getDB();
 
-$upiId = get_setting('upi_id', 'chandni0984@oksbi');
-$payeeName = get_setting('upi_payee_name', 'chandni 0777');
+$upiId = get_setting('upi_id', 'ashrafkhan0777-2@oksbi');
+$payeeName = get_setting('upi_payee_name', 'Ashraf Ali');
 $razorpayKeyId = get_setting('razorpay_key_id', 'rzp_test_migDemoKey123');
 $gatewayMode = get_setting('gateway_mode', 'test');
 
@@ -192,15 +192,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Standard Clean UPI Intent String (Literal @ sign, clean payee name to prevent app crashes)
 $cleanAmount = number_format($cart['total_amount'], 2, '.', '');
-$cleanUpiId = 'chandni0984@oksbi';
-$cleanPayee = 'Chandni';
+$cleanUpiId = 'ashrafkhan0777-2@oksbi';
+$cleanPayee = 'Ashraf Ali';
 $note = 'GarbaPass';
 
 // Intent URIs for different apps
-$genericUpiPayload = "upi://pay?pa={$cleanUpiId}&pn={$cleanPayee}&am={$cleanAmount}&cu=INR&tn={$note}";
-$phonepePayload    = "phonepe://pay?pa={$cleanUpiId}&pn={$cleanPayee}&am={$cleanAmount}&cu=INR&tn={$note}";
-$paytmPayload      = "paytmmp://pay?pa={$cleanUpiId}&pn={$cleanPayee}&am={$cleanAmount}&cu=INR&tn={$note}";
-$gpayPayload       = "gpay://upi/pay?pa={$cleanUpiId}&pn={$cleanPayee}&am={$cleanAmount}&cu=INR&tn={$note}";
+$genericUpiPayload = "upi://pay?pa={$cleanUpiId}&pn=" . urlencode($cleanPayee) . "&am={$cleanAmount}&cu=INR&tn={$note}";
+$phonepePayload    = "phonepe://pay?pa={$cleanUpiId}&pn=" . urlencode($cleanPayee) . "&am={$cleanAmount}&cu=INR&tn={$note}";
+$paytmPayload      = "paytmmp://pay?pa={$cleanUpiId}&pn=" . urlencode($cleanPayee) . "&am={$cleanAmount}&cu=INR&tn={$note}";
+$gpayPayload       = "gpay://upi/pay?pa={$cleanUpiId}&pn=" . urlencode($cleanPayee) . "&am={$cleanAmount}&cu=INR&tn={$note}";
 
 $pageTitle = 'Direct UPI Payment | ' . e($cart['event_title']);
 $currentNav = 'garba';
@@ -257,22 +257,22 @@ include __DIR__ . '/includes/header.php';
                 <span style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.78rem; padding: 4px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.6px; display: inline-block; margin-bottom: 8px;">
                     &#9889; Official Bank Verified UPI Transfer
                 </span>
-                <h2 style="color: #fff; font-size: 1.7rem; font-weight: 900; margin: 0 0 6px;">Pay Directly via UPI ID</h2>
+                <h2 style="color: #fff; font-size: 1.7rem; font-weight: 900; margin: 0 0 6px;">Pay Directly via Official Scanner / UPI</h2>
                 <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">
-                    Zero convenience fee &bull; Fast, direct &amp; 100% secure payment for <?= e($cart['seat_numbers'] ?: 'selected seats') ?>
+                    Scan the official QR below or use UPI ID &bull; Instant confirmation for <?= e($cart['seat_numbers'] ?: 'selected seats') ?>
                 </p>
             </div>
 
-            <!-- UPI White Box -->
+            <!-- UPI White Box with Official Scanner -->
             <div style="border: 2px solid #e2e8f0; max-width: 520px; margin: 0 auto 25px; padding: 24px 20px; border-radius: 16px; background: #ffffff; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,0.25);">
                 
-                <div style="font-size: 0.9rem; color: #475569; font-weight: 600;">
-                    Bank Account Holder: <strong style="color: #0f172a;">chandni 0777 (State Bank of India)</strong>
+                <div style="font-size: 0.92rem; color: #475569; font-weight: 700;">
+                    Official Account: <strong style="color: #0f172a; font-size: 1.05rem;">Ashraf Ali</strong> &bull; <span style="color:#0369a1;">Jana Small Finance 9105</span>
                 </div>
 
                 <!-- Payable Amount Big Display -->
                 <div style="margin: 14px 0 16px;">
-                    <span style="font-size: 0.8rem; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Exact Dynamic Amount to Transfer</span>
+                    <span style="font-size: 0.8rem; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Exact Amount to Transfer</span>
                     <div style="font-size: 2.3rem; font-weight: 900; color: #7a1244; line-height: 1.1; margin-top: 4px;">
                         <?= format_inr($cart['total_amount']) ?>
                     </div>
@@ -281,22 +281,22 @@ include __DIR__ . '/includes/header.php';
                     </div>
                 </div>
 
-                <!-- Live Dynamic Scannable UPI QR Code -->
-                <div style="margin: 14px auto 18px; padding: 12px; background: #fafafa; border: 2px dashed #cbd5e1; border-radius: 14px; max-width: 250px;">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&amp;data=<?= urlencode($genericUpiPayload) ?>" 
-                         alt="Dynamic UPI QR Code" 
-                         style="width: 200px; height: 200px; display: block; margin: 0 auto; border-radius: 8px;">
-                    <div style="font-size: 0.82rem; font-weight: 800; color: #0f172a; margin-top: 8px;">
-                        &#128241; Scan to Pay with Any UPI App
+                <!-- Official Scanner Image -->
+                <div style="margin: 16px auto 18px; padding: 12px; background: #111827; border: 2.5px solid var(--gold-accent); border-radius: 16px; max-width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.35);">
+                    <img src="<?= asset_v('assets/uploads/upi-scanner-ashraf.png') ?>" 
+                         alt="Official Google Pay UPI Scanner - Ashraf Ali" 
+                         style="width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 10px;">
+                    <div style="font-size: 0.88rem; font-weight: 800; color: #ffd966; margin-top: 10px;">
+                        &#128241; Official Google Pay / UPI Scanner
                     </div>
-                    <div style="font-size: 0.76rem; color: #64748b; margin-top: 2px;">
-                        Preloaded with exact: <strong style="color: #7a1244; font-size: 0.9rem;"><?= format_inr($cart['total_amount']) ?></strong>
+                    <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 2px;">
+                        Ashraf Ali &bull; Jana Small Finance 9105
                     </div>
                 </div>
 
                 <!-- UPI ID Bar + High-Visibility Copy Button -->
                 <div style="background: #f1f5f9; border: 2px dashed #94a3b8; padding: 14px 16px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <span id="upi-id-text" style="font-size: 1.25rem; font-weight: 900; color: #0f172a; font-family: monospace; letter-spacing: 0.5px;">
+                    <span id="upi-id-text" style="font-size: 1.22rem; font-weight: 900; color: #0f172a; font-family: monospace; letter-spacing: 0.5px;">
                         <?= e($cleanUpiId) ?>
                     </span>
                     <button type="button" class="btn btn-secondary" id="btn-copy-upi-main" onclick="copyUpiIdMain()" style="color: #fff; background: #1e293b; border: none; font-weight: 800; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 0.88rem; transition: all 0.2s ease;">
@@ -312,7 +312,7 @@ include __DIR__ . '/includes/header.php';
                 <!-- 1-Click Direct UPI App Buttons for Mobile -->
                 <div style="margin-bottom: 16px;">
                     <div style="font-size: 0.82rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px;">
-                        Tap to Pay Directly with Your App (<?= format_inr($cart['total_amount']) ?>):
+                        Or Tap to Pay Directly with App (<?= format_inr($cart['total_amount']) ?>):
                     </div>
 
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">

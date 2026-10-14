@@ -200,27 +200,188 @@ include __DIR__ . '/includes/header.php';
 <!-- Main Container Content -->
 <div class="container" style="padding-top: 35px; padding-bottom: 60px;">
 
-    <!-- 2. OFFICIAL POSTER GRAPHIC & EVENT DETAILS -->
-    <div class="festive-card" style="margin-bottom: 35px; padding: 25px 22px;">
+    <!-- 2. OFFICIAL BOARDING PASSES & EVENT SHOWCASE (5 Official Ticket Designs) -->
+    <?php
+    $officialPasses = [
+        [
+            'id'          => 1,
+            'name'        => 'Single Entry (No Food)',
+            'price'       => 199,
+            'persons'     => 1,
+            'food'        => false,
+            'food_badge'  => 'No Food',
+            'badge_color' => '#ef4444',
+            'theme_color' => '#dc2626',
+            'row'         => 'H',
+            'image'       => 'assets/uploads/ticket-single-199.png',
+            'tag'         => 'Single &bull; Economy'
+        ],
+        [
+            'id'          => 2,
+            'name'        => 'Couple Entry (No Food)',
+            'price'       => 299,
+            'persons'     => 2,
+            'food'        => false,
+            'food_badge'  => 'No Food',
+            'badge_color' => '#ef4444',
+            'theme_color' => '#7c3aed',
+            'row'         => 'E',
+            'image'       => 'assets/uploads/ticket-couple-299.png',
+            'tag'         => 'Couple &bull; Prime'
+        ],
+        [
+            'id'          => 3,
+            'name'        => 'Single Entry (With Food Included)',
+            'price'       => 399,
+            'persons'     => 1,
+            'food'        => true,
+            'food_badge'  => 'Dinner Included',
+            'badge_color' => '#22c55e',
+            'theme_color' => '#16a34a',
+            'row'         => 'C',
+            'image'       => 'assets/uploads/ticket-single-food-399.png',
+            'tag'         => 'Single &bull; Food Included'
+        ],
+        [
+            'id'          => 4,
+            'name'        => 'Couple Entry (With Food Included)',
+            'price'       => 699,
+            'persons'     => 2,
+            'food'        => true,
+            'food_badge'  => 'Dinner Included',
+            'badge_color' => '#22c55e',
+            'theme_color' => '#b91c1c',
+            'row'         => 'A',
+            'image'       => 'assets/uploads/ticket-couple-food-699.png',
+            'tag'         => 'Couple &bull; VIP Food'
+        ],
+        [
+            'id'          => 5,
+            'name'        => 'Family Entry (With Food Included)',
+            'price'       => 1299,
+            'persons'     => 4,
+            'food'        => true,
+            'food_badge'  => 'Family Feast (4 Persons)',
+            'badge_color' => '#22c55e',
+            'theme_color' => '#2563eb',
+            'row'         => 'VIP',
+            'image'       => 'assets/uploads/ticket-family-food-1299.png',
+            'tag'         => 'Family VIP &bull; 4 Persons'
+        ],
+    ];
+    ?>
+
+    <div class="festive-card" style="margin-bottom: 35px; padding: 25px 20px;">
         <div style="text-align: center; margin-bottom: 20px;">
-            <span class="hero-badge" style="display:inline-block; margin-bottom: 6px;">Millennium India Group Presents</span>
+            <span class="hero-badge" style="display:inline-block; margin-bottom: 6px;">Official Millennium India Group Tickets</span>
             <h1 style="font-size: 2.2rem; font-weight: 900; color: #fff; margin: 4px 0 8px;">
                 <?= e($event['title'] ?? 'Jashn-E-Garba 2026') ?>
             </h1>
             <p style="color: var(--gold-light); font-size: 1.05rem; font-weight: 700; margin: 0;">
-                Dance &bull; Celebrate &bull; Feel the Vibes!
+                Official BookMyShow Passes &bull; 5 Exclusive Pass Categories
             </p>
         </div>
 
-        <!-- Official Poster Graphic Showcase -->
-        <div style="max-width: 820px; margin: 0 auto 24px; border-radius: 14px; overflow: hidden; border: 2px solid var(--gold-accent); box-shadow: 0 10px 30px rgba(0,0,0,0.7);">
-            <img src="<?= asset_v('assets/uploads/jashn-poster-new.jpg') ?>" 
-                 alt="Jashn-E-Garba 2026 Official Poster" 
-                 style="width: 100%; display: block; object-fit: contain; max-height: 540px; margin: 0 auto; background: #000;">
+        <!-- 5 Official Passes Quick Switcher Tabs -->
+        <div style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;" id="pass-tab-bar">
+            <?php foreach ($officialPasses as $idx => $p): ?>
+                <button type="button" 
+                        onclick="switchOfficialPass(<?= $idx ?>)" 
+                        id="pass-tab-btn-<?= $idx ?>" 
+                        class="pass-tab-button <?= $idx === 0 ? 'active' : '' ?>"
+                        style="background: <?= $idx === 0 ? 'var(--gold-accent)' : 'rgba(20,2,11,0.85)' ?>; color: <?= $idx === 0 ? '#1f0411' : '#cbd5e1' ?>; border: 1.5px solid <?= $idx === 0 ? 'var(--gold-accent)' : 'rgba(245,183,34,0.3)' ?>; font-weight: 800; font-size: 0.85rem; padding: 8px 16px; border-radius: 50px; cursor: pointer; transition: all 0.2s ease;">
+                    <?= $p['price'] == 199 ? 'Single ₹199' : ($p['price'] == 299 ? 'Couple ₹299' : ($p['price'] == 399 ? 'Single+Food ₹399' : ($p['price'] == 699 ? 'Couple+Food ₹699' : 'Family+Food ₹1299'))) ?>
+                </button>
+            <?php endforeach; ?>
+        </div>
+
+        <!-- Active Boarding Pass Hero Showcase -->
+        <div style="max-width: 920px; margin: 0 auto 25px; background: #000; border-radius: 16px; overflow: hidden; border: 2.5px solid var(--gold-accent); box-shadow: 0 15px 45px rgba(0,0,0,0.85); position: relative;">
+            
+            <div id="active-pass-container" style="transition: opacity 0.25s ease;">
+                <img id="active-pass-img" 
+                     src="<?= asset_v($officialPasses[0]['image']) ?>" 
+                     alt="<?= e($officialPasses[0]['name']) ?>" 
+                     style="width: 100%; height: auto; display: block; object-fit: contain; cursor: pointer;"
+                     onclick="openPassModal(this.src, document.getElementById('active-pass-title').innerText)">
+            </div>
+
+            <!-- Pass Info Strip Under Active Image -->
+            <div style="background: rgba(22, 2, 13, 0.96); padding: 16px 20px; border-top: 1.5px solid rgba(245, 183, 34, 0.35); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span id="active-pass-tag" style="background: #e11d48; color: #fff; font-size: 0.72rem; font-weight: 800; padding: 2px 10px; border-radius: 12px; text-transform: uppercase;">
+                            <?= $officialPasses[0]['tag'] ?>
+                        </span>
+                        <span id="active-pass-food-badge" style="background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid #ef4444; font-size: 0.72rem; font-weight: 800; padding: 2px 10px; border-radius: 12px;">
+                            <?= $officialPasses[0]['food_badge'] ?>
+                        </span>
+                    </div>
+                    <h3 id="active-pass-title" style="color: #fff; font-size: 1.35rem; font-weight: 900; margin: 6px 0 2px;">
+                        <?= $officialPasses[0]['name'] ?>
+                    </h3>
+                    <div style="font-size: 0.85rem; color: #cbd5e1;">
+                        &#128197; 16 Oct 2026 &bull; &#128205; Unique Garden, Patna &bull; Permits entry for <strong id="active-pass-admit" style="color:#ffd966;"><?= $officialPasses[0]['persons'] ?> Person</strong>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                    <div style="text-align: right;">
+                        <span style="font-size: 0.76rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Official Pass Rate</span>
+                        <div id="active-pass-price" style="font-size: 2rem; font-weight: 900; color: var(--gold-accent); line-height: 1;">
+                            ₹<?= $officialPasses[0]['price'] ?>/-
+                        </div>
+                    </div>
+                    <button type="button" 
+                            id="btn-active-pass-book" 
+                            onclick="selectTierAndScroll('<?= $officialPasses[0]['row'] ?>')" 
+                            class="btn-bms-red" 
+                            style="padding: 12px 22px; font-size: 0.95rem; font-weight: 800; border-radius: 8px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                        <span>&#9889; Book This Pass Live</span> <span>&darr;</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5 Passes Mini-Card Grid (All Visible on Mobile & Desktop) -->
+        <div style="margin-top: 25px; margin-bottom: 25px;">
+            <div style="text-align: center; margin-bottom: 14px;">
+                <span style="font-size: 0.84rem; font-weight: 800; color: var(--gold-accent); text-transform: uppercase; letter-spacing: 0.5px;">
+                    &#127915; All 5 Official Pass Tiers Available for Instant Booking:
+                </span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; max-width: 940px; margin: 0 auto;">
+                <?php foreach ($officialPasses as $idx => $pass): ?>
+                    <div style="background: rgba(18, 2, 11, 0.9); border: 1.5px solid rgba(245, 183, 34, 0.35); border-radius: 12px; padding: 10px; cursor: pointer; transition: all 0.2s ease; text-align: center;" 
+                         onclick="switchOfficialPass(<?= $idx ?>); document.getElementById('pass-tab-bar').scrollIntoView({behavior:'smooth'});"
+                         onmouseover="this.style.borderColor='var(--gold-accent)'; this.style.transform='translateY(-2px)';"
+                         onmouseout="this.style.borderColor='rgba(245, 183, 34, 0.35)'; this.style.transform='translateY(0)';"
+                         title="Click to view full pass details">
+                        <div style="border-radius: 8px; overflow: hidden; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                            <img src="<?= asset_v($pass['image']) ?>" alt="<?= e($pass['name']) ?>" style="width: 100%; height: auto; display: block; aspect-ratio: 16/9; object-fit: cover;">
+                        </div>
+                        <div style="font-weight: 800; font-size: 0.85rem; color: #fff; margin-bottom: 2px;">
+                            <?= e($pass['name']) ?>
+                        </div>
+                        <div style="font-size: 1.15rem; font-weight: 900; color: var(--gold-accent);">
+                            ₹<?= $pass['price'] ?>/-
+                        </div>
+                        <div style="font-size: 0.72rem; color: <?= $pass['food'] ? '#34d399' : '#f87171' ?>; font-weight: 700; margin: 2px 0 6px;">
+                            <?= $pass['food'] ? '&#127869; Food Included' : '&#10060; No Food' ?>
+                        </div>
+                        <button type="button" 
+                                onclick="event.stopPropagation(); selectTierAndScroll('<?= $pass['row'] ?>');"
+                                style="width: 100%; background: var(--bms-red); color: #fff; border: none; font-weight: 800; font-size: 0.74rem; padding: 5px 8px; border-radius: 6px; cursor: pointer;">
+                            Book Seats &darr;
+                        </button>
+                    </div>
+                <?php endforeach; ?>
+            </div>
         </div>
 
         <!-- Event Key Meta Highlights -->
-        <div class="hero-meta-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+        <div class="hero-meta-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 15px;">
             <div class="hero-meta-card" style="padding: 14px 18px;">
                 <span style="font-size: 1.7rem;">&#128197;</span>
                 <div>
@@ -241,47 +402,88 @@ include __DIR__ . '/includes/header.php';
                 <span style="font-size: 1.7rem;">&#127869;</span>
                 <div>
                     <strong>Food Privilege:</strong>
-                    <div style="color: var(--gold-accent); font-weight: 800;">Food Included with Passes of ₹399 &amp; ₹699</div>
+                    <div style="color: var(--gold-accent); font-weight: 800;">Food Included with Passes of ₹399, ₹699 &amp; ₹1299</div>
                 </div>
             </div>
         </div>
     </div>
 
-
-
-    <!-- 4. DIRECT UPI PAYMENT CARD (No QR Code Image, Clean UPI Bar) -->
-    <div class="festive-card" style="margin-bottom: 35px; border: 2px solid var(--gold-accent); background: linear-gradient(135deg, rgba(61,7,32,0.96), rgba(20,2,11,0.98)); padding: 22px 20px; border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; border-bottom: 1px dashed rgba(245,183,34,0.3); padding-bottom: 12px;">
+    <!-- 4. OFFICIAL DIRECT SCANNER & UPI PAYMENT CARD -->
+    <div class="festive-card" style="margin-bottom: 35px; border: 2.5px solid var(--gold-accent); background: linear-gradient(135deg, rgba(45,5,24,0.98), rgba(15,2,9,0.99)); padding: 25px 22px; border-radius: 16px; box-shadow: 0 10px 35px rgba(0,0,0,0.65);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; border-bottom: 1.5px dashed rgba(245,183,34,0.3); padding-bottom: 14px;">
             <div>
-                <span style="background: var(--gold-accent); color: #1f0411; font-weight: 800; font-size: 0.74rem; padding: 3px 12px; border-radius: 20px; text-transform: uppercase;">
-                    &#9889; Quick Direct UPI Payment
+                <span style="background: var(--gold-accent); color: #1f0411; font-weight: 800; font-size: 0.76rem; padding: 4px 14px; border-radius: 20px; text-transform: uppercase;">
+                    &#9889; Instant Direct Scanner &bull; Zero Convenience Fee
                 </span>
-                <h3 style="font-size: 1.35rem; color: #fff; margin: 6px 0 0; font-weight: 800;">
-                    Direct UPI Transfer &bull; Zero Convenience Fee
+                <h3 style="font-size: 1.45rem; color: #fff; margin: 8px 0 0; font-weight: 900;">
+                    Scan Official QR Code to Pay Directly
                 </h3>
             </div>
             <div style="text-align: right;">
-                <div style="font-size: 0.85rem; color: #cbd5e1;">Payee: <strong style="color: #fff;">chandni 0777 (SBI)</strong></div>
-                <div style="display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-top: 3px;">
-                    <code id="upi-id-text" style="color: var(--gold-accent); font-size: 0.92rem; font-weight: 800; background: rgba(0,0,0,0.4); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(245,183,34,0.3);">chandni0984@oksbi</code>
-                    <button type="button" onclick="copyUpiId()" id="btn-copy-upi" style="background: var(--gold-accent); color: #1f0411; border: none; font-weight: 800; font-size: 0.75rem; padding: 4px 10px; border-radius: 6px; cursor: pointer;">
-                        Copy
+                <div style="font-size: 0.88rem; color: #cbd5e1;">Payee: <strong style="color: #fff; font-size: 1rem;">Ashraf Ali</strong> &bull; <span style="color:#ffd966;">Jana Small Finance 9105</span></div>
+                <div style="display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-top: 4px;">
+                    <code id="upi-id-text" style="color: var(--gold-accent); font-size: 0.95rem; font-weight: 800; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(245,183,34,0.4);">ashrafkhan0777-2@oksbi</code>
+                    <button type="button" onclick="copyUpiId()" id="btn-copy-upi" style="background: var(--gold-accent); color: #1f0411; border: none; font-weight: 800; font-size: 0.78rem; padding: 5px 12px; border-radius: 6px; cursor: pointer;">
+                        Copy UPI
                     </button>
                 </div>
             </div>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-            <p style="font-size: 0.92rem; color: #e2e8f0; margin: 0; line-height: 1.5; flex: 1; min-width: 260px;">
-                Select your seats in the arena layout below. Your UPI payment amount will be <strong>calculated dynamically based on your chosen seats and tiers</strong> (Passes from ₹199 to ₹699) to UPI ID <code style="color: var(--gold-accent); font-weight:800;">chandni0984@oksbi</code>.
-            </p>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <a href="#bms-seat-arena" class="btn btn-primary" style="padding: 11px 24px; font-weight: 800; font-size: 0.95rem; border-radius: 8px; text-decoration: none;">
-                    &#127915; Select Seats &amp; Book Now &darr;
-                </a>
-                <a href="<?= BASE_URL ?>/ticket.php" class="btn btn-secondary" style="padding: 11px 18px; font-size: 0.88rem; border-radius: 8px; background: #222634; font-weight: 700;">
-                    &#128269; Already Paid? Search Pass
-                </a>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; align-items: center;">
+            
+            <!-- Left: Official Scanner Image -->
+            <div style="text-align: center; background: #0f172a; padding: 16px; border-radius: 14px; border: 2px solid var(--gold-accent); box-shadow: 0 8px 25px rgba(0,0,0,0.4); max-width: 310px; margin: 0 auto;">
+                <img src="<?= asset_v('assets/uploads/upi-scanner-ashraf.png') ?>" 
+                     alt="Official Ashraf Ali Google Pay QR Scanner" 
+                     style="width: 100%; height: auto; display: block; border-radius: 10px; margin: 0 auto;">
+                <div style="font-size: 0.86rem; font-weight: 800; color: #ffd966; margin-top: 10px;">
+                    &#128241; Official Google Pay / UPI Scanner
+                </div>
+                <div style="font-size: 0.76rem; color: #94a3b8; margin-top: 2px;">
+                    Ashraf Ali &bull; Jana Small Finance Bank
+                </div>
+            </div>
+
+            <!-- Right: Dynamic Pricing Guide + 1-Click Ticket Claim by UTR -->
+            <div>
+                <p style="font-size: 0.95rem; color: #e2e8f0; margin: 0 0 14px; line-height: 1.6;">
+                    Scan the official QR scanner on the left using <strong>Google Pay, PhonePe, Paytm, BHIM, or any UPI App</strong>. Passes range from <strong>₹199 to ₹1299</strong> depending on your choice:
+                </p>
+
+                <ul style="color: #cbd5e1; font-size: 0.88rem; padding-left: 18px; margin: 0 0 18px; line-height: 1.7;">
+                    <li>&#127915; <strong>Single Entry (No Food)</strong>: ₹199/- (Admit 1)</li>
+                    <li>&#127915; <strong>Couple Entry (No Food)</strong>: ₹299/- (Admit 2)</li>
+                    <li>&#127869; <strong>Single Entry (With Food)</strong>: ₹399/- (Admit 1 + Food Included)</li>
+                    <li>&#127869; <strong>Couple Entry (With Food)</strong>: ₹699/- (Admit 2 + Food Included)</li>
+                    <li>&#127869; <strong>Family Entry (With Food)</strong>: ₹1299/- (Admit 4 + Food Included)</li>
+                </ul>
+
+                <!-- 1-Click UTR Instant Claim Box -->
+                <div style="background: rgba(10, 1, 6, 0.85); border: 1.5px solid var(--gold-accent); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;">
+                    <div style="font-size: 0.88rem; font-weight: 800; color: #ffd966; margin-bottom: 8px;">
+                        &#9889; Already Scanned &amp; Paid? Enter 12-Digit UTR to Download Pass:
+                    </div>
+                    <form action="<?= BASE_URL ?>/ticket.php" method="GET" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <input type="text" 
+                               name="search" 
+                               placeholder="Enter 12-digit UPI UTR / Ref No..." 
+                               required 
+                               style="flex: 1; min-width: 190px; padding: 10px 14px; font-size: 0.95rem; font-family: monospace; border-radius: 8px; background: #000; border: 1.5px solid var(--gold-accent); color: #fff; box-sizing: border-box;">
+                        <button type="submit" class="btn btn-primary" style="padding: 10px 18px; font-weight: 800; font-size: 0.9rem; border-radius: 8px; white-space: nowrap;">
+                            &#10004; Get Ticket &rarr;
+                        </button>
+                    </form>
+                </div>
+
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <a href="#bms-seat-arena" class="btn btn-primary" style="padding: 11px 22px; font-weight: 800; font-size: 0.92rem; border-radius: 8px; text-decoration: none;">
+                        &#127915; Pick Seats in Arena &darr;
+                    </a>
+                    <a href="<?= BASE_URL ?>/ticket.php" class="btn btn-secondary" style="padding: 11px 18px; font-size: 0.88rem; border-radius: 8px; background: #222634; font-weight: 700;">
+                        &#128269; Search by Mobile / Booking ID
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -304,10 +506,11 @@ include __DIR__ . '/includes/header.php';
         <?php foreach ($categories as $cat): ?>
             <?php 
                 $isCouple = stripos($cat['name'], 'Couple') !== false;
-                $isVip = stripos($cat['name'], 'VIP') !== false;
+                $isFamily = stripos($cat['name'], 'Family') !== false;
+                $isVip = stripos($cat['name'], 'VIP') !== false || $isFamily;
                 $hasFood = ((float)$cat['price'] >= 350 || stripos($cat['name'], 'With Food') !== false);
-                $tierRowsLabel = ((float)$cat['price'] >= 600) ? 'Row A, B (VIP)' : (((float)$cat['price'] >= 350) ? 'Row C, D (Prime Plus)' : (((float)$cat['price'] >= 250) ? 'Row E, F, G (Prime)' : 'Row H, J, K, L (Economy)'));
-                $targetRowLetter = ((float)$cat['price'] >= 600) ? 'A' : (((float)$cat['price'] >= 350) ? 'C' : (((float)$cat['price'] >= 250) ? 'E' : 'H'));
+                $tierRowsLabel = ((float)$cat['price'] >= 1000) ? 'Row VIP (Family Box)' : (((float)$cat['price'] >= 600) ? 'Row A, B (VIP)' : (((float)$cat['price'] >= 350) ? 'Row C, D (Prime Plus)' : (((float)$cat['price'] >= 250) ? 'Row E, F, G (Prime)' : 'Row H, J, K, L (Economy)')));
+                $targetRowLetter = ((float)$cat['price'] >= 1000) ? 'VIP' : (((float)$cat['price'] >= 600) ? 'A' : (((float)$cat['price'] >= 350) ? 'C' : (((float)$cat['price'] >= 250) ? 'E' : 'H')));
             ?>
             <div style="background: linear-gradient(135deg, rgba(35, 4, 20, 0.96), rgba(18, 2, 10, 0.98)); border: 1.5px solid <?= ($isCouple || $isVip) ? 'var(--gold-accent)' : 'rgba(245, 183, 34, 0.35)' ?>; border-radius: 14px; padding: 18px; box-shadow: 0 6px 20px rgba(0,0,0,0.55); position: relative; text-align: left;">
                 <?php if ($isCouple): ?>
@@ -624,7 +827,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function copyUpiId() {
-    const upiText = 'chandni0984@oksbi';
+    const upiText = 'ashrafkhan0777-2@oksbi';
     const btn = document.getElementById('btn-copy-upi');
     
     if (navigator.clipboard && window.isSecureContext) {
@@ -653,12 +856,89 @@ function copyUpiId() {
             btn.style.background = '#4ade80';
             btn.style.color = '#000';
             setTimeout(function() {
-                btn.innerText = 'Copy';
+                btn.innerText = 'Copy UPI';
                 btn.style.background = 'var(--gold-accent)';
                 btn.style.color = '#1f0411';
             }, 2500);
         }
     }
+}
+
+// 5 Official Boarding Passes Switcher & Modal
+const officialPassesData = <?= json_encode($officialPasses) ?>;
+
+function switchOfficialPass(idx) {
+    const p = officialPassesData[idx];
+    if (!p) return;
+
+    // Update Tab Buttons
+    document.querySelectorAll('.pass-tab-button').forEach((btn, i) => {
+        if (i === idx) {
+            btn.style.background = 'var(--gold-accent)';
+            btn.style.color = '#1f0411';
+            btn.style.borderColor = 'var(--gold-accent)';
+        } else {
+            btn.style.background = 'rgba(20,2,11,0.85)';
+            btn.style.color = '#cbd5e1';
+            btn.style.borderColor = 'rgba(245,183,34,0.3)';
+        }
+    });
+
+    const img = document.getElementById('active-pass-img');
+    const container = document.getElementById('active-pass-container');
+    const title = document.getElementById('active-pass-title');
+    const tag = document.getElementById('active-pass-tag');
+    const foodBadge = document.getElementById('active-pass-food-badge');
+    const admit = document.getElementById('active-pass-admit');
+    const price = document.getElementById('active-pass-price');
+    const bookBtn = document.getElementById('btn-active-pass-book');
+
+    if (container) {
+        container.style.opacity = '0.3';
+        setTimeout(() => {
+            if (img) img.src = p.image;
+            if (title) title.innerText = p.name;
+            if (tag) {
+                tag.innerHTML = p.tag;
+                tag.style.background = p.theme_color || '#e11d48';
+            }
+            if (foodBadge) {
+                foodBadge.innerText = p.food_badge;
+                foodBadge.style.color = p.badge_color;
+                foodBadge.style.borderColor = p.badge_color;
+                foodBadge.style.background = p.food ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)';
+            }
+            if (admit) admit.innerText = p.persons + ' Person' + (p.persons > 1 ? 's' : '');
+            if (price) price.innerText = '₹' + p.price + '/-';
+            if (bookBtn) {
+                bookBtn.setAttribute('onclick', "selectTierAndScroll('" + p.row + "')");
+            }
+            container.style.opacity = '1';
+        }, 120);
+    }
+}
+
+function openPassModal(src, title) {
+    let modal = document.getElementById('pass-lightbox-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'pass-lightbox-modal';
+        modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; cursor:zoom-out;';
+        modal.innerHTML = `
+            <div style="position:relative; max-width:1100px; width:100%; text-align:center;" onclick="event.stopPropagation()">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <span id="modal-pass-title" style="color:#ffd966; font-weight:800; font-size:1.1rem;"></span>
+                    <button type="button" onclick="document.getElementById('pass-lightbox-modal').style.display='none'" style="background:var(--gold-accent); color:#1f0411; border:none; border-radius:50%; width:36px; height:36px; font-weight:900; font-size:1.2rem; cursor:pointer;">&times;</button>
+                </div>
+                <img id="modal-pass-img" src="" style="width:100%; height:auto; max-height:85vh; object-fit:contain; border-radius:12px; border:2px solid var(--gold-accent); box-shadow:0 10px 40px rgba(0,0,0,0.9);">
+            </div>
+        `;
+        modal.onclick = function() { modal.style.display = 'none'; };
+        document.body.appendChild(modal);
+    }
+    document.getElementById('modal-pass-img').src = src;
+    document.getElementById('modal-pass-title').innerText = title || 'Official Boarding Pass';
+    modal.style.display = 'flex';
 }
 
 // ==========================================

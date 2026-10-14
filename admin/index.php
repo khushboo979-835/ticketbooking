@@ -585,7 +585,7 @@ try {
                 </div>
                 <div class="bms-kpi-value" style="color: #ffd966;"><?= format_inr($totalRevenue) ?></div>
                 <div class="bms-kpi-sub">
-                    <span>100% Verified in UPI (chandni0984@oksbi)</span>
+                    <span>100% Verified in UPI (ashrafkhan0777-2@oksbi &bull; Ashraf Ali)</span>
                 </div>
             </div>
 

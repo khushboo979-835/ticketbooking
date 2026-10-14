@@ -174,16 +174,16 @@ function get_setting(string $key, string $default = ''): string {
                     $db->prepare("UPDATE site_settings SET setting_value = '7004665804' WHERE setting_key = 'contact_phone'")->execute();
                 } catch (PDOException $ex) {}
             }
-            if (!isset($settingsCache['upi_id']) || $settingsCache['upi_id'] !== 'chandni0984@oksbi') {
-                $settingsCache['upi_id'] = 'chandni0984@oksbi';
+            if (!isset($settingsCache['upi_id']) || $settingsCache['upi_id'] !== 'ashrafkhan0777-2@oksbi') {
+                $settingsCache['upi_id'] = 'ashrafkhan0777-2@oksbi';
                 try {
-                    $db->prepare("UPDATE site_settings SET setting_value = 'chandni0984@oksbi' WHERE setting_key = 'upi_id'")->execute();
+                    $db->prepare("UPDATE site_settings SET setting_value = 'ashrafkhan0777-2@oksbi' WHERE setting_key = 'upi_id'")->execute();
                 } catch (PDOException $ex) {}
             }
-            if (!isset($settingsCache['upi_payee_name']) || $settingsCache['upi_payee_name'] !== 'chandni 0777') {
-                $settingsCache['upi_payee_name'] = 'chandni 0777';
+            if (!isset($settingsCache['upi_payee_name']) || $settingsCache['upi_payee_name'] !== 'Ashraf Ali') {
+                $settingsCache['upi_payee_name'] = 'Ashraf Ali';
                 try {
-                    $db->prepare("UPDATE site_settings SET setting_value = 'chandni 0777' WHERE setting_key = 'upi_payee_name'")->execute();
+                    $db->prepare("UPDATE site_settings SET setting_value = 'Ashraf Ali' WHERE setting_key = 'upi_payee_name'")->execute();
                 } catch (PDOException $ex) {}
             }
             // Auto-heal any booking with non-empty transaction_ref to verified status so passes unlock instantly
@@ -314,7 +314,7 @@ function get_event_categories(int $eventId, bool $activeOnly = true): array {
     try {
         $db = getDB();
 
-        // Auto-sync ticket categories with official poster pricing (₹199, ₹299, ₹399, ₹699)
+        // Auto-sync ticket categories with official poster pricing (₹199, ₹299, ₹399, ₹699, ₹1299)
         static $syncedPricing = false;
         if (!$syncedPricing) {
             $syncedPricing = true;
@@ -323,7 +323,16 @@ function get_event_categories(int $eventId, bool $activeOnly = true): array {
                 $db->exec("UPDATE ticket_categories SET name = 'Couple Pass (No Food)', price = 299.00, people_allowed = 2, status = 'active' WHERE id = 2");
                 $db->exec("UPDATE ticket_categories SET name = 'Single Pass (With Food)', price = 399.00, people_allowed = 1, status = 'active' WHERE id = 3");
                 $db->exec("UPDATE ticket_categories SET name = 'Couple Pass (With Food)', price = 699.00, people_allowed = 2, status = 'active' WHERE id = 4");
-                $db->exec("UPDATE ticket_categories SET status = 'inactive' WHERE id NOT IN (1, 2, 3, 4) AND event_id = 1");
+                
+                // Ensure Category 5 (Family Pass With Food ₹1299)
+                $chkCat5 = $db->query("SELECT id FROM ticket_categories WHERE id = 5")->fetch();
+                if (!$chkCat5) {
+                    $db->exec("INSERT INTO ticket_categories (id, event_id, name, price, total_seats, available_seats, people_allowed, status) VALUES (5, 1, 'Family Pass (With Food)', 1299.00, 50, 50, 4, 'active')");
+                } else {
+                    $db->exec("UPDATE ticket_categories SET name = 'Family Pass (With Food)', price = 1299.00, people_allowed = 4, status = 'active' WHERE id = 5");
+                }
+                
+                $db->exec("UPDATE ticket_categories SET status = 'inactive' WHERE id NOT IN (1, 2, 3, 4, 5) AND event_id = 1");
                 $db->exec("UPDATE events SET description = 'Millennium India Group presents Jashn-E-Garba 2026! Dance, Celebrate, Feel the Vibes! Authentic Gujarati Dandiya beats, live folk orchestra, high-energy lights, contest awards, delicious food options and royal festive celebration.' WHERE id = 1 AND description LIKE '%Saurabh%'");
             } catch (Throwable $e) {}
         }
@@ -434,6 +443,7 @@ function ensure_seat_inventory_table(): void {
         $count = (int)$db->query("SELECT COUNT(*) FROM `event_seats` WHERE `event_id` = 1")->fetchColumn();
         if ($count === 0) {
             $tierConfigs = [
+                ['cat_id' => 5, 'name' => 'Family Pass (With Food)', 'price' => 1299.00, 'rows' => ['VIP'], 'seats_per_row' => 8],
                 ['cat_id' => 4, 'name' => 'Couple Pass (With Food)', 'price' => 699.00, 'rows' => ['A', 'B'], 'seats_per_row' => 10],
                 ['cat_id' => 3, 'name' => 'Single Pass (With Food)', 'price' => 399.00, 'rows' => ['C', 'D'], 'seats_per_row' => 10],
                 ['cat_id' => 2, 'name' => 'Couple Pass (No Food)',   'price' => 299.00, 'rows' => ['E', 'F', 'G'], 'seats_per_row' => 10],
@@ -464,6 +474,21 @@ function ensure_seat_inventory_table(): void {
                     }
                 }
             }
+        } else {
+            // Ensure VIP seats for Family Pass (With Food ₹1299) exist in existing tables
+            try {
+                $chkVip = (int)$db->query("SELECT COUNT(*) FROM `event_seats` WHERE `category_id` = 5")->fetchColumn();
+                if ($chkVip === 0) {
+                    $insVip = $db->prepare("
+                        INSERT IGNORE INTO `event_seats` (event_id, category_id, category_name, tier_price, row_name, seat_num, seat_code, status)
+                        VALUES (1, 5, 'Family Pass (With Food)', 1299.00, 'VIP', :num, :code, 'available')
+                    ");
+                    for ($sNum = 1; $sNum <= 8; $sNum++) {
+                        $sCode = sprintf('VIP-%02d', $sNum);
+                        $insVip->execute([':num' => $sNum, ':code' => $sCode]);
+                    }
+                }
+            } catch (Throwable $ve) {}
         }
         // 4. Ensure verified booking for client tester mobile 6204954936 exists
         try {

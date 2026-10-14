@@ -290,7 +290,7 @@ include __DIR__ . '/includes/header.php';
                     Claim Pass for: <span style="font-family: monospace; color: var(--gold-accent);"><?= e($searchQuery) ?></span>
                 </h3>
                 <p style="color: #cbd5e1; font-size: 0.92rem; max-width: 560px; margin: 0 auto; line-height: 1.6;">
-                    If you transferred funds directly to UPI ID <code style="color:var(--gold-accent); font-weight:800;">chandni0984@oksbi</code>, enter your 12-digit UPI UTR number below to immediately generate and download your official Gate Pass &amp; Tax Receipt:
+                    If you transferred funds directly to UPI ID <code style="color:var(--gold-accent); font-weight:800;">ashrafkhan0777-2@oksbi</code> (Ashraf Ali), enter your 12-digit UPI UTR number below to immediately generate and download your official Gate Pass &amp; Tax Receipt:
                 </p>
             </div>
 
@@ -321,6 +321,7 @@ include __DIR__ . '/includes/header.php';
                         <option value="2">Couple Pass (No Food) - ₹299 (Entry for 2 • Row E-G)</option>
                         <option value="3" selected>Single Pass (With Food) - ₹399 (Entry for 1 + Dinner • Row C-D)</option>
                         <option value="4">Couple Pass (With Food) - ₹699 (Entry for 2 + Dinner • Row A-B)</option>
+                        <option value="5">Family Pass (With Food) - ₹1299 (Entry for 4 + Dinner • VIP Family Box)</option>
                     </select>
                 </div>
 
@@ -331,7 +332,7 @@ include __DIR__ . '/includes/header.php';
 
             <div style="margin-top: 22px; text-align: center; border-top: 1px dashed rgba(245,183,34,0.3); padding-top: 16px;">
                 <div style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 10px;">Need immediate manual verification from our team?</div>
-                <a href="https://wa.me/917004665804?text=<?= urlencode("Hello Millennium India Group, please verify ticket for: " . $searchQuery . ". UPI Payee: chandni 0777 (chandni0984@oksbi)") ?>" 
+                <a href="https://wa.me/917004665804?text=<?= urlencode("Hello Millennium India Group, please verify ticket for: " . $searchQuery . ". UPI Payee: Ashraf Ali (ashrafkhan0777-2@oksbi)") ?>" 
                    target="_blank" 
                    class="btn" 
                    style="background: #25d366; color: #fff; font-weight: 800; font-size: 0.92rem; padding: 10px 20px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
@@ -351,7 +352,7 @@ include __DIR__ . '/includes/header.php';
             <h2 class="card-title" style="justify-content: center; margin-top: 14px; font-size: 1.8rem;">How to Download Your Pass &amp; Receipt</h2>
             
             <p style="color: #cbd5e1; font-size: 0.95rem; max-width: 580px; margin: 0 auto 24px; line-height: 1.6;">
-                Every booking made with UPI ID (<code style="color:var(--gold-accent);">chandni0984@oksbi</code>) is stored securely in our official database. Enter your details in the search box above to access your pass.
+                Every booking made with UPI ID (<code style="color:var(--gold-accent);">ashrafkhan0777-2@oksbi</code> &bull; Ashraf Ali) is stored securely in our official database. Enter your details in the search box above to access your pass.
             </p>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 25px; text-align: left;">
@@ -443,8 +444,14 @@ include __DIR__ . '/includes/header.php';
                     &#9889; Already Paid via UPI? Unlock Pass Instantly:
                 </h4>
                 <p style="margin: 0 0 16px; font-size: 0.9rem; color: #475569;">
-                    If you transferred to UPI ID <strong>chandni0984@oksbi</strong>, enter your 12-digit UTR / Reference ID below to unlock your Digital QR Pass immediately:
+                    If you transferred to UPI ID <strong>ashrafkhan0777-2@oksbi</strong> (Ashraf Ali), enter your 12-digit UTR / Reference ID below to unlock your Digital QR Pass immediately:
                 </p>
+
+                <!-- Official Scanner Preview -->
+                <div style="text-align: center; margin-bottom: 16px;">
+                    <img src="<?= asset_v('assets/uploads/upi-scanner-ashraf.png') ?>" alt="Ashraf Ali Official UPI Scanner" style="max-width: 220px; width: 100%; border-radius: 10px; border: 2px solid #7a1244; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                    <div style="font-size: 0.8rem; color: #475569; font-weight: 700; margin-top: 5px;">Scan with Any UPI App &bull; Payee: Ashraf Ali (9105)</div>
+                </div>
 
                 <form action="<?= BASE_URL ?>/ticket.php" method="POST">
                     <input type="hidden" name="action" value="submit_utr_ticket">
@@ -697,7 +704,7 @@ include __DIR__ . '/includes/header.php';
                 <div>
                     <span style="font-size: 0.76rem; color: #888; text-transform: uppercase; font-weight: 700;">Payment Mode</span>
                     <div style="color: #fff; font-size: 0.95rem; font-weight: 700; margin-top: 2px;">
-                        Direct UPI (chandni0984@oksbi)
+                        Direct UPI (ashrafkhan0777-2@oksbi)
                     </div>
                 </div>
 
