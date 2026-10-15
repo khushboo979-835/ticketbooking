@@ -447,10 +447,13 @@ include __DIR__ . '/includes/header.php';
                     If you transferred to UPI ID <strong>ashrafkhan0777-2@oksbi</strong> (Ashraf Ali), enter your 12-digit UTR / Reference ID below to unlock your Digital QR Pass immediately:
                 </p>
 
-                <!-- Official Scanner Preview -->
+                <!-- Official UPI ID Badge -->
                 <div style="text-align: center; margin-bottom: 16px;">
-                    <img src="<?= asset_v('assets/uploads/upi-scanner-ashraf.png') ?>" alt="Ashraf Ali Official UPI Scanner" style="max-width: 220px; width: 100%; border-radius: 10px; border: 2px solid #7a1244; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-                    <div style="font-size: 0.8rem; color: #475569; font-weight: 700; margin-top: 5px;">Scan with Any UPI App &bull; Payee: Ashraf Ali (9105)</div>
+                    <div style="display: inline-flex; align-items: center; gap: 10px; background: #0f172a; padding: 10px 18px; border-radius: 30px; border: 1.5px solid #ffd966;">
+                        <span style="font-size: 0.82rem; color: #94a3b8; font-weight: 700;">UPI ID:</span>
+                        <code style="font-family: monospace; font-size: 1.05rem; font-weight: 800; color: #ffd966;">ashrafkhan0777-2@oksbi</code>
+                        <span style="color: #cbd5e1; font-size: 0.82rem;">(Ashraf Ali &bull; Jana Bank 9105)</span>
+                    </div>
                 </div>
 
                 <form action="<?= BASE_URL ?>/ticket.php" method="POST">

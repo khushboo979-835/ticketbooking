@@ -410,15 +410,15 @@ include __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-    <!-- 4. OFFICIAL DIRECT SCANNER & UPI PAYMENT CARD -->
+    <!-- 4. OFFICIAL DIRECT UPI PAYMENT CARD -->
     <div class="festive-card" style="margin-bottom: 35px; border: 2.5px solid var(--gold-accent); background: linear-gradient(135deg, rgba(45,5,24,0.98), rgba(15,2,9,0.99)); padding: 25px 22px; border-radius: 16px; box-shadow: 0 10px 35px rgba(0,0,0,0.65);">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; border-bottom: 1.5px dashed rgba(245,183,34,0.3); padding-bottom: 14px;">
             <div>
                 <span style="background: var(--gold-accent); color: #1f0411; font-weight: 800; font-size: 0.76rem; padding: 4px 14px; border-radius: 20px; text-transform: uppercase;">
-                    &#9889; Instant Direct Scanner &bull; Zero Convenience Fee
+                    &#9889; Official Direct UPI Transfer &bull; Zero Convenience Fee
                 </span>
                 <h3 style="font-size: 1.45rem; color: #fff; margin: 8px 0 0; font-weight: 900;">
-                    Scan Official QR Code to Pay Directly
+                    Pay Directly via UPI ID: ashrafkhan0777-2@oksbi
                 </h3>
             </div>
             <div style="text-align: right;">
@@ -434,23 +434,37 @@ include __DIR__ . '/includes/header.php';
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; align-items: center;">
             
-            <!-- Left: Official Scanner Image -->
-            <div style="text-align: center; background: #0f172a; padding: 16px; border-radius: 14px; border: 2px solid var(--gold-accent); box-shadow: 0 8px 25px rgba(0,0,0,0.4); max-width: 310px; margin: 0 auto;">
-                <img src="<?= asset_v('assets/uploads/upi-scanner-ashraf.png') ?>" 
-                     alt="Official Ashraf Ali Google Pay QR Scanner" 
-                     style="width: 100%; height: auto; display: block; border-radius: 10px; margin: 0 auto;">
-                <div style="font-size: 0.86rem; font-weight: 800; color: #ffd966; margin-top: 10px;">
-                    &#128241; Official Google Pay / UPI Scanner
+            <!-- Left: Official UPI ID Account Card (No Scanner) -->
+            <div style="text-align: center; background: linear-gradient(135deg, #0f172a, #1e293b); padding: 22px 18px; border-radius: 14px; border: 2px solid var(--gold-accent); box-shadow: 0 8px 25px rgba(0,0,0,0.4); max-width: 360px; margin: 0 auto; width: 100%; box-sizing: border-box;">
+                <div style="font-size: 0.8rem; color: #ffd966; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">
+                    &#9889; Official Bank Account
                 </div>
-                <div style="font-size: 0.76rem; color: #94a3b8; margin-top: 2px;">
-                    Ashraf Ali &bull; Jana Small Finance Bank
+                <div style="font-size: 1.4rem; font-weight: 900; color: #fff; margin: 6px 0 2px;">
+                    Ashraf Ali
+                </div>
+                <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 14px;">
+                    Jana Small Finance Bank (A/C: ...9105)
+                </div>
+
+                <div style="background: rgba(0,0,0,0.45); border: 1.5px solid var(--gold-accent); border-radius: 10px; padding: 12px; margin-bottom: 14px;">
+                    <div style="font-size: 0.74rem; color: #cbd5e1; text-transform: uppercase; font-weight: 700;">Direct Payee UPI ID</div>
+                    <div style="font-size: 1.1rem; font-family: monospace; font-weight: 900; color: #ffd966; margin: 4px 0 8px; word-break: break-all;">
+                        ashrafkhan0777-2@oksbi
+                    </div>
+                    <button type="button" onclick="copyUpiId()" class="btn btn-primary" style="padding: 8px 18px; font-size: 0.84rem; font-weight: 800; width: 100%;">
+                        &#128203; Copy UPI ID
+                    </button>
+                </div>
+
+                <div style="font-size: 0.78rem; color: #94a3b8; line-height: 1.5;">
+                    &#10004; Transfer via Google Pay, PhonePe, Paytm, or BHIM &bull; Paste UTR on right to get pass
                 </div>
             </div>
 
             <!-- Right: Dynamic Pricing Guide + 1-Click Ticket Claim by UTR -->
             <div>
                 <p style="font-size: 0.95rem; color: #e2e8f0; margin: 0 0 14px; line-height: 1.6;">
-                    Scan the official QR scanner on the left using <strong>Google Pay, PhonePe, Paytm, BHIM, or any UPI App</strong>. Passes range from <strong>₹199 to ₹1299</strong> depending on your choice:
+                    Pay directly using <strong>Google Pay, PhonePe, Paytm, BHIM, or any UPI App</strong> to UPI ID <code style="color:var(--gold-accent); font-weight:800;">ashrafkhan0777-2@oksbi</code>. Official passes pricing:
                 </p>
 
                 <ul style="color: #cbd5e1; font-size: 0.88rem; padding-left: 18px; margin: 0 0 18px; line-height: 1.7;">
@@ -464,7 +478,7 @@ include __DIR__ . '/includes/header.php';
                 <!-- 1-Click UTR Instant Claim Box -->
                 <div style="background: rgba(10, 1, 6, 0.85); border: 1.5px solid var(--gold-accent); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px;">
                     <div style="font-size: 0.88rem; font-weight: 800; color: #ffd966; margin-bottom: 8px;">
-                        &#9889; Already Scanned &amp; Paid? Enter 12-Digit UTR to Download Pass:
+                        &#9889; Already Paid via UPI? Enter 12-Digit UTR to Download Pass:
                     </div>
                     <form action="<?= BASE_URL ?>/ticket.php" method="GET" style="display: flex; gap: 8px; flex-wrap: wrap;">
                         <input type="text" 
@@ -490,71 +504,11 @@ include __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-    <!-- 5. BOOKMYSHOW INTERACTIVE SEAT BOOKING ARENA & CATEGORY PASSES -->
-    <div style="text-align: center; margin-bottom: 25px;" id="bms-seat-arena">
-        <span style="background: rgba(245,183,34,0.18); color: var(--gold-accent); border: 1px solid rgba(245,183,34,0.4); font-weight: 800; text-transform: uppercase; font-size: 0.78rem; padding: 4px 14px; border-radius: 20px; letter-spacing: 1px;">
-            &#127915; BookMyShow Live Seating Map &bull; Official Arena Layout
-        </span>
-        <h2 style="font-size: 2.2rem; font-weight: 900; color: #fff; margin: 10px 0 6px;">
-            Select Your Seats &amp; Entry Pass
-        </h2>
-        <p style="color: var(--text-muted); max-width: 650px; margin: 0 auto; font-size: 0.94rem;">
-            Official pricing as shown on poster &bull; Pick your favorite seats live on the arena map below!
-        </p>
-    </div>
-
-    <!-- Category Tier Overview Cards (BookMyShow Tier Cards) -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; max-width: 980px; margin: 0 auto 30px;">
-        <?php foreach ($categories as $cat): ?>
-            <?php 
-                $isCouple = stripos($cat['name'], 'Couple') !== false;
-                $isFamily = stripos($cat['name'], 'Family') !== false;
-                $isVip = stripos($cat['name'], 'VIP') !== false || $isFamily;
-                $hasFood = ((float)$cat['price'] >= 350 || stripos($cat['name'], 'With Food') !== false);
-                $tierRowsLabel = ((float)$cat['price'] >= 1000) ? 'Row VIP (Family Box)' : (((float)$cat['price'] >= 600) ? 'Row A, B (VIP)' : (((float)$cat['price'] >= 350) ? 'Row C, D (Prime Plus)' : (((float)$cat['price'] >= 250) ? 'Row E, F, G (Prime)' : 'Row H, J, K, L (Economy)')));
-                $targetRowLetter = ((float)$cat['price'] >= 1000) ? 'VIP' : (((float)$cat['price'] >= 600) ? 'A' : (((float)$cat['price'] >= 350) ? 'C' : (((float)$cat['price'] >= 250) ? 'E' : 'H')));
-            ?>
-            <div style="background: linear-gradient(135deg, rgba(35, 4, 20, 0.96), rgba(18, 2, 10, 0.98)); border: 1.5px solid <?= ($isCouple || $isVip) ? 'var(--gold-accent)' : 'rgba(245, 183, 34, 0.35)' ?>; border-radius: 14px; padding: 18px; box-shadow: 0 6px 20px rgba(0,0,0,0.55); position: relative; text-align: left;">
-                <?php if ($isCouple): ?>
-                    <span style="position: absolute; top: -10px; right: 14px; background: linear-gradient(135deg, #f5b722, #d99208); color: #1f0411; font-size: 0.68rem; font-weight: 800; padding: 2px 10px; border-radius: 20px; text-transform: uppercase;">
-                        &#128293; Popular
-                    </span>
-                <?php endif; ?>
-
-                <div style="font-size: 1.05rem; font-weight: 800; color: #fff; margin-bottom: 4px;">
-                    <?= e($cat['name']) ?>
-                </div>
-
-                <div style="font-size: 0.78rem; color: #cbd5e1; margin-bottom: 8px;">
-                    &#128186; <?= $tierRowsLabel ?> &bull; &#128101; <?= (int)$cat['people_allowed'] ?> Person<?= $cat['people_allowed'] > 1 ? 's' : '' ?>
-                </div>
-
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px dashed rgba(245,183,34,0.25); padding-top: 10px;">
-                    <div>
-                        <div style="font-size: 1.45rem; font-weight: 900; color: var(--gold-accent); line-height: 1;">
-                            <?= format_inr($cat['price']) ?>
-                        </div>
-                        <div style="font-size: 0.72rem; color: <?= $hasFood ? '#34d399' : '#f87171' ?>; font-weight: 700; margin-top: 3px;">
-                            <?= $hasFood ? '&#127869; Food Incl.' : '&#10060; No Food' ?>
-                        </div>
-                    </div>
-
-                    <button type="button" 
-                            onclick="selectTierAndScroll('<?= $targetRowLetter ?>')" 
-                            class="btn-bms-red" 
-                            style="padding: 8px 14px; font-size: 0.82rem; border-radius: 8px; text-decoration: none; cursor: pointer;">
-                        <span>Pick Seats</span> <span>&darr;</span>
-                    </button>
-                </div>
-            </div>
-        <?php endforeach; ?>
-    </div>
-
     <!-- ========================================================
          BOOKMYSHOW CINEMA / ARENA SEAT LAYOUT MATRIX
          Pure Direct Multiple Seat Selection
          ======================================================== -->
-    <div class="bms-arena-wrapper" id="bms-seat-map">
+    <div class="bms-arena-wrapper" id="bms-seat-arena">
         <!-- Event Header Bar -->
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
             <div>
@@ -950,14 +904,17 @@ let selectedSeats = [];
 let seatPrices = {};
 
 function scrollToSeatMap() {
-    const el = document.getElementById('bms-seat-map');
+    const el = document.getElementById('bms-seat-arena') || document.getElementById('bms-seat-map');
     if (el) {
         el.scrollIntoView({ behavior: 'smooth' });
     }
 }
 
 function selectTierAndScroll(rowLetter) {
-    const rowEl = document.getElementById('row-container-' + rowLetter);
+    let rowEl = document.getElementById('row-container-' + rowLetter);
+    if (!rowEl && (rowLetter === 'VIP' || rowLetter === 'VIP 1')) {
+        rowEl = document.getElementById('row-container-VIP 1') || document.getElementById('row-container-VIP');
+    }
     if (rowEl) {
         rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         rowEl.style.transition = 'background 0.3s ease';

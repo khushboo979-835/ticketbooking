@@ -330,11 +330,11 @@ function get_event_categories(int $eventId, bool $activeOnly = true): array {
                 if (!$chkCat5) {
                     $db->exec("INSERT INTO ticket_categories (id, event_id, name, price, total_quantity, available_quantity, people_allowed, status) VALUES (5, 1, 'Family Pass (With Food)', 1299.00, 500, 500, 4, 'active')");
                 } else {
-                    $db->exec("UPDATE ticket_categories SET name = 'Family Pass (With Food)', price = 1299.00, people_allowed = 4, status = 'active', total_quantity = 500 WHERE id = 5");
+                    $db->exec("UPDATE ticket_categories SET name = 'Family Pass (With Food)', price = 1299.00, people_allowed = 4, status = 'active', total_quantity = 500, available_quantity = CASE WHEN available_quantity IS NULL OR available_quantity < 20 THEN 500 ELSE available_quantity END WHERE id = 5");
                 }
                 
                 // Self-healing: ensure available_quantity is healthy for all categories (>= 500)
-                $db->exec("UPDATE ticket_categories SET total_quantity = 500, available_quantity = 500 WHERE event_id = 1 AND (available_quantity IS NULL OR available_quantity < 10)");
+                $db->exec("UPDATE ticket_categories SET total_quantity = 500, available_quantity = 500 WHERE event_id = 1 AND (available_quantity IS NULL OR available_quantity < 20)");
                 
                 $db->exec("UPDATE ticket_categories SET status = 'inactive' WHERE id NOT IN (1, 2, 3, 4, 5) AND event_id = 1");
                 $db->exec("UPDATE events SET description = 'Millennium India Group presents Jashn-E-Garba 2026! Dance, Celebrate, Feel the Vibes! Authentic Gujarati Dandiya beats, live folk orchestra, high-energy lights, contest awards, delicious food options and royal festive celebration.' WHERE id = 1 AND description LIKE '%Saurabh%'");
@@ -438,16 +438,19 @@ function ensure_seat_inventory_table(): void {
             INDEX `idx_seat_status` (`status`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-        // 2. Ensure seat_numbers column in bookings table
+        // 2. Ensure seat_numbers column in bookings table & expand row_name size
         try {
             $db->exec("ALTER TABLE `bookings` ADD COLUMN `seat_numbers` VARCHAR(255) NULL");
+        } catch (Throwable $e) {}
+        try {
+            $db->exec("ALTER TABLE `event_seats` MODIFY COLUMN `row_name` VARCHAR(20) NOT NULL");
         } catch (Throwable $e) {}
 
         // 3. Seed initial seats if empty
         $count = (int)$db->query("SELECT COUNT(*) FROM `event_seats` WHERE `event_id` = 1")->fetchColumn();
         if ($count === 0) {
             $tierConfigs = [
-                ['cat_id' => 5, 'name' => 'Family Pass (With Food)', 'price' => 1299.00, 'rows' => ['VIP'], 'seats_per_row' => 8],
+                ['cat_id' => 5, 'name' => 'Family Pass (With Food)', 'price' => 1299.00, 'rows' => ['VIP 1', 'VIP 2'], 'seats_per_row' => 10],
                 ['cat_id' => 4, 'name' => 'Couple Pass (With Food)', 'price' => 699.00, 'rows' => ['A', 'B'], 'seats_per_row' => 10],
                 ['cat_id' => 3, 'name' => 'Single Pass (With Food)', 'price' => 399.00, 'rows' => ['C', 'D'], 'seats_per_row' => 10],
                 ['cat_id' => 2, 'name' => 'Couple Pass (No Food)',   'price' => 299.00, 'rows' => ['E', 'F', 'G'], 'seats_per_row' => 10],
@@ -464,7 +467,8 @@ function ensure_seat_inventory_table(): void {
             foreach ($tierConfigs as $tc) {
                 foreach ($tc['rows'] as $rName) {
                     for ($sNum = 1; $sNum <= $tc['seats_per_row']; $sNum++) {
-                        $sCode = sprintf('%s-%02d', $rName, $sNum);
+                        $prefix = str_replace(' ', '', $rName);
+                        $sCode = sprintf('%s-%02d', $prefix, $sNum);
                         $st = in_array($sCode, $initSold) ? 'sold' : 'available';
                         $insStmt->execute([
                             ':cat_id'   => $tc['cat_id'],
@@ -479,20 +483,28 @@ function ensure_seat_inventory_table(): void {
                 }
             }
         } else {
-            // Ensure VIP seats for Family Pass (With Food ₹1299) exist in existing tables
+            // Expand VIP seats for Family Pass (With Food ₹1299) to 20 seats (VIP 1 and VIP 2)
             try {
-                $chkVip = (int)$db->query("SELECT COUNT(*) FROM `event_seats` WHERE `category_id` = 5")->fetchColumn();
-                if ($chkVip === 0) {
-                    $insVip = $db->prepare("
-                        INSERT IGNORE INTO `event_seats` (event_id, category_id, category_name, tier_price, row_name, seat_num, seat_code, status)
-                        VALUES (1, 5, 'Family Pass (With Food)', 1299.00, 'VIP', :num, :code, 'available')
-                    ");
-                    for ($sNum = 1; $sNum <= 8; $sNum++) {
-                        $sCode = sprintf('VIP-%02d', $sNum);
-                        $insVip->execute([':num' => $sNum, ':code' => $sCode]);
-                    }
+                $insVip = $db->prepare("
+                    INSERT IGNORE INTO `event_seats` (event_id, category_id, category_name, tier_price, row_name, seat_num, seat_code, status)
+                    VALUES (1, 5, 'Family Pass (With Food)', 1299.00, :row, :num, :code, 'available')
+                ");
+
+                // Ensure Row VIP 1 has 10 seats (VIP-01 to VIP-10)
+                for ($sNum = 1; $sNum <= 10; $sNum++) {
+                    $sCode = sprintf('VIP-%02d', $sNum);
+                    $insVip->execute([':row' => 'VIP 1', ':num' => $sNum, ':code' => $sCode]);
                 }
-            } catch (Throwable $ve) {}
+                $db->exec("UPDATE event_seats SET row_name = 'VIP 1' WHERE seat_code LIKE 'VIP-%'");
+
+                // Ensure Row VIP 2 has 10 seats (VIP2-01 to VIP2-10)
+                for ($sNum = 1; $sNum <= 10; $sNum++) {
+                    $sCode = sprintf('VIP2-%02d', $sNum);
+                    $insVip->execute([':row' => 'VIP 2', ':num' => $sNum, ':code' => $sCode]);
+                }
+            } catch (Throwable $ve) {
+                error_log('[vip expand error]: ' . $ve->getMessage());
+            }
         }
         // 4. Ensure verified booking for client tester mobile 6204954936 exists
         try {

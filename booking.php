@@ -169,7 +169,7 @@ include __DIR__ . '/includes/header.php';
         ['name' => 'Couple (No Food)', 'price' => 299, 'food' => false, 'img' => 'assets/uploads/ticket-couple-299.png', 'row' => 'E-G'],
         ['name' => 'Single + Dinner', 'price' => 399, 'food' => true, 'img' => 'assets/uploads/ticket-single-food-399.png', 'row' => 'C-D'],
         ['name' => 'Couple + Dinner', 'price' => 699, 'food' => true, 'img' => 'assets/uploads/ticket-couple-food-699.png', 'row' => 'A-B'],
-        ['name' => 'Family + Dinner (4P)', 'price' => 1299, 'food' => true, 'img' => 'assets/uploads/ticket-family-food-1299.png', 'row' => 'VIP'],
+        ['name' => 'Family + Dinner (4P)', 'price' => 1299, 'food' => true, 'img' => 'assets/uploads/ticket-family-food-1299.png', 'row' => 'VIP 1, VIP 2'],
     ];
     ?>
     <div style="background: rgba(30, 4, 18, 0.95); border: 2px solid var(--gold-accent); border-radius: 14px; padding: 18px 16px; margin-bottom: 25px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);">

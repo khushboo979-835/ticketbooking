@@ -267,14 +267,14 @@ include __DIR__ . '/includes/header.php';
                 <span style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.78rem; padding: 4px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.6px; display: inline-block; margin-bottom: 8px;">
                     &#9889; Official Bank Verified UPI Transfer
                 </span>
-                <h2 style="color: #fff; font-size: 1.7rem; font-weight: 900; margin: 0 0 6px;">Pay Directly via Official Scanner / UPI</h2>
+                <h2 style="color: #fff; font-size: 1.7rem; font-weight: 900; margin: 0 0 6px;">Pay Directly via UPI ID / Apps</h2>
                 <p style="color: var(--text-muted); font-size: 0.95rem; margin: 0;">
-                    Scan the official QR below or use UPI ID &bull; Instant confirmation for <?= e($cart['seat_numbers'] ?: 'selected seats') ?>
+                    Transfer to official UPI ID below &bull; Instant confirmation for <?= e($cart['seat_numbers'] ?: 'selected seats') ?>
                 </p>
             </div>
 
-            <!-- UPI White Box with Official Scanner -->
-            <div style="border: 2px solid #e2e8f0; max-width: 520px; margin: 0 auto 25px; padding: 24px 20px; border-radius: 16px; background: #ffffff; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,0.25);">
+            <!-- UPI White Box with Clean UPI ID Card -->
+            <div style="border: 2px solid #e2e8f0; max-width: 540px; margin: 0 auto 25px; padding: 26px 22px; border-radius: 16px; background: #ffffff; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,0.25);">
                 
                 <div style="font-size: 0.92rem; color: #475569; font-weight: 700;">
                     Official Account: <strong style="color: #0f172a; font-size: 1.05rem;">Ashraf Ali</strong> &bull; <span style="color:#0369a1;">Jana Small Finance 9105</span>
@@ -291,60 +291,31 @@ include __DIR__ . '/includes/header.php';
                     </div>
                 </div>
 
-                <!-- QR Code View Switcher (Official Standee vs Dynamic Amount QR) -->
-                <div style="display: flex; justify-content: center; gap: 8px; margin: 16px auto 14px; max-width: 380px;">
-                    <button type="button" id="tab-btn-scanner" onclick="switchQrTab('scanner')" style="flex: 1; padding: 8px 12px; border-radius: 20px; font-weight: 800; font-size: 0.82rem; border: 1.5px solid var(--gold-accent); background: var(--gold-accent); color: #1f0411; cursor: pointer; transition: all 0.2s;">
-                        &#128241; Official Scanner
-                    </button>
-                    <button type="button" id="tab-btn-dynamic" onclick="switchQrTab('dynamic')" style="flex: 1; padding: 8px 12px; border-radius: 20px; font-weight: 800; font-size: 0.82rem; border: 1.5px solid #cbd5e1; background: #f8fafc; color: #475569; cursor: pointer; transition: all 0.2s;">
-                        &#9889; Auto-Amount QR (<?= format_inr($cart['total_amount']) ?>)
-                    </button>
-                </div>
-
-                <!-- View 1: Official Google Pay UPI Scanner (Ashraf Ali) -->
-                <div id="official-scanner-box" style="margin: 0 auto 14px; padding: 14px; background: #0f172a; border: 2.5px solid var(--gold-accent); border-radius: 18px; max-width: 330px; box-shadow: 0 12px 30px rgba(0,0,0,0.45);">
-                    <img src="<?= asset_v('assets/uploads/upi-scanner-ashraf.png') ?>" 
-                         alt="Official Google Pay UPI Scanner - Ashraf Ali" 
-                         style="width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 12px;">
-                    <div style="font-size: 0.95rem; font-weight: 800; color: #ffd966; margin-top: 10px;">
-                        &#128241; Official Standee Scanner
+                <!-- Highlighted Official UPI ID Card -->
+                <div style="background: linear-gradient(135deg, #0f172a, #1e293b); border: 2px solid var(--gold-accent); border-radius: 14px; padding: 18px 20px; margin: 16px auto; max-width: 440px; box-shadow: 0 6px 20px rgba(0,0,0,0.15);">
+                    <div style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Official Payee UPI ID</div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px;">
+                        <span id="upi-id-text" style="color: #ffd966; font-size: 1.15rem; font-family: monospace; font-weight: 900; word-break: break-all;">
+                            <?= e($cleanUpiId) ?>
+                        </span>
+                        <button type="button" id="btn-copy-upi-main" onclick="copyUpiIdMain()" style="background: var(--gold-accent); color: #1f0411; border: none; font-size: 0.85rem; font-weight: 800; padding: 8px 16px; border-radius: 8px; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                            &#128203; Copy UPI ID
+                        </button>
                     </div>
-                    <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 3px;">
-                        Ashraf Ali &bull; Jana Small Finance 9105
+                    <div style="font-size: 0.78rem; color: #cbd5e1; margin-top: 10px; text-align: left; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+                        &#10004; Payee: <strong style="color: #fff;">Ashraf Ali</strong> &bull; Bank: <strong style="color: #ffd966;">Jana Small Finance 9105</strong>
                     </div>
-                </div>
-
-                <!-- View 2: High-Res Dynamic Auto-Amount QR (Exact cart amount pre-encoded) -->
-                <div id="dynamic-qr-box" style="display: none; margin: 0 auto 14px; padding: 18px; background: #ffffff; border: 2.5px solid var(--gold-accent); border-radius: 18px; max-width: 330px; box-shadow: 0 12px 30px rgba(0,0,0,0.25);">
-                    <div id="dynamic-upi-qrcode" style="display: flex; justify-content: center; align-items: center; min-height: 215px; padding: 6px; background: #fff; border-radius: 10px;"></div>
-                    <div style="font-size: 0.95rem; font-weight: 900; color: #7a1244; margin-top: 10px;">
-                        Exact <?= format_inr($cart['total_amount']) ?> Pre-Filled
-                    </div>
-                    <div style="font-size: 0.8rem; color: #64748b; margin-top: 3px;">
-                        Scan with Any UPI App &bull; Amount Enters Automatically
-                    </div>
-                </div>
-
-                <!-- Compact UPI ID Copy Option -->
-                <div style="margin: 10px auto; display: inline-flex; align-items: center; gap: 8px; background: #f1f5f9; border: 1.5px solid #cbd5e1; padding: 6px 14px; border-radius: 20px;">
-                    <span style="font-size: 0.8rem; color: #64748b; font-weight: 700;">UPI ID:</span>
-                    <span id="upi-id-text" style="color: #0f172a; font-size: 0.9rem; font-family: monospace; font-weight: 800;">
-                        <?= e($cleanUpiId) ?>
-                    </span>
-                    <button type="button" id="btn-copy-upi-main" onclick="copyUpiIdMain()" style="background: var(--gold-accent); color: #1f0411; border: none; font-size: 0.74rem; font-weight: 800; padding: 4px 10px; border-radius: 10px; cursor: pointer;">
-                        Copy
-                    </button>
                 </div>
 
                 <!-- Notification Alert Banner upon copying -->
-                <div id="copy-toast" style="display: none; background: #dcfce7; border: 1.5px solid #22c55e; color: #15803d; padding: 10px 14px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; margin: 12px auto; max-width: 360px; text-align: center;">
-                    &#10004; UPI ID copied! Open GPay, PhonePe or Paytm to transfer exact <?= format_inr($cart['total_amount']) ?>
+                <div id="copy-toast" style="display: none; background: #dcfce7; border: 1.5px solid #22c55e; color: #15803d; padding: 10px 14px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; margin: 12px auto; max-width: 420px; text-align: center;">
+                    &#10004; UPI ID copied! Open GPay, PhonePe or Paytm and transfer exact <?= format_inr($cart['total_amount']) ?>
                 </div>
 
                 <!-- 1-Click Direct UPI App Buttons for Mobile -->
-                <div style="margin: 20px 0 14px;">
+                <div style="margin: 22px 0 14px;">
                     <div style="font-size: 0.84rem; color: #334155; font-weight: 800; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">
-                        &#128242; Tap on Mobile to Pay (<?= format_inr($cart['total_amount']) ?>):
+                        &#128242; Or Tap Directly on Mobile to Pay (<?= format_inr($cart['total_amount']) ?>):
                     </div>
 
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
@@ -375,15 +346,14 @@ include __DIR__ . '/includes/header.php';
                     </div>
                 </div>
 
-                <!-- Practical instructions addressing the PhonePe gallery scan limitation -->
                 <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; margin: 16px auto 8px; text-align: left; font-size: 0.82rem; color: #475569; line-height: 1.55;">
                     <div style="font-weight: 800; color: #0f172a; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-                        <span>&#128161;</span> <span>Quick Mobile Payment Tips:</span>
+                        <span>&#128161;</span> <span>Payment Guide:</span>
                     </div>
                     <ul style="margin: 0; padding-left: 18px;">
-                        <li><strong>Instant 1-Click Pay:</strong> Tap the app button above (<strong>PhonePe, GPay, Paytm, BHIM</strong>) to open your app directly with no screenshot needed!</li>
-                        <li><strong>Gallery Scan Notice:</strong> If scanning QR from photo gallery, PhonePe limits gallery uploads to ₹2,000. To pay any amount smoothly, tap the <strong>"PhonePe"</strong> button above or transfer to UPI ID <code><?= e($cleanUpiId) ?></code>.</li>
-                        <li><strong>Camera / Second Phone:</strong> Open your camera or UPI app scanner and point at the QR code above.</li>
+                        <li><strong>1-Click Pay:</strong> Tap your app button above (<strong>PhonePe, GPay, Paytm, BHIM</strong>) to open directly &amp; pay exact <?= format_inr($cart['total_amount']) ?>.</li>
+                        <li><strong>Manual Transfer:</strong> Or copy UPI ID <code><?= e($cleanUpiId) ?></code> and pay from your banking app.</li>
+                        <li><strong>Next Step:</strong> After payment, paste the 12-digit UTR number below to receive your ticket!</li>
                     </ul>
                 </div>
 
@@ -452,64 +422,7 @@ include __DIR__ . '/includes/header.php';
     </div>
 </div>
 
-<script src="<?= asset_v('assets/js/qrcode.min.js') ?>"></script>
 <script>
-// Switch between Official Standee Scanner & Auto-Amount Dynamic QR
-let dynamicQrRendered = false;
-function switchQrTab(tab) {
-    const scannerBox = document.getElementById('official-scanner-box');
-    const dynamicBox = document.getElementById('dynamic-qr-box');
-    const btnScanner = document.getElementById('tab-btn-scanner');
-    const btnDynamic = document.getElementById('tab-btn-dynamic');
-
-    if (tab === 'scanner') {
-        if (scannerBox) scannerBox.style.display = 'block';
-        if (dynamicBox) dynamicBox.style.display = 'none';
-        if (btnScanner) {
-            btnScanner.style.background = 'var(--gold-accent)';
-            btnScanner.style.color = '#1f0411';
-            btnScanner.style.borderColor = 'var(--gold-accent)';
-        }
-        if (btnDynamic) {
-            btnDynamic.style.background = '#f8fafc';
-            btnDynamic.style.color = '#475569';
-            btnDynamic.style.borderColor = '#cbd5e1';
-        }
-    } else {
-        if (scannerBox) scannerBox.style.display = 'none';
-        if (dynamicBox) dynamicBox.style.display = 'block';
-        if (btnDynamic) {
-            btnDynamic.style.background = 'var(--gold-accent)';
-            btnDynamic.style.color = '#1f0411';
-            btnDynamic.style.borderColor = 'var(--gold-accent)';
-        }
-        if (btnScanner) {
-            btnScanner.style.background = '#f8fafc';
-            btnScanner.style.color = '#475569';
-            btnScanner.style.borderColor = '#cbd5e1';
-        }
-
-        if (!dynamicQrRendered) {
-            dynamicQrRendered = true;
-            const container = document.getElementById('dynamic-upi-qrcode');
-            const upiPayload = <?= json_encode($genericUpiPayload) ?>;
-            if (container && typeof QRCode !== 'undefined') {
-                container.innerHTML = '';
-                new QRCode(container, {
-                    text: upiPayload,
-                    width: 210,
-                    height: 210,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.M
-                });
-            } else if (container) {
-                container.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=210x210&data=' + encodeURIComponent(upiPayload) + '" alt="Auto-Amount QR" style="width:210px;height:210px;border-radius:8px;">';
-            }
-        }
-    }
-}
-
 // 1-Click Launch specific UPI app on mobile with universal fallback
 function launchUpiApp(appName) {
     const isAndroid = /Android/i.test(navigator.userAgent);
