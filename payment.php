@@ -195,16 +195,16 @@ $cleanAmount = (fmod($numAmount, 1.0) == 0.0) ? (string)(int)$numAmount : number
 $cleanUpiId = 'ashrafkhan0777-2@oksbi';
 $cleanPayee = 'Ashraf Ali';
 $encodedPayee = rawurlencode($cleanPayee);
-$note = rawurlencode('GarbaPass ' . $bookingUid);
+$note = rawurlencode('GarbaPass');
 
-// 1. NPCI Universal UPI Payload (Universal deep link & QR code)
-$genericUpiPayload = "upi://pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}&tr=" . rawurlencode($bookingUid);
+// 1. NPCI Universal UPI Payload (Direct P2P transfer - clean & compatible with all UPI apps)
+$genericUpiPayload = "upi://pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}";
 
 // 2. Android Chrome Intent deep links (Directly launches specific installed app on Android)
-$phonepeIntent = "intent://pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}&tr=" . rawurlencode($bookingUid) . "#Intent;scheme=upi;package=com.phonepe.app;end";
-$paytmIntent   = "intent://pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}&tr=" . rawurlencode($bookingUid) . "#Intent;scheme=upi;package=net.one97.paytm;end";
-$gpayIntent    = "intent://pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}&tr=" . rawurlencode($bookingUid) . "#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end";
-$bhimIntent    = "intent://pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}&tr=" . rawurlencode($bookingUid) . "#Intent;scheme=upi;package=in.org.npci.upiapp;end";
+$phonepeIntent = "intent://pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}#Intent;scheme=upi;package=com.phonepe.app;end";
+$paytmIntent   = "intent://pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}#Intent;scheme=upi;package=net.one97.paytm;end";
+$gpayIntent    = "intent://pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end";
+$bhimIntent    = "intent://pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}#Intent;scheme=upi;package=in.org.npci.upiapp;end";
 
 // 3. iOS Schemes
 $phonepeIos = "phonepe://upi/pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}";
@@ -332,14 +332,15 @@ include __DIR__ . '/includes/header.php';
                     &#10004; Mobile Number 7004665804 copied! Open PhonePe/GPay -> 'To Mobile Number' and pay exact <?= format_inr($cart['total_amount']) ?>
                 </div>
 
-                <!-- PhonePe User Advisory Notice -->
-                <div style="background: #eff6ff; border: 1.5px solid #3b82f6; border-radius: 12px; padding: 14px 18px; margin: 16px auto; text-align: left; max-width: 490px; box-shadow: 0 4px 12px rgba(59,130,246,0.1);">
-                    <div style="font-weight: 800; color: #1e40af; font-size: 0.92rem; margin-bottom: 6px; display: flex; align-items: center; gap: 7px;">
-                        <span style="font-size: 1.1rem;">💡</span> <span>PhonePe Users / जरूरी सूचना:</span>
+                <!-- PhonePe & UPI App Payment Guide -->
+                <div style="background: #f0fdf4; border: 1.5px solid #22c55e; border-radius: 12px; padding: 14px 18px; margin: 16px auto; text-align: left; max-width: 490px; box-shadow: 0 4px 12px rgba(34,197,94,0.1);">
+                    <div style="font-weight: 800; color: #15803d; font-size: 0.95rem; margin-bottom: 6px; display: flex; align-items: center; gap: 7px;">
+                        <span style="font-size: 1.15rem;">&#128161;</span> <span>How to Complete Payment in PhonePe / GPay / Paytm:</span>
                     </div>
-                    <div style="font-size: 0.85rem; color: #1e3a8a; line-height: 1.6;">
-                        Agar PhonePe me <strong>"You can pay up to ₹2,000 with QR codes via gallery..."</strong> ka message aaye, toh yeh koi error nahi hai. Bas <strong>"DISMISS"</strong> par tap karein aur apna payment confirm karein!<br>
-                        <strong>Direct Pay:</strong> Neeche diye gaye <strong>PhonePe</strong> ya <strong>Google Pay</strong> button par click karein, ya PhonePe me <strong>"To Mobile Number" (7004665804)</strong> par direct send karein.
+                    <div style="font-size: 0.85rem; color: #166534; line-height: 1.65;">
+                        &#10004; <strong>PhonePe:</strong> PhonePe open hone par neeche purple button <strong>"Proceed To Pay"</strong> par tap karein aur apna UPI PIN daalkar payment confirm karein.<br>
+                        &#10004; <strong>Google Pay / Paytm / BHIM:</strong> Button par tap karte hi app direct open hogi, bas PIN daalkar pay karein.<br>
+                        &#10004; <strong>Direct Transfer:</strong> Ya UPI ID <code><?= e($cleanUpiId) ?></code> ya Mobile <code>7004665804</code> par kisi bhi UPI app se direct bhejein.
                     </div>
                 </div>
 
