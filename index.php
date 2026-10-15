@@ -446,18 +446,28 @@ include __DIR__ . '/includes/header.php';
                     Jana Small Finance Bank (A/C: ...9105)
                 </div>
 
-                <div style="background: rgba(0,0,0,0.45); border: 1.5px solid var(--gold-accent); border-radius: 10px; padding: 12px; margin-bottom: 14px;">
-                    <div style="font-size: 0.74rem; color: #cbd5e1; text-transform: uppercase; font-weight: 700;">Direct Payee UPI ID</div>
-                    <div style="font-size: 1.1rem; font-family: monospace; font-weight: 900; color: #ffd966; margin: 4px 0 8px; word-break: break-all;">
+                <div style="background: rgba(0,0,0,0.45); border: 1.5px solid var(--gold-accent); border-radius: 10px; padding: 12px; margin-bottom: 12px;">
+                    <div style="font-size: 0.74rem; color: #cbd5e1; text-transform: uppercase; font-weight: 700;">Option 1: Direct Payee UPI ID</div>
+                    <div style="font-size: 1.05rem; font-family: monospace; font-weight: 900; color: #ffd966; margin: 4px 0 8px; word-break: break-all;">
                         ashrafkhan0777-2@oksbi
                     </div>
-                    <button type="button" onclick="copyUpiId()" class="btn btn-primary" style="padding: 8px 18px; font-size: 0.84rem; font-weight: 800; width: 100%;">
+                    <button type="button" onclick="copyUpiId()" class="btn btn-primary" style="padding: 7px 18px; font-size: 0.82rem; font-weight: 800; width: 100%;">
                         &#128203; Copy UPI ID
                     </button>
                 </div>
 
+                <div style="background: rgba(14,165,233,0.15); border: 1.5px solid #38bdf8; border-radius: 10px; padding: 12px; margin-bottom: 14px;">
+                    <div style="font-size: 0.74rem; color: #7dd3fc; text-transform: uppercase; font-weight: 700;">Option 2: Pay to Mobile (PhonePe / GPay)</div>
+                    <div style="font-size: 1.15rem; font-family: monospace; font-weight: 900; color: #fff; margin: 4px 0 8px;">
+                        7004665804
+                    </div>
+                    <button type="button" onclick="copyIndexMobile()" id="btn-copy-index-mob" class="btn" style="padding: 7px 18px; font-size: 0.82rem; font-weight: 800; width: 100%; background: #38bdf8; color: #082f49; border: none; cursor: pointer;">
+                        &#128203; Copy Mobile Number
+                    </button>
+                </div>
+
                 <div style="font-size: 0.78rem; color: #94a3b8; line-height: 1.5;">
-                    &#10004; Transfer via Google Pay, PhonePe, Paytm, or BHIM &bull; Paste UTR on right to get pass
+                    &#10004; Transfer via PhonePe, Google Pay, Paytm, or BHIM &bull; Paste UTR on right to get pass
                 </div>
             </div>
 
@@ -815,6 +825,41 @@ function copyUpiId() {
                 btn.innerText = 'Copy UPI';
                 btn.style.background = 'var(--gold-accent)';
                 btn.style.color = '#1f0411';
+            }, 2500);
+        }
+    }
+}
+
+function copyIndexMobile() {
+    const mobileText = '7004665804';
+    const btn = document.getElementById('btn-copy-index-mob');
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(mobileText).then(onSuccess).catch(fallback);
+    } else {
+        fallback();
+    }
+    function fallback() {
+        const temp = document.createElement('textarea');
+        temp.value = mobileText;
+        document.body.appendChild(temp);
+        temp.select();
+        try {
+            document.execCommand('copy');
+            onSuccess();
+        } catch(e) {
+            alert('Mobile Number: ' + mobileText);
+        }
+        document.body.removeChild(temp);
+    }
+    function onSuccess() {
+        if (btn) {
+            btn.innerText = 'Copied!';
+            btn.style.background = '#4ade80';
+            btn.style.color = '#000';
+            setTimeout(function() {
+                btn.innerText = '📋 Copy Mobile Number';
+                btn.style.background = '#38bdf8';
+                btn.style.color = '#082f49';
             }, 2500);
         }
     }

@@ -292,8 +292,8 @@ include __DIR__ . '/includes/header.php';
                 </div>
 
                 <!-- Highlighted Official UPI ID Card -->
-                <div style="background: linear-gradient(135deg, #0f172a, #1e293b); border: 2px solid var(--gold-accent); border-radius: 14px; padding: 18px 20px; margin: 16px auto; max-width: 440px; box-shadow: 0 6px 20px rgba(0,0,0,0.15);">
-                    <div style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Official Payee UPI ID</div>
+                <div style="background: linear-gradient(135deg, #0f172a, #1e293b); border: 2px solid var(--gold-accent); border-radius: 14px; padding: 18px 20px; margin: 16px auto 12px; max-width: 440px; box-shadow: 0 6px 20px rgba(0,0,0,0.15);">
+                    <div style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Option 1: Official Payee UPI ID</div>
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px;">
                         <span id="upi-id-text" style="color: #ffd966; font-size: 1.15rem; font-family: monospace; font-weight: 900; word-break: break-all;">
                             <?= e($cleanUpiId) ?>
@@ -307,9 +307,40 @@ include __DIR__ . '/includes/header.php';
                     </div>
                 </div>
 
+                <!-- Option 2: Pay to Mobile Number -->
+                <div style="background: linear-gradient(135deg, #0c2340, #172554); border: 2px solid #38bdf8; border-radius: 14px; padding: 16px 20px; margin: 12px auto; max-width: 440px; box-shadow: 0 6px 20px rgba(0,0,0,0.15);">
+                    <div style="font-size: 0.8rem; color: #93c5fd; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Option 2: Pay to Mobile Number (PhonePe / GPay)</div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px;">
+                        <span style="color: #fff; font-size: 1.25rem; font-family: monospace; font-weight: 900; letter-spacing: 1px;">
+                            7004665804
+                        </span>
+                        <button type="button" id="btn-copy-mobile" onclick="copyMobileNumber()" style="background: #38bdf8; color: #082f49; border: none; font-size: 0.85rem; font-weight: 800; padding: 8px 16px; border-radius: 8px; cursor: pointer; white-space: nowrap;">
+                            &#128203; Copy Number
+                        </button>
+                    </div>
+                    <div style="font-size: 0.78rem; color: #bfdbfe; margin-top: 8px; text-align: left; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 6px;">
+                        &#10004; Name: <strong style="color: #fff;">Ashraf Ali</strong> &bull; PhonePe / Google Pay / Paytm
+                    </div>
+                </div>
+
                 <!-- Notification Alert Banner upon copying -->
-                <div id="copy-toast" style="display: none; background: #dcfce7; border: 1.5px solid #22c55e; color: #15803d; padding: 10px 14px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; margin: 12px auto; max-width: 420px; text-align: center;">
+                <div id="copy-toast" style="display: none; background: #dcfce7; border: 1.5px solid #22c55e; color: #15803d; padding: 10px 14px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; margin: 12px auto; max-width: 440px; text-align: center;">
                     &#10004; UPI ID copied! Open GPay, PhonePe or Paytm and transfer exact <?= format_inr($cart['total_amount']) ?>
+                </div>
+
+                <div id="copy-mobile-toast" style="display: none; background: #e0f2fe; border: 1.5px solid #38bdf8; color: #0369a1; padding: 10px 14px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; margin: 12px auto; max-width: 440px; text-align: center;">
+                    &#10004; Mobile Number 7004665804 copied! Open PhonePe/GPay -> 'To Mobile Number' and pay exact <?= format_inr($cart['total_amount']) ?>
+                </div>
+
+                <!-- PhonePe User Advisory Notice -->
+                <div style="background: #eff6ff; border: 1.5px solid #3b82f6; border-radius: 12px; padding: 14px 18px; margin: 16px auto; text-align: left; max-width: 490px; box-shadow: 0 4px 12px rgba(59,130,246,0.1);">
+                    <div style="font-weight: 800; color: #1e40af; font-size: 0.92rem; margin-bottom: 6px; display: flex; align-items: center; gap: 7px;">
+                        <span style="font-size: 1.1rem;">💡</span> <span>PhonePe Users / जरूरी सूचना:</span>
+                    </div>
+                    <div style="font-size: 0.85rem; color: #1e3a8a; line-height: 1.6;">
+                        Agar PhonePe me <strong>"You can pay up to ₹2,000 with QR codes via gallery..."</strong> ka message aaye, toh yeh koi error nahi hai. Bas <strong>"DISMISS"</strong> par tap karein aur apna payment confirm karein!<br>
+                        <strong>Direct Pay:</strong> Neeche diye gaye <strong>PhonePe</strong> ya <strong>Google Pay</strong> button par click karein, ya PhonePe me <strong>"To Mobile Number" (7004665804)</strong> par direct send karein.
+                    </div>
                 </div>
 
                 <!-- 1-Click Direct UPI App Buttons for Mobile -->
@@ -352,7 +383,7 @@ include __DIR__ . '/includes/header.php';
                     </div>
                     <ul style="margin: 0; padding-left: 18px;">
                         <li><strong>1-Click Pay:</strong> Tap your app button above (<strong>PhonePe, GPay, Paytm, BHIM</strong>) to open directly &amp; pay exact <?= format_inr($cart['total_amount']) ?>.</li>
-                        <li><strong>Manual Transfer:</strong> Or copy UPI ID <code><?= e($cleanUpiId) ?></code> and pay from your banking app.</li>
+                        <li><strong>Manual Transfer:</strong> Or copy UPI ID <code><?= e($cleanUpiId) ?></code> or Mobile <code>7004665804</code> and pay from your banking app.</li>
                         <li><strong>Next Step:</strong> After payment, paste the 12-digit UTR number below to receive your ticket!</li>
                     </ul>
                 </div>
@@ -459,15 +490,8 @@ function launchUpiApp(appName) {
     const target = apps[appName] || apps.any;
     const dest = isAndroid ? target.android : (isIOS ? target.ios : target.universal);
 
-    // Direct launch
+    // Direct launch without race condition timeout
     window.location.href = dest;
-
-    // Fallback after 1500ms to universal chooser if user is still focused on page
-    setTimeout(function() {
-        if (document.hasFocus()) {
-            window.location.href = target.universal;
-        }
-    }, 1500);
 }
 
 function copyUpiIdMain() {
@@ -502,8 +526,53 @@ function copyUpiIdMain() {
             btn.style.color = '#000';
             setTimeout(() => {
                 btn.innerHTML = '&#128203; Copy UPI ID';
-                btn.style.background = '#1e293b';
-                btn.style.color = '#fff';
+                btn.style.background = 'var(--gold-accent)';
+                btn.style.color = '#1f0411';
+            }, 3000);
+        }
+        if (toast) {
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 6000);
+        }
+    }
+}
+
+function copyMobileNumber() {
+    const mobileText = '7004665804';
+    const btn = document.getElementById('btn-copy-mobile');
+    const toast = document.getElementById('copy-mobile-toast');
+    
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(mobileText).then(onCopySuccess).catch(fallbackCopy);
+    } else {
+        fallbackCopy();
+    }
+    
+    function fallbackCopy() {
+        const temp = document.createElement('textarea');
+        temp.value = mobileText;
+        document.body.appendChild(temp);
+        temp.select();
+        try {
+            document.execCommand('copy');
+            onCopySuccess();
+        } catch (e) {
+            prompt('Copy Mobile Number:', mobileText);
+        }
+        document.body.removeChild(temp);
+    }
+    
+    function onCopySuccess() {
+        if (btn) {
+            btn.innerHTML = '&#10004; Copied!';
+            btn.style.background = '#22c55e';
+            btn.style.color = '#000';
+            setTimeout(() => {
+                btn.innerHTML = '&#128203; Copy Number';
+                btn.style.background = '#38bdf8';
+                btn.style.color = '#082f49';
             }, 3000);
         }
         if (toast) {
