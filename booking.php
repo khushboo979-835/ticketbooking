@@ -162,6 +162,41 @@ include __DIR__ . '/includes/header.php';
         </div>
     <?php endif; ?>
 
+    <!-- 5 Official Passes Visual Reference -->
+    <?php
+    $bookingPasses = [
+        ['name' => 'Single (No Food)', 'price' => 199, 'food' => false, 'img' => 'assets/uploads/ticket-single-199.png', 'row' => 'H-L'],
+        ['name' => 'Couple (No Food)', 'price' => 299, 'food' => false, 'img' => 'assets/uploads/ticket-couple-299.png', 'row' => 'E-G'],
+        ['name' => 'Single + Dinner', 'price' => 399, 'food' => true, 'img' => 'assets/uploads/ticket-single-food-399.png', 'row' => 'C-D'],
+        ['name' => 'Couple + Dinner', 'price' => 699, 'food' => true, 'img' => 'assets/uploads/ticket-couple-food-699.png', 'row' => 'A-B'],
+        ['name' => 'Family + Dinner (4P)', 'price' => 1299, 'food' => true, 'img' => 'assets/uploads/ticket-family-food-1299.png', 'row' => 'VIP'],
+    ];
+    ?>
+    <div style="background: rgba(30, 4, 18, 0.95); border: 2px solid var(--gold-accent); border-radius: 14px; padding: 18px 16px; margin-bottom: 25px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; border-bottom:1px dashed rgba(245,183,34,0.3); padding-bottom:10px;">
+            <span style="font-weight:800; font-size:0.95rem; color:#fff;">
+                &#127915; Official Boarding Passes &amp; Food Privileges (5 Exclusive Passes):
+            </span>
+            <span style="font-size:0.8rem; color:var(--gold-light); font-weight:700;">
+                &#9889; Tap seats on arena map below &bull; Total calculates dynamically
+            </span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px;">
+            <?php foreach ($bookingPasses as $bp): ?>
+                <div style="background: rgba(15,2,9,0.9); border: 1px solid rgba(245,183,34,0.3); border-radius: 10px; padding: 8px; text-align: center;">
+                    <div style="border-radius: 6px; overflow: hidden; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.1);">
+                        <img src="<?= asset_v($bp['img']) ?>" alt="<?= e($bp['name']) ?>" style="width: 100%; height: auto; display: block; aspect-ratio: 16/9; object-fit: cover;">
+                    </div>
+                    <div style="font-weight: 800; font-size: 0.82rem; color: #fff;"><?= e($bp['name']) ?></div>
+                    <div style="font-size: 1.15rem; font-weight: 900; color: var(--gold-accent);">₹<?= $bp['price'] ?>/-</div>
+                    <div style="font-size: 0.72rem; color: <?= $bp['food'] ? '#34d399' : '#f87171' ?>; font-weight: 700; margin-top: 2px;">
+                        <?= $bp['food'] ? '&#127869; Food Included' : '&#10060; No Food' ?> &bull; Row <?= $bp['row'] ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+
     <!-- ========================================================
          BOOKMYSHOW CINEMA / ARENA SEAT LAYOUT MATRIX
          Pure Direct Multiple Seat Selection

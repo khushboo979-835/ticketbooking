@@ -98,13 +98,29 @@ include __DIR__ . '/includes/header.php';
             <div>
                 <h3 class="card-title">&#127915; Available Ticket Categories</h3>
                 <div class="tickets-grid" style="margin-top: 15px;">
+                    <?php 
+                    $passImgMap = [
+                        199  => 'assets/uploads/ticket-single-199.png',
+                        299  => 'assets/uploads/ticket-couple-299.png',
+                        399  => 'assets/uploads/ticket-single-food-399.png',
+                        699  => 'assets/uploads/ticket-couple-food-699.png',
+                        1299 => 'assets/uploads/ticket-family-food-1299.png',
+                    ];
+                    ?>
                     <?php foreach ($categories as $cat): ?>
-                        <?php $hasFood = ((float)$cat['price'] >= 350 || stripos($cat['name'], 'With Food') !== false); ?>
-                        <div class="ticket-item">
+                        <?php 
+                            $hasFood = ((float)$cat['price'] >= 350 || stripos($cat['name'], 'With Food') !== false); 
+                            $cPrice = (int)round((float)$cat['price']);
+                            $ticketImg = $passImgMap[$cPrice] ?? 'assets/uploads/ticket-single-199.png';
+                        ?>
+                        <div class="ticket-item" style="display:flex; flex-direction:column; justify-content:space-between;">
                             <div>
-                                <h3 class="ticket-title"><?= e($cat['name']) ?></h3>
-                                <div class="ticket-price"><?= format_inr($cat['price']) ?></div>
-                                <div class="ticket-capacity">
+                                <div style="border-radius:8px; overflow:hidden; margin-bottom:12px; border:1.5px solid rgba(245,183,34,0.35);">
+                                    <img src="<?= asset_v($ticketImg) ?>" alt="<?= e($cat['name']) ?>" style="width:100%; height:auto; display:block; aspect-ratio:16/9; object-fit:cover;">
+                                </div>
+                                <h3 class="ticket-title" style="margin-bottom:4px;"><?= e($cat['name']) ?></h3>
+                                <div class="ticket-price" style="font-size:1.6rem;"><?= format_inr($cat['price']) ?></div>
+                                <div class="ticket-capacity" style="margin:6px 0;">
                                     <span>&#128101;</span>
                                     <span>Permits entry for <strong><?= (int)$cat['people_allowed'] ?> Person<?= $cat['people_allowed'] > 1 ? 's' : '' ?></strong></span>
                                 </div>
