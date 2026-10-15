@@ -319,18 +319,22 @@ function get_event_categories(int $eventId, bool $activeOnly = true): array {
         if (!$syncedPricing) {
             $syncedPricing = true;
             try {
-                $db->exec("UPDATE ticket_categories SET name = 'Single Pass (No Food)', price = 199.00, people_allowed = 1, status = 'active' WHERE id = 1");
-                $db->exec("UPDATE ticket_categories SET name = 'Couple Pass (No Food)', price = 299.00, people_allowed = 2, status = 'active' WHERE id = 2");
-                $db->exec("UPDATE ticket_categories SET name = 'Single Pass (With Food)', price = 399.00, people_allowed = 1, status = 'active' WHERE id = 3");
-                $db->exec("UPDATE ticket_categories SET name = 'Couple Pass (With Food)', price = 699.00, people_allowed = 2, status = 'active' WHERE id = 4");
+                // Sync all 5 categories with official poster pricing and healthy inventory
+                $db->exec("UPDATE ticket_categories SET name = 'Single Pass (No Food)', price = 199.00, people_allowed = 1, status = 'active', total_quantity = 500 WHERE id = 1");
+                $db->exec("UPDATE ticket_categories SET name = 'Couple Pass (No Food)', price = 299.00, people_allowed = 2, status = 'active', total_quantity = 500 WHERE id = 2");
+                $db->exec("UPDATE ticket_categories SET name = 'Single Pass (With Food)', price = 399.00, people_allowed = 1, status = 'active', total_quantity = 500 WHERE id = 3");
+                $db->exec("UPDATE ticket_categories SET name = 'Couple Pass (With Food)', price = 699.00, people_allowed = 2, status = 'active', total_quantity = 500 WHERE id = 4");
                 
                 // Ensure Category 5 (Family Pass With Food ₹1299)
                 $chkCat5 = $db->query("SELECT id FROM ticket_categories WHERE id = 5")->fetch();
                 if (!$chkCat5) {
-                    $db->exec("INSERT INTO ticket_categories (id, event_id, name, price, total_seats, available_seats, people_allowed, status) VALUES (5, 1, 'Family Pass (With Food)', 1299.00, 50, 50, 4, 'active')");
+                    $db->exec("INSERT INTO ticket_categories (id, event_id, name, price, total_quantity, available_quantity, people_allowed, status) VALUES (5, 1, 'Family Pass (With Food)', 1299.00, 500, 500, 4, 'active')");
                 } else {
-                    $db->exec("UPDATE ticket_categories SET name = 'Family Pass (With Food)', price = 1299.00, people_allowed = 4, status = 'active' WHERE id = 5");
+                    $db->exec("UPDATE ticket_categories SET name = 'Family Pass (With Food)', price = 1299.00, people_allowed = 4, status = 'active', total_quantity = 500 WHERE id = 5");
                 }
+                
+                // Self-healing: ensure available_quantity is healthy for all categories (>= 500)
+                $db->exec("UPDATE ticket_categories SET total_quantity = 500, available_quantity = 500 WHERE event_id = 1 AND (available_quantity IS NULL OR available_quantity < 10)");
                 
                 $db->exec("UPDATE ticket_categories SET status = 'inactive' WHERE id NOT IN (1, 2, 3, 4, 5) AND event_id = 1");
                 $db->exec("UPDATE events SET description = 'Millennium India Group presents Jashn-E-Garba 2026! Dance, Celebrate, Feel the Vibes! Authentic Gujarati Dandiya beats, live folk orchestra, high-energy lights, contest awards, delicious food options and royal festive celebration.' WHERE id = 1 AND description LIKE '%Saurabh%'");
