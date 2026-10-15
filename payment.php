@@ -281,38 +281,38 @@ include __DIR__ . '/includes/header.php';
                     </div>
                 </div>
 
-                <!-- Official Scanner Image -->
-                <div style="margin: 16px auto 18px; padding: 12px; background: #111827; border: 2.5px solid var(--gold-accent); border-radius: 16px; max-width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.35);">
+                <!-- Official Scanner Image (Primary Payment Method) -->
+                <div style="margin: 16px auto 14px; padding: 14px; background: #0f172a; border: 2.5px solid var(--gold-accent); border-radius: 18px; max-width: 330px; box-shadow: 0 12px 30px rgba(0,0,0,0.45);">
                     <img src="<?= asset_v('assets/uploads/upi-scanner-ashraf.png') ?>" 
                          alt="Official Google Pay UPI Scanner - Ashraf Ali" 
-                         style="width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 10px;">
-                    <div style="font-size: 0.88rem; font-weight: 800; color: #ffd966; margin-top: 10px;">
-                        &#128241; Official Google Pay / UPI Scanner
+                         style="width: 100%; height: auto; display: block; margin: 0 auto; border-radius: 12px;">
+                    <div style="font-size: 0.95rem; font-weight: 800; color: #ffd966; margin-top: 10px;">
+                        &#128241; Scan with Any UPI App to Pay
                     </div>
-                    <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 2px;">
-                        Ashraf Ali &bull; Jana Small Finance 9105
+                    <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 3px;">
+                        Google Pay &bull; PhonePe &bull; Paytm &bull; BHIM
                     </div>
-                </div>
 
-                <!-- UPI ID Bar + High-Visibility Copy Button -->
-                <div style="background: #f1f5f9; border: 2px dashed #94a3b8; padding: 14px 16px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <span id="upi-id-text" style="font-size: 1.22rem; font-weight: 900; color: #0f172a; font-family: monospace; letter-spacing: 0.5px;">
-                        <?= e($cleanUpiId) ?>
-                    </span>
-                    <button type="button" class="btn btn-secondary" id="btn-copy-upi-main" onclick="copyUpiIdMain()" style="color: #fff; background: #1e293b; border: none; font-weight: 800; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 0.88rem; transition: all 0.2s ease;">
-                        &#128203; Copy UPI ID
-                    </button>
+                    <!-- Compact UPI ID Copy Option Inside Scanner Box -->
+                    <div style="margin-top: 10px; display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(245,183,34,0.3); padding: 5px 12px; border-radius: 20px;">
+                        <span id="upi-id-text" style="color: #ffd966; font-size: 0.84rem; font-family: monospace; font-weight: 700;">
+                            <?= e($cleanUpiId) ?>
+                        </span>
+                        <button type="button" id="btn-copy-upi-main" onclick="copyUpiIdMain()" style="background: var(--gold-accent); color: #1f0411; border: none; font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 10px; cursor: pointer;">
+                            Copy
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Notification Alert Banner upon copying -->
-                <div id="copy-toast" style="display: none; background: #dcfce7; border: 1.5px solid #22c55e; color: #15803d; padding: 10px 14px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; margin-bottom: 18px; text-align: center;">
+                <div id="copy-toast" style="display: none; background: #dcfce7; border: 1.5px solid #22c55e; color: #15803d; padding: 10px 14px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; margin: 12px auto; max-width: 360px; text-align: center;">
                     &#10004; UPI ID copied! Open GPay, PhonePe or Paytm to transfer exact <?= format_inr($cart['total_amount']) ?>
                 </div>
 
                 <!-- 1-Click Direct UPI App Buttons for Mobile -->
-                <div style="margin-bottom: 16px;">
+                <div style="margin: 18px 0 14px;">
                     <div style="font-size: 0.82rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px;">
-                        Or Tap to Pay Directly with App (<?= format_inr($cart['total_amount']) ?>):
+                        Or Tap Directly on Mobile to Pay (<?= format_inr($cart['total_amount']) ?>):
                     </div>
 
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">

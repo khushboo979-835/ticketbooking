@@ -13,6 +13,10 @@ $currentNav = $currentNav ?? 'home';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($pageTitle) ?></title>
     <meta name="description" content="Official ticket booking portal for Jashn-E-Garba 2026 by Millennium India Group. Patna's premier Dandiya & Garba Mahotsav at Unique Garden on 16 October 2026.">
+    <!-- Immediate Cache-Busting Headers for Live Consistency -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <!-- Dynamic Asset Versioning (Anti-Stale Browser Caching) -->
     <link rel="stylesheet" href="<?= asset_v('assets/css/style.css') ?>">
     <?php if (isset($extraCss)): ?>

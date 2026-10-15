@@ -3,6 +3,8 @@
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/config/functions.php';
 
+send_no_cache_headers();
+
 $slug = $_GET['slug'] ?? 'jashn-e-garba-2026';
 $event = get_event($slug);
 

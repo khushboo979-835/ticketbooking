@@ -4,6 +4,8 @@ ob_start();
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/config/functions.php';
 
+send_no_cache_headers();
+
 $pageTitle = 'Jashn-E-Garba 2026 | Official Ticket Booking | Millennium India Group';
 $currentNav = 'home';
 
