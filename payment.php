@@ -195,22 +195,21 @@ $cleanAmount = (fmod($numAmount, 1.0) == 0.0) ? (string)(int)$numAmount : number
 $cleanUpiId = 'ashrafkhan0777-2@oksbi';
 $cleanPayee = 'Ashraf Ali';
 $encodedPayee = rawurlencode($cleanPayee);
-$note = rawurlencode('GarbaPass');
 
-// 1. NPCI Universal UPI Payload (Direct P2P transfer - clean & compatible with all UPI apps)
-$genericUpiPayload = "upi://pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}";
+// 1. Pure Universal UPI Link (No tr, no tn, 100% standard clean across all UPI apps)
+$genericUpiPayload = "upi://pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR";
 
-// 2. Android Chrome Intent deep links (Directly launches specific installed app on Android)
-$phonepeIntent = "intent://pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}#Intent;scheme=upi;package=com.phonepe.app;end";
-$paytmIntent   = "intent://pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}#Intent;scheme=upi;package=net.one97.paytm;end";
-$gpayIntent    = "intent://pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end";
-$bhimIntent    = "intent://pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}#Intent;scheme=upi;package=in.org.npci.upiapp;end";
+// 2. Google Pay Chrome Intent (Direct 1-Click Launch)
+$gpayIntent    = "intent://pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end";
+$phonepeIntent = $genericUpiPayload;
+$paytmIntent   = $genericUpiPayload;
+$bhimIntent    = $genericUpiPayload;
 
-// 3. iOS Schemes
-$phonepeIos = "phonepe://upi/pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}";
-$paytmIos   = "paytmmp://pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}";
-$gpayIos    = "gpay://upi/pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}";
-$bhimIos    = "bhim://upi/pay?pa={$cleanUpiId}&pn={$encodedPayee}&am={$cleanAmount}&cu=INR&tn={$note}";
+// 3. Universal Schemes
+$phonepeIos = $genericUpiPayload;
+$paytmIos   = $genericUpiPayload;
+$gpayIos    = $genericUpiPayload;
+$bhimIos    = $genericUpiPayload;
 
 $pageTitle = 'Direct UPI Payment | ' . e($cart['event_title']);
 $currentNav = 'garba';
@@ -458,44 +457,14 @@ include __DIR__ . '/includes/header.php';
 </div>
 
 <script>
-// 1-Click Launch specific UPI app on mobile with universal fallback
+// 1-Click Launch specific UPI app on mobile
 function launchUpiApp(appName) {
-    const isAndroid = /Android/i.test(navigator.userAgent);
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-    const apps = {
-        phonepe: {
-            android: <?= json_encode($phonepeIntent) ?>,
-            ios: <?= json_encode($phonepeIos) ?>,
-            universal: <?= json_encode($genericUpiPayload) ?>
-        },
-        gpay: {
-            android: <?= json_encode($gpayIntent) ?>,
-            ios: <?= json_encode($gpayIos) ?>,
-            universal: <?= json_encode($genericUpiPayload) ?>
-        },
-        paytm: {
-            android: <?= json_encode($paytmIntent) ?>,
-            ios: <?= json_encode($paytmIos) ?>,
-            universal: <?= json_encode($genericUpiPayload) ?>
-        },
-        bhim: {
-            android: <?= json_encode($bhimIntent) ?>,
-            ios: <?= json_encode($bhimIos) ?>,
-            universal: <?= json_encode($genericUpiPayload) ?>
-        },
-        any: {
-            android: <?= json_encode($genericUpiPayload) ?>,
-            ios: <?= json_encode($genericUpiPayload) ?>,
-            universal: <?= json_encode($genericUpiPayload) ?>
-        }
-    };
-
-    const target = apps[appName] || apps.any;
-    const dest = isAndroid ? target.android : (isIOS ? target.ios : target.universal);
-
-    // Direct launch without race condition timeout
-    window.location.href = dest;
+    if (appName === 'gpay') {
+        window.location.href = <?= json_encode($gpayIntent) ?>;
+        return;
+    }
+    // Standard universal UPI link for PhonePe, Paytm, BHIM, etc.
+    window.location.href = <?= json_encode($genericUpiPayload) ?>;
 }
 
 function copyUpiIdMain() {
