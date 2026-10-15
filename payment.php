@@ -332,33 +332,36 @@ include __DIR__ . '/includes/header.php';
                     &#10004; Mobile Number 7004665804 copied! Open PhonePe/GPay -> 'To Mobile Number' and pay exact <?= format_inr($cart['total_amount']) ?>
                 </div>
 
-                <!-- PhonePe & UPI App Payment Guide -->
+                <!-- UPI Payment Quick Guide -->
                 <div style="background: #f0fdf4; border: 1.5px solid #22c55e; border-radius: 12px; padding: 14px 18px; margin: 16px auto; text-align: left; max-width: 490px; box-shadow: 0 4px 12px rgba(34,197,94,0.1);">
                     <div style="font-weight: 800; color: #15803d; font-size: 0.95rem; margin-bottom: 6px; display: flex; align-items: center; gap: 7px;">
-                        <span style="font-size: 1.15rem;">&#128161;</span> <span>How to Complete Payment in PhonePe / GPay / Paytm:</span>
+                        <span style="font-size: 1.15rem;">&#9889;</span> <span>Payment Guide (Super Simple):</span>
                     </div>
                     <div style="font-size: 0.85rem; color: #166534; line-height: 1.65;">
-                        &#10004; <strong>PhonePe:</strong> PhonePe open hone par neeche purple button <strong>"Proceed To Pay"</strong> par tap karein aur apna UPI PIN daalkar payment confirm karein.<br>
-                        &#10004; <strong>Google Pay / Paytm / BHIM:</strong> Button par tap karte hi app direct open hogi, bas PIN daalkar pay karein.<br>
-                        &#10004; <strong>Direct Transfer:</strong> Ya UPI ID <code><?= e($cleanUpiId) ?></code> ya Mobile <code>7004665804</code> par kisi bhi UPI app se direct bhejein.
+                        &#10004; <strong>Google Pay (Sabse Aasan):</strong> Neeche blue <strong>"Google Pay"</strong> button par tap karein, seedha PIN maang kar payment ho jayega!<br>
+                        &#10004; <strong>PhonePe User:</strong> PhonePe me <strong>"Proceed To Pay"</strong> ke baad neeche purple <strong>"Pay <?= format_inr($cart['total_amount']) ?>"</strong> button par tap karein aur PIN dalein.<br>
+                        &#10004; <strong>Direct Mobile Transfer:</strong> PhonePe me <strong>"To Mobile Number"</strong> par <code>7004665804</code> (Ashraf Ali) daalkar bhi direct pay kar sakte hain.
                     </div>
                 </div>
 
                 <!-- 1-Click Direct UPI App Buttons for Mobile -->
                 <div style="margin: 22px 0 14px;">
                     <div style="font-size: 0.84rem; color: #334155; font-weight: 800; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">
-                        &#128242; Or Tap Directly on Mobile to Pay (<?= format_inr($cart['total_amount']) ?>):
+                        &#128242; Tap on Mobile to Pay (<?= format_inr($cart['total_amount']) ?>):
                     </div>
 
+                    <!-- PRIMARY 1-CLICK INSTANT GOOGLE PAY -->
+                    <a href="<?= e($gpayIntent) ?>" onclick="launchUpiApp('gpay'); return false;" class="btn" style="background: linear-gradient(135deg, #1a73e8, #1557b0); color: #fff; font-weight: 900; font-size: 1.05rem; padding: 15px 20px; border-radius: 12px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 18px rgba(26,115,232,0.4); margin-bottom: 12px; width: 100%; box-sizing: border-box; cursor: pointer;">
+                        <span style="font-size: 1.35rem;">&#9889;</span> 
+                        <span>Pay via Google Pay (1-Click Instant)</span>
+                        <span style="background: rgba(255,255,255,0.25); color: #fff; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; text-transform: uppercase; font-weight: 800; margin-left: auto;">Easiest</span>
+                    </a>
+
+                    <!-- SECONDARY APPS GRID: PhonePe, Paytm, BHIM, Any UPI -->
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
                         <!-- PhonePe -->
                         <a href="<?= e($phonepeIntent) ?>" onclick="launchUpiApp('phonepe'); return false;" class="btn" style="background: #5f259f; color: #fff; font-weight: 800; font-size: 0.9rem; padding: 12px 14px; border-radius: 10px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 4px 14px rgba(95,37,159,0.35);">
                             <span style="font-size: 1.15rem;">&#128241;</span> <span>PhonePe</span>
-                        </a>
-
-                        <!-- Google Pay -->
-                        <a href="<?= e($gpayIntent) ?>" onclick="launchUpiApp('gpay'); return false;" class="btn" style="background: #1a73e8; color: #fff; font-weight: 800; font-size: 0.9rem; padding: 12px 14px; border-radius: 10px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 4px 14px rgba(26,115,232,0.35);">
-                            <span style="font-size: 1.15rem;">&#128241;</span> <span>Google Pay</span>
                         </a>
 
                         <!-- Paytm -->
